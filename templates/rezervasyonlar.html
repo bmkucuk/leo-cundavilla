@@ -212,8 +212,10 @@ async function load() {
   tbody.innerHTML = data.map(r => {
     const aktif = r.giris && r.cikis && r.giris <= todayStr && todayStr < r.cikis;
     const girisToday = r.giris === todayStr;
-    const rowBg = aktif ? 'background:#0e2038' : girisToday ? 'background:#0e2a14' : '';
-    return `<tr style="${rowBg}">
+    const isHL = _urlQ && String(r.foy_no) === String(_urlQ);
+    const rowBg = isHL ? 'background:#7a5c00;outline:2px solid #ffd700' : aktif ? 'background:#0e2038' : girisToday ? 'background:#0e2a14' : '';
+    const rowId = isHL ? 'id="hl-row"' : '';
+    return `<tr ${rowId} style="${rowBg}">
       <td>${r.foy_no}</td>
       <td>${r.oda_no}</td>
       <td class="${r.otel=='LEO'?'leo-tag':'cv-tag'}">${r.otel}</td>
@@ -399,6 +401,22 @@ document.getElementById('modal').addEventListener('click', e => {
 // URL'den ?q= parametresini oku (oda durumundan gelen yönlendirme)
 const _urlQ = new URLSearchParams(window.location.search).get('q');
 if (_urlQ) { document.getElementById('search').value = _urlQ; }
+const _origLoad = load;
+async function load() {
+  await _origLoad.apply(this, arguments);
+  if (_urlQ) {
+    const hl = document.getElementById('hl-row');
+    if (hl) {
+      hl.scrollIntoView({behavior:'smooth', block:'center'});
+      // 3 saniye sonra highlight solar
+      setTimeout(() => {
+        hl.style.transition = 'background 1.5s, outline 1.5s';
+        hl.style.background = '';
+        hl.style.outline = 'none';
+      }, 3000);
+    }
+  }
+}
 load();
 </script>
 {% endblock %}
