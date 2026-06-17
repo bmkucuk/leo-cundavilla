@@ -182,11 +182,16 @@ def update_rezervasyon(foy_no, data):
         toplam_gun = int(data.get('toplam_gun') or 0)
         toplam_fiyat = float(data.get('toplam_fiyat') or 0)
     kapora = float(data.get('kapora') or 0)
+    # Mevcut tahsilatı koru, bakiyeyi yeniden hesapla
+    r = conn.execute("SELECT rez_tahsilat FROM rezervasyonlar WHERE foy_no=?", (int(foy_no),)).fetchone()
+    rez_tahsilat = float(r['rez_tahsilat'] or 0) if r else 0
+    rez_bakiye = max(0, toplam_fiyat - kapora - rez_tahsilat)
     conn.execute("""
         UPDATE rezervasyonlar SET
             oda_no=?, otel=?, kanal=?, musteri=?, yetiskin=?, cocuk=?,
             ek_yatak=?, gun_fiyat=?, giris=?, cikis=?, toplam_gun=?,
             toplam_fiyat=?, kapora=?, kapora_tarihi=?, aciklama=?,
+            rez_bakiye=?,
             updated_at=datetime('now','localtime')
         WHERE foy_no=?
     """, (
@@ -194,7 +199,7 @@ def update_rezervasyon(foy_no, data):
         data['musteri'], int(data.get('yetiskin',1)), int(data.get('cocuk',0)),
         data.get('ek_yatak','Yok'), gun_fiyat, giris, cikis,
         toplam_gun, toplam_fiyat, kapora, data.get('kapora_tarihi'),
-        data.get('aciklama',''), int(foy_no)
+        data.get('aciklama',''), rez_bakiye, int(foy_no)
     ))
     conn.commit(); conn.close()
 
