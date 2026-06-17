@@ -57,8 +57,9 @@
 <div class="modal-overlay" id="edit-modal">
   <div class="modal" style="min-width:360px">
     <h2>Adisyon Düzenle — #<span id="edit-adis-no"></span></h2>
-    <div style="background:var(--card2);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--text2)">
-      <span id="e-info">—</span>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Oda (Föy)</label>
+      <select id="e-foy" style="width:100%"></select>
     </div>
     <div class="form-group" style="margin-bottom:10px">
       <label>Tarih</label>
@@ -187,7 +188,10 @@ async function addAdisyon() {
 function openEdit(a) {
   editAdisNo = a.adisyon_no;
   document.getElementById('edit-adis-no').textContent = a.adisyon_no;
-  document.getElementById('e-info').textContent = `Föy #${a.foy_no} — ${a.musteri||'?'} | Oda ${a.oda_no||'?'}`;
+  const sel = document.getElementById('e-foy');
+  sel.innerHTML = foyListesi.map(f =>
+    `<option value="${f.foy_no}" ${f.foy_no==a.foy_no?'selected':''}>#${f.foy_no} — ${f.musteri} (Oda ${f.oda_no})</option>`
+  ).join('');
   document.getElementById('e-tarih').value = a.tarih||'';
   document.getElementById('e-tutar').value = a.tutar;
   document.getElementById('e-aciklama').value = a.aciklama||'';
@@ -201,6 +205,7 @@ function closeEdit() {
 async function saveEdit() {
   const r = await api('/api/adisyon/guncelle', {
     adisyon_no: editAdisNo,
+    foy_no:     parseInt(document.getElementById('e-foy').value),
     tarih:      document.getElementById('e-tarih').value,
     tutar:      parseFloat(document.getElementById('e-tutar').value),
     aciklama:   document.getElementById('e-aciklama').value,
