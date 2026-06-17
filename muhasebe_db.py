@@ -246,10 +246,12 @@ def init_db():
         c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES(?,?,?)", b)
 
     acenteler = [
-        ("BKG", "Booking.com",  15.0),
-        ("EXP", "Expedia",      15.0),
-        ("JLY", "JollyTur",     15.0),
-        ("TTS", "TatilSepeti",  15.0),
+        ("BKG",     "Booking.com",  15.0),
+        ("EXP",     "Expedia",      15.0),
+        ("JLY",     "JollyTur",     15.0),
+        ("TTS",     "TatilSepeti",  15.0),
+        ("Telefon", "Telefon",       0.0),
+        ("Kapidan", "Kapidan",       0.0),
     ]
     for a in acenteler:
         c.execute("INSERT OR IGNORE INTO acenteler(kod,ad,komisyon_orani) VALUES(?,?,?)", a)

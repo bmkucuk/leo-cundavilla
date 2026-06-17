@@ -142,10 +142,11 @@ async function load() {
 
   allData = rows;
   document.getElementById('tbody').innerHTML = rows.map(r => {
+    const otoTag = r.foy_no ? '<span style="font-size:10px;background:#1a3a5a;color:#56b4f5;padding:1px 5px;border-radius:3px;margin-left:4px">Oto</span>' : '';
     return `<tr>
       <td>${fmtDate(r.tarih)}</td>
-      <td>${r.acente_kod}</td>
-      <td style="text-align:center">${r.foy_no||'—'}</td>
+      <td>${r.acente_kod}${otoTag}</td>
+      <td style="text-align:center">${r.foy_no ? '<a href="/rezervasyonlar?q='+r.foy_no+'" style="color:var(--accent)">'+r.foy_no+'</a>' : '—'}</td>
       <td>${r.misafir||'—'}</td>
       <td style="text-align:right">${fmt(r.rez_tutari)}</td>
       <td style="text-align:center">${r.komisyon_oran||0}%</td>

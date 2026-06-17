@@ -272,6 +272,7 @@ def api_rez_yeni():
     try:
         data = request.get_json()
         db.save_rezervasyon(data)
+        acente_cari_oto_kaydet(data)
         # Yevmiye: konaklama geliri
         yevmiye_rez_kaydet(
             int(data.get('foy_no') or 0), float(data.get('toplam_fiyat') or 0),
@@ -293,6 +294,7 @@ def api_rez_sil():
         conn = mdb.get_conn()
         conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ?", (f'%Föy#{foy_no}%',))
         conn.commit(); conn.close()
+        acente_cari_oto_sil(foy_no)
         # Rezervasyonu sil
         db.delete_rezervasyon(foy_no)
         return jsonify({'ok': True})
@@ -415,6 +417,7 @@ def api_rez_guncelle():
     try:
         data = request.get_json()
         db.update_rezervasyon(data['foy_no'], data)
+        acente_cari_oto_kaydet(data)
         # Yevmiye: konaklama geliri güncelle
         yevmiye_rez_kaydet(
             int(data.get('foy_no') or 0), float(data.get('toplam_fiyat') or 0),
@@ -454,6 +457,66 @@ def yevmiye_rez_kaydet(foy_no, toplam_fiyat, otel, giris, musteri,
         conn.commit(); conn.close()
     except Exception as e:
         print(f'Yevmiye rez kayıt hatası: {e}')
+
+
+def acente_cari_oto_kaydet(data):
+    """Rezervasyon kaydedilince kanala göre acente_cari'ye otomatik kayıt yazar."""
+    try:
+        kanal = data.get('kanal', '')
+        if not kanal:
+            return
+        # Kanal → acente_kod eşleştirmesi
+        kanal_map = {
+            'Booking': 'BKG', 'BKG': 'BKG',
+            'EXP': 'EXP', 'Expedia': 'EXP',
+            'JLY': 'JLY', 'JollyTur': 'JLY',
+            'TTS': 'TTS', 'TatilSepeti': 'TTS',
+            'Telefon': 'Telefon',
+            'Kapıdan': 'Kapidan',
+        }
+        acente_kod = kanal_map.get(kanal, kanal)
+        foy_no  = data.get('foy_no')
+        musteri = data.get('musteri', '')
+        toplam  = float(data.get('toplam_fiyat') or 0)
+        otel    = data.get('otel', 'LEO')
+        tarih   = data.get('giris') or date.today().isoformat()
+        conn = mdb.get_conn()
+        # Aynı föy varsa güncelle, yoksa ekle
+        existing = conn.execute(
+            "SELECT id FROM acente_cari WHERE foy_no=?", (foy_no,)
+        ).fetchone()
+        if existing:
+            conn.execute("""
+                UPDATE acente_cari
+                SET acente_kod=?, misafir=?, rez_tutari=?, otel=?, tarih=?
+                WHERE foy_no=?
+            """, (acente_kod, musteri, toplam, otel, tarih, foy_no))
+        else:
+            # Komisyon oranını acenteler tablosundan çek
+            a = conn.execute(
+                "SELECT komisyon_orani FROM acenteler WHERE kod=?", (acente_kod,)
+            ).fetchone()
+            oran = float(a['komisyon_orani']) if a else 0.0
+            kom  = round(toplam * oran / 100, 2)
+            conn.execute("""
+                INSERT INTO acente_cari
+                (tarih,acente_kod,foy_no,rez_no,misafir,rez_tutari,
+                 komisyon_oran,komisyon_tl,gelen_odeme,otel)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+            """, (tarih, acente_kod, foy_no, '', musteri, toplam,
+                  oran, kom, 0.0, otel))
+        conn.commit(); conn.close()
+    except Exception as e:
+        print(f'Acente oto kayıt hatası: {e}')
+
+def acente_cari_oto_sil(foy_no):
+    """Rezervasyon silinince acente_cari kaydını da siler."""
+    try:
+        conn = mdb.get_conn()
+        conn.execute("DELETE FROM acente_cari WHERE foy_no=?", (foy_no,))
+        conn.commit(); conn.close()
+    except Exception as e:
+        print(f'Acente oto sil hatası: {e}')
 
 ODEME_HESAP_KODU = {
     'Nakit': '100', 'nakit': '100',
