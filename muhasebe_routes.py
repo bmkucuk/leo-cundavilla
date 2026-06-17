@@ -664,7 +664,6 @@ def api_mizan():
     satirlar = []
     gruplar = {
         'Aktif':    ('AKTİF (VARLIKLAR)', []),
-        'Pasif':    ('PASİF (YÜKÜMLÜLÜKLER)', []),
         'Gelir':    ('GELİRLER', []),
         'Gider':    ('GİDERLER', []),
         'Ozkaynak': ('ÖZKAYNAKLAR', []),
