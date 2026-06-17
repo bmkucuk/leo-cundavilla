@@ -512,7 +512,8 @@ def api_vergi_onayla():
             banka = row['odeme_banka'] or 'IS'
             banka_hesap = '100' if banka=='KASA' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
             mdb2._yevmiye_ekle(conn, tarih, 'Vergi Ödemesi', '770', banka_hesap,
-                               row['tutar'], f"{row['vergi_turu']} {row['donem_yil']}/{row['donem_ay']}", 'GENEL')
+                               row['tutar'], f"{row['vergi_turu']} {row['donem_yil']}/{row['donem_ay']}", 'GENEL',
+                               kaynak_tablo='vergi', kaynak_id=int(d['id']))
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
@@ -615,23 +616,23 @@ def api_ortak_ekle():
         """, (d['tarih'], d['ortak'], d.get('belge_no', ''), d['aciklama'],
               d.get('gider_kategori', ''), tutar,
               d.get('odeme_sekli', ''), iade, d.get('otel', 'GENEL')))
+        ortak_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         if net > 0:
             ortak_hesap = '500-LK' if d['ortak'] == 'LK' else '500-BT'
             odeme = d.get('odeme_sekli', '')
             banka_hesap = '100' if 'Nakit' in odeme else '102-2' if 'Ziraat' in odeme else '102-3' if 'Deniz' in odeme else '102-1'
 
             if islem_tipi == 'Ortaga Geri Odeme':
-                # Şirket ortağa geri ödüyor: 500-LK/BT borcu kapanır
                 mdb._yevmiye_ekle(conn, d['tarih'], 'Ortağa Geri Ödeme',
                                   ortak_hesap, banka_hesap,
-                                  net, d['aciklama'], d.get('otel','GENEL'))
+                                  net, d['aciklama'], d.get('otel','GENEL'),
+                                  kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
             else:
-                # Ortak kendi cebinden ödedi: şirkete borç doğdu
                 gider_hesap = '741' if 'Market' in d.get('gider_kategori','') else                               '742' if 'Tamir' in d.get('gider_kategori','') else                               '740' if 'Elektrik' in d.get('gider_kategori','') else '780'
-                # Önce gider kaydı
                 mdb._yevmiye_ekle(conn, d['tarih'], 'Ortak Gider (Kendi Cebinden)',
                                   gider_hesap, ortak_hesap,
-                                  net, d['aciklama'], d.get('otel','GENEL'))
+                                  net, d['aciklama'], d.get('otel','GENEL'),
+                                  kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
