@@ -57,6 +57,9 @@
 <div class="modal-overlay" id="edit-modal">
   <div class="modal" style="min-width:360px">
     <h2>Adisyon Düzenle — #<span id="edit-adis-no"></span></h2>
+    <div style="background:var(--card2);border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:var(--text2)">
+      <span id="e-info">—</span>
+    </div>
     <div class="form-group" style="margin-bottom:10px">
       <label>Tarih</label>
       <input type="date" id="e-tarih">
@@ -184,6 +187,7 @@ async function addAdisyon() {
 function openEdit(a) {
   editAdisNo = a.adisyon_no;
   document.getElementById('edit-adis-no').textContent = a.adisyon_no;
+  document.getElementById('e-info').textContent = `Föy #${a.foy_no} — ${a.musteri||'?'} | Oda ${a.oda_no||'?'}`;
   document.getElementById('e-tarih').value = a.tarih||'';
   document.getElementById('e-tutar').value = a.tutar;
   document.getElementById('e-aciklama').value = a.aciklama||'';
