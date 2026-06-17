@@ -794,7 +794,6 @@ def api_stok_sil():
     try:
         d = request.get_json()
         conn = mdb.get_conn()
-        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='stok' AND kaynak_id=?", (d['id'],))
         conn.execute('DELETE FROM yevmiye WHERE kaynak_tablo=? AND kaynak_id=?', ('stok', d['id']))
         conn.execute('DELETE FROM stok WHERE id=?', (d['id'],))
         conn.commit(); conn.close()
@@ -807,7 +806,6 @@ def api_vergi_sil():
     try:
         d = request.get_json()
         conn = mdb.get_conn()
-        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='vergi' AND kaynak_id=?", (d['id'],))
         conn.execute('DELETE FROM yevmiye WHERE kaynak_tablo=? AND kaynak_id=?', ('vergi', d['id']))
         conn.execute('DELETE FROM vergi WHERE id=?', (d['id'],))
         conn.commit(); conn.close()
@@ -820,7 +818,6 @@ def api_maas_sil():
     try:
         d = request.get_json()
         conn = mdb.get_conn()
-        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='personel_maas' AND kaynak_id=?", (d['id'],))
         conn.execute('DELETE FROM yevmiye WHERE kaynak_tablo=? AND kaynak_id=?', ('personel_maas', d['id']))
         conn.execute('DELETE FROM personel_maas WHERE id=?', (d['id'],))
         conn.commit(); conn.close()
