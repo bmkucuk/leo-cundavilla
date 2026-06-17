@@ -295,13 +295,21 @@ def save_adisyon(data):
     _sync_adisyon_totals(conn, foy_no)
     conn.commit(); conn.close()
 
-def update_adisyon(adisyon_no, tutar, odeme):
+def update_adisyon(adisyon_no, tutar, odeme, tarih=None, foy_no=None):
     conn = get_conn()
     a = conn.execute("SELECT foy_no FROM adisyonlar WHERE adisyon_no=?", (adisyon_no,)).fetchone()
-    conn.execute("UPDATE adisyonlar SET tutar=?, odeme=? WHERE adisyon_no=?",
-                 (tutar, odeme, adisyon_no))
-    if a:
-        _sync_adisyon_totals(conn, a['foy_no'])
+    eski_foy = a['foy_no'] if a else None
+    yeni_foy = foy_no or eski_foy
+    if tarih:
+        conn.execute("UPDATE adisyonlar SET tutar=?, odeme=?, tarih=?, foy_no=? WHERE adisyon_no=?",
+                     (tutar, odeme, tarih, yeni_foy, adisyon_no))
+    else:
+        conn.execute("UPDATE adisyonlar SET tutar=?, odeme=?, foy_no=? WHERE adisyon_no=?",
+                     (tutar, odeme, yeni_foy, adisyon_no))
+    if eski_foy:
+        _sync_adisyon_totals(conn, eski_foy)
+    if yeni_foy and yeni_foy != eski_foy:
+        _sync_adisyon_totals(conn, yeni_foy)
     conn.commit(); conn.close()
 
 def delete_rezervasyon(foy_no):
