@@ -234,8 +234,7 @@ def api_cari():
     aktif_rez = [r for r in rezervasyonlar if r.get('durum') != 'Kapora Yandı']
     ozet = {
         'toplam_rez':      sum(_f(r.get('toplam_fiyat')) for r in aktif_rez),
-        'toplam_kapora':   sum(_f(r.get('kapora')) for r in aktif_rez),
-        'toplam_tahsilat': sum(_f(r.get('rez_tahsilat')) for r in aktif_rez),
+        'toplam_tahsilat': sum(_f(r.get('rez_tahsilat')) + _f(r.get('kapora')) for r in aktif_rez),
         'rez_bakiye':      sum(_f(r.get('rez_bakiye')) for r in aktif_rez),
         'adis_toplam':     sum(_f(r.get('adisyon')) for r in aktif_rez),
         'adis_tahsilat':   sum(_f(r.get('adis_tahsilat')) for r in aktif_rez),
