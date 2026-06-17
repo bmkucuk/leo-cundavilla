@@ -13,6 +13,7 @@
       <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">🏨 Rezervasyon</div>
       <div style="display:flex;gap:8px">
         <div class="stat-card" style="flex:1"><div class="label">Toplam Tutar</div><div class="value blue" id="oz-rez-toplam">—</div></div>
+        <div class="stat-card" style="flex:1"><div class="label">Kapora</div><div class="value green" id="oz-kapora">—</div></div>
         <div class="stat-card" style="flex:1"><div class="label">Tahsilat</div><div class="value green" id="oz-tahsilat">—</div></div>
         <div class="stat-card" style="flex:1"><div class="label">Bakiye</div><div class="value red" id="oz-rez-bak">—</div></div>
       </div>
@@ -413,6 +414,7 @@ function updateCards() {
   const r = selFoy ? allData.find(x => x.foy_no === selFoy) : null;
   if (r) {
     document.getElementById('oz-rez-toplam').textContent = fmt(r.toplam_fiyat);
+    document.getElementById('oz-kapora').textContent = fmt(r.kapora);
     document.getElementById('oz-tahsilat').textContent = fmt(r.rez_tahsilat);
     document.getElementById('oz-rez-bak').textContent = fmt(r.rez_bakiye);
     document.getElementById('oz-adis-toplam').textContent = fmt(r.adisyon);
@@ -423,6 +425,7 @@ function updateCards() {
     document.querySelector('#cari-cards .stat-card:nth-child(4) .value').className = `value ${(r.adis_bakiye||0)>0?'red':'green'}`;
   } else {
     document.getElementById('oz-rez-toplam').textContent = fmt(ozetData.toplam_rez);
+    document.getElementById('oz-kapora').textContent = fmt(ozetData.toplam_kapora);
     document.getElementById('oz-tahsilat').textContent = fmt(ozetData.toplam_tahsilat);
     document.getElementById('oz-rez-bak').textContent = fmt(ozetData.rez_bakiye);
     document.getElementById('oz-adis-toplam').textContent = fmt(ozetData.adis_toplam);
