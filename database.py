@@ -119,7 +119,7 @@ def get_rezervasyonlar(q=None, otel=None):
     if q:
         sql += " AND (LOWER(musteri) LIKE ? OR CAST(foy_no AS TEXT) LIKE ? OR CAST(oda_no AS TEXT) LIKE ?)"
         params += [f'%{q.lower()}%', f'%{q}%', f'%{q}%']
-    sql += " ORDER BY foy_no"
+    sql += " ORDER BY foy_no DESC"
     rows = conn.execute(sql, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]
