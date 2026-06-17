@@ -37,6 +37,7 @@
   padding:10px 8px;border-radius:3px;grid-column:1/-1;margin:8px 0 2px;text-align:center;letter-spacing:2px}
 .cell{width:60px;height:34px;border-radius:3px;border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;position:relative}
+.cell.dolu-leo,.cell.dolu-cv,.cell.dolu-genel{cursor:pointer}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
 .cell.dolu-leo{background:#0a4a7a;color:#00cfff;border-color:#00cfff}
@@ -158,7 +159,7 @@ function render(d){
         const gF=cell.giris?new Date(cell.giris+'T00:00:00').toLocaleDateString('tr-TR'):'';
         const cF=cell.cikis?new Date(cell.cikis+'T00:00:00').toLocaleDateString('tr-TR'):'';
         const todayStyleD = '';
-        html+=`<div class="cell ${cls}${isToday?' today':''}" style="${todayStyleD}">${cell.initials}<div class="tooltip">${cell.musteri}<br>${gF} – ${cF}<br>Föy: ${cell.foy_no}</div></div>`;
+        html+=`<div class="cell ${cls}${isToday?' today':''}" style="${todayStyleD}" onclick="window.location='/rezervasyonlar?q=${cell.foy_no}'">${cell.initials}<div class="tooltip">${cell.musteri}<br>${gF} – ${cF}<br>Föy: ${cell.foy_no}</div></div>`;
       } else {
         const todayStyle = isToday ? 'background:#2a4a6a;border:1px solid #6ab0ff' : '';
         html+=`<div class="cell bos${isToday?' today':''}" style="${todayStyle}"></div>`;

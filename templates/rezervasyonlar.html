@@ -396,6 +396,9 @@ document.getElementById('modal').addEventListener('click', e => {
   if (e.target.id === 'modal') closeModal();
 });
 
+// URL'den ?q= parametresini oku (oda durumundan gelen yönlendirme)
+const _urlQ = new URLSearchParams(window.location.search).get('q');
+if (_urlQ) { document.getElementById('search').value = _urlQ; }
 load();
 </script>
 {% endblock %}
