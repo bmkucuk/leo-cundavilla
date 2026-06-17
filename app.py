@@ -231,7 +231,10 @@ def api_oda_durumu():
 def api_cari():
     rezervasyonlar = db.get_rezervasyonlar()
     def _f(v): return float(v or 0)
-    aktif_rez = [r for r in rezervasyonlar if r.get('durum') != 'Kapora Yandı']
+    today = date.today().isoformat()
+    aktif_rez = [r for r in rezervasyonlar
+                 if r.get('durum') != 'Kapora Yandı'
+                 and (r.get('cikis') or '9999') >= today]
     ozet = {
         'toplam_rez':      sum(_f(r.get('toplam_fiyat')) for r in aktif_rez),
         'toplam_kapora':   sum(_f(r.get('kapora')) for r in aktif_rez),
@@ -251,7 +254,10 @@ def api_adisyonlar():
     musteri_map = {r['foy_no']: r['musteri'] for r in rezervasyonlar}
     for a in adisyonlar:
         a['musteri'] = musteri_map.get(a['foy_no'], '')
-    aktif_rez = [r for r in rezervasyonlar if r.get('durum') != 'Kapora Yandı']
+    today = date.today().isoformat()
+    aktif_rez = [r for r in rezervasyonlar
+                 if r.get('durum') != 'Kapora Yandı'
+                 and (r.get('cikis') or '9999') >= today]
     foy_listesi = [{'foy_no': r['foy_no'], 'musteri': r['musteri'], 'oda_no': r['oda_no']}
                    for r in sorted(aktif_rez, key=lambda x: x['foy_no'])]
     return jsonify({'adisyonlar': adisyonlar, 'foy_listesi': foy_listesi})
