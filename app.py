@@ -334,9 +334,7 @@ def api_checkin():
         if toplam > 0:
             mdb._yevmiye_ekle(conn, tarih, 'Check-in Konaklama', '120', gelir_hesap,
                               toplam, aciklama, otel)
-        if kapora > 0:
-            mdb._yevmiye_ekle(conn, tarih, 'Kapora Mahsubu', '340', '120',
-                              kapora, aciklama, otel)
+        # Kapora mahsubu kaldırıldı - kapora zaten 102-1/120 ile yazıldı
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
@@ -372,7 +370,7 @@ def api_checkin_iptal():
             mdb._yevmiye_ekle(conn, tarih, 'Check-in Storno', gelir_hesap, '120',
                               toplam, aciklama, otel)
         if kapora > 0:
-            mdb._yevmiye_ekle(conn, tarih, 'Kapora Mahsubu Storno', '120', '340',
+            mdb._yevmiye_ekle(conn, tarih, 'Kapora Mahsubu Storno', '120', '102-1',
                               kapora, aciklama, otel)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
@@ -397,7 +395,7 @@ def api_kapora_yandi():
         tarih = date.today().isoformat()
         # Yevmiye: Alınan Avanslar borç / Diğer Olağan Gelir alacak (340/649)
         conn = mdb.get_conn()
-        mdb._yevmiye_ekle(conn, tarih, 'Kapora Yanması', '340', '649',
+        mdb._yevmiye_ekle(conn, tarih, 'Kapora Yanması', '120', '649',
                           kapora, f'Föy#{foy_no} {musteri} kapora yandı - iptal bedeli', otel)
         conn.commit(); conn.close()
         # Rezervasyon durumunu güncelle, bakiyeyi sıfırla (silinmez)
