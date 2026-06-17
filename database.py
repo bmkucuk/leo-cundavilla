@@ -245,6 +245,8 @@ def save_adisyon_odeme(adisyon_no, foy_no, tutar, odeme_sekli):
             "UPDATE adisyonlar SET odenen_tutar=?, odendi=?, odeme_tarihi=?, odeme_sekli=? WHERE adisyon_no=?",
             (yeni_odenen, 1 if tam_odendi else 0, tarih if tam_odendi else '', odeme_sekli if tam_odendi else '', adisyon_no)
         )
+    # Rezervasyondaki adisyon toplamlarını güncelle
+    _sync_adisyon_totals(conn, foy_no)
     conn.commit(); conn.close()
     return tarih
 
@@ -332,11 +334,14 @@ def delete_adisyon(adisyon_no):
 
 def _sync_adisyon_totals(conn, foy_no):
     """Adisyon ekle/sil/güncelle sonrası rezervasyondaki adisyon özetini hesapla."""
-    NAKIT = ('Nakit', 'Kredi Kartı', 'Havale', 'EFT')
-    rows = conn.execute("SELECT tutar, odeme FROM adisyonlar WHERE foy_no=?", (foy_no,)).fetchall()
-    toplam  = sum(r['tutar'] or 0 for r in rows)
-    tahsil  = sum(r['tutar'] or 0 for r in rows if r['odeme'] in NAKIT)
-    bakiye  = max(0, toplam - tahsil)
+    rows = conn.execute("SELECT tutar FROM adisyonlar WHERE foy_no=?", (foy_no,)).fetchall()
+    toplam = sum(r['tutar'] or 0 for r in rows)
+    # Tahsilatı adisyon_odemeler tablosundan al (kısmi ödemeleri de kapsar)
+    tahsil_row = conn.execute(
+        "SELECT COALESCE(SUM(tutar),0) FROM adisyon_odemeler WHERE foy_no=?", (foy_no,)
+    ).fetchone()
+    tahsil = float(tahsil_row[0] or 0)
+    bakiye = max(0, toplam - tahsil)
     conn.execute("""
         UPDATE rezervasyonlar SET adisyon=?, adis_tahsilat=?, adis_bakiye=?,
         updated_at=datetime('now','localtime') WHERE foy_no=?
