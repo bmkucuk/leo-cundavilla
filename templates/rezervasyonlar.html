@@ -401,14 +401,11 @@ document.getElementById('modal').addEventListener('click', e => {
 // URL'den ?q= parametresini oku (oda durumundan gelen yönlendirme)
 const _urlQ = new URLSearchParams(window.location.search).get('q');
 if (_urlQ) { document.getElementById('search').value = _urlQ; }
-const _origLoad = load;
-async function load() {
-  await _origLoad.apply(this, arguments);
+load().then(() => {
   if (_urlQ) {
     const hl = document.getElementById('hl-row');
     if (hl) {
       hl.scrollIntoView({behavior:'smooth', block:'center'});
-      // 3 saniye sonra highlight solar
       setTimeout(() => {
         hl.style.transition = 'background 1.5s, outline 1.5s';
         hl.style.background = '';
@@ -416,7 +413,6 @@ async function load() {
       }, 3000);
     }
   }
-}
-load();
+});
 </script>
 {% endblock %}
