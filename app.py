@@ -448,8 +448,12 @@ def yevmiye_rez_kaydet(foy_no, toplam_fiyat, otel, giris, musteri,
 
         kap_tarih = kapora_tarihi or tarih
 
-        # Rezervasyon anında sadece kapora: İş Bankası borç / Alınan Avanslar alacak (340)
-        # Konaklama geliri check-in anında yazılacak
+        # Konaklama geliri: Müşteri Cari borç / Konaklama Geliri alacak
+        if toplam_fiyat and toplam_fiyat > 0:
+            mdb._yevmiye_ekle(conn, tarih, 'Konaklama Geliri', '120', gelir_hesap,
+                              toplam_fiyat, aciklama_kon, otel)
+
+        # Kapora: İş Bankası borç / Alınan Avanslar alacak (340)
         if kapora and kapora > 0:
             mdb._yevmiye_ekle(conn, kap_tarih, 'Kapora', '102-1', '340',
                               kapora, aciklama_kap, otel)
