@@ -412,6 +412,12 @@ load().then(() => {
         hl.style.outline = 'none';
       }, 3000);
     }
+    // Arama kutusunu temizle ve URL'i sıfırla (sayfa yenilenmeden)
+    setTimeout(() => {
+      document.getElementById('search').value = '';
+      history.replaceState(null, '', '/rezervasyonlar');
+      load();
+    }, 4000);
   }
 });
 </script>
