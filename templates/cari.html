@@ -44,6 +44,12 @@
     <input type="text" id="cari-search" placeholder="🔍 Misafir, föy, oda ara..."
       style="padding:6px 12px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:250px"
       oninput="filterCari()">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
+      <input type="checkbox" id="cb-cari-aktif" onchange="filterCari()" style="width:15px;height:15px;accent-color:var(--accent)"> Aktif
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
+      <input type="checkbox" id="cb-cari-tamam" onchange="filterCari()" style="width:15px;height:15px;accent-color:#5d5"> Tamamlandı
+    </label>
   </div>
   <div class="table-wrap" style="max-height:420px;overflow-y:auto">
     <table>
@@ -192,9 +198,27 @@ function renderCari(data) {
 
 function filterCari() {
   const q = document.getElementById('cari-search').value.toLowerCase();
-  renderCari(q ? allData.filter(r =>
-    String(r.foy_no).includes(q) || String(r.oda_no).includes(q) || (r.musteri||'').toLowerCase().includes(q)
-  ) : allData);
+  const showAktif = document.getElementById('cb-cari-aktif').checked;
+  const showTamam = document.getElementById('cb-cari-tamam').checked;
+
+  let result = allData;
+
+  if (q) {
+    result = result.filter(r =>
+      String(r.foy_no).includes(q) || String(r.oda_no).includes(q) || (r.musteri||'').toLowerCase().includes(q)
+    );
+  }
+
+  if (showAktif || showTamam) {
+    result = result.filter(r => {
+      const tamam = (r.rez_bakiye <= 0) && (r.adis_bakiye <= 0);
+      if (showAktif && !tamam) return true;
+      if (showTamam && tamam) return true;
+      return false;
+    });
+  }
+
+  renderCari(result);
 }
 
 async function selectRow(foy) {
