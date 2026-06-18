@@ -525,7 +525,7 @@ def acente_cari_oto_sil(foy_no):
 ODEME_HESAP_KODU = {
     'Nakit': '100', 'nakit': '100',
     'Kredi Kartı': '102-1', 'KK': '102-1', 'kk': '102-1',
-    'Havale': '102-1', 'EFT': '102-1',
+    'İş Bankası': '102-1', 'Denizbank': '102-3',
 }
 
 
@@ -544,7 +544,7 @@ def api_tahsilat_gecmis():
     conn.close()
     odeme_map = {
         '100': 'Nakit', '102-1': 'İş Bankası', '102-2': 'Ziraat',
-        '102-3': 'Deniz Bank', '120': 'Müşteri Cari', '340': 'Alınan Kaparo'
+        '102-3': 'Denizbank', '120': 'Müşteri Cari', '340': 'Alınan Kaparo'
     }
     result = []
     for r in rows:

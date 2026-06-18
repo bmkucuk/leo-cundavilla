@@ -204,7 +204,7 @@ def init_db():
         ("100",    "Kasa TL",                   "Aktif",     "Nakit"),
         ("102-1",  "İş Bankası",                "Aktif",     "Banka"),
         ("102-2",  "Ziraat Bankası",             "Aktif",     "Banka"),
-        ("102-3",  "Deniz Bank",                 "Aktif",     "Banka"),
+        ("102-3",  "Denizbank",                 "Aktif",     "Banka"),
         ("120",    "Müşteri Cari",               "Aktif",     "Alacak"),
         ("150",    "Stok",                       "Aktif",     "Stok"),
         ("153",    "Stok/Market Gideri",         "Gider",     "Gider"),
@@ -240,7 +240,7 @@ def init_db():
         ("KASA",  "Kasa TL",        ""),
         ("IS",    "İş Bankası",     ""),
         ("ZRH",   "Ziraat Bankası", ""),
-        ("DNZ",   "Deniz Bank",     ""),
+        ("DNZ",   "Denizbank",     ""),
     ]
     for b in bankalar:
         c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES(?,?,?)", b)

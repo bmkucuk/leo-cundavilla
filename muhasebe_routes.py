@@ -418,7 +418,7 @@ def api_demirbas():
 # Banka adı → hesap kodu
 BANKA_AD_KODU = {
     'Kasa TL': '100', 'İş Bankası': '102-1',
-    'Ziraat Bankası': '102-2', 'Deniz Bank': '102-3',
+    'Ziraat Bankası': '102-2', 'Denizbank': '102-3', 'Deniz Bank': '102-3',
 }
 BANKA_HESAP_KODU = {'100': '100', '102-1': '102-1', '102-2': '102-2', '102-3': '102-3',
                     'KASA': '100', 'IS': '102-1', 'ZRH': '102-2', 'DNZ': '102-3'}
