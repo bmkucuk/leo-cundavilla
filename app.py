@@ -605,7 +605,7 @@ def api_rez_tah():
         if hesap_kodu and tutar > 0:
             rez = db.get_rezervasyonlar()
             r = next((x for x in rez if x['foy_no'] == foy_no), None)
-            tarih = date.today().isoformat()
+            tarih = d.get('tarih') or date.today().isoformat()
             otel = r.get('otel', 'LEO') if r else 'LEO'
             musteri = r.get('musteri', '') if r else ''
             gelir_hesap = '600' if otel == 'LEO' else '601'

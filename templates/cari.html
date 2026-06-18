@@ -151,6 +151,40 @@
 
 </div>
 
+
+<!-- Tahsilat Düzenleme Modalı -->
+<div class="modal-overlay" id="tah-edit-modal">
+  <div class="modal" style="min-width:360px">
+    <h2>Tahsilat Düzenle</h2>
+    <input type="hidden" id="te-id">
+    <input type="hidden" id="te-tur">
+    <input type="hidden" id="te-ref-id">
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Tarih</label>
+      <input type="date" id="te-tarih">
+    </div>
+    <div class="form-group" style="margin-bottom:10px">
+      <label>Tutar (₺)</label>
+      <input type="number" id="te-tutar" min="0">
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>Ödeme Yöntemi</label>
+      <select id="te-odeme">
+        <option>Nakit</option>
+        <option>Kredi Kartı</option>
+        <option>İş Bankası</option>
+        <option>Denizbank</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="silTahsilatDuzenle()">🗑 Sil</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-default" onclick="closeTahEdit()">İptal</button>
+      <button class="btn btn-primary" onclick="saveTahEdit()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -298,7 +332,10 @@ function renderDokum(r) {
           <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(t.tutar)}</td>
           <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${t.odeme}</td>
           <td style="text-align:right;font-weight:700;font-size:14px" class="${tamamlandi?'green':'orange'}">${fmt(Math.max(0,kalanBakiye))}</td>
-          <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${tamamlandi?'#1a6b3a':'#4a3a0a'};color:#fff">${tamamlandi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span></td>
+          <td style="text-align:center">
+            <span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${tamamlandi?'#1a6b3a':'#4a3a0a'};color:#fff">${tamamlandi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
+            <button onclick="duzenleTahsilat('rez',${t.id},${r.foy_no},${t.tutar},'${t.odeme||''}','${t.tarih||''}','${t.tur||''}')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer">✏️</button>
+          </td>
         </tr>`);
       });
       // Hala bakiye varsa yeni borç satırı (checkbox ile)
@@ -339,7 +376,10 @@ function renderDokum(r) {
         <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(o.tutar)}</td>
         <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${o.odeme_sekli}</td>
         <td style="text-align:right;font-weight:700;font-size:14px" class="${odendi?'green':'orange'}">${fmt(Math.max(0, a.tutar - odenenTutar))}</td>
-        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${odendi?'#1a6b3a':'#4a3a0a'};color:#fff">${odendi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span></td>
+        <td style="text-align:center">
+            <span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${odendi?'#1a6b3a':'#4a3a0a'};color:#fff">${odendi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
+            <button onclick="duzenleTahsilat('adis',${o.id},${a.adisyon_no},${o.tutar},'${o.odeme_sekli||''}','${o.tarih||''}','Adisyon Tahsilat')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer">✏️</button>
+        </td>
       </tr>`);
     });
 
@@ -514,5 +554,62 @@ async function onarAdis() {
 }
 
 load();
+function duzenleTahsilat(tur, id, refId, tutar, odeme, tarih, islemTur) {
+  document.getElementById('te-tur').value = tur;
+  document.getElementById('te-id').value = id;
+  document.getElementById('te-ref-id').value = refId;
+  document.getElementById('te-tarih').value = tarih;
+  document.getElementById('te-tutar').value = tutar;
+  document.getElementById('te-odeme').value = odeme;
+  document.getElementById('tah-edit-modal').classList.add('open');
+}
+
+function closeTahEdit() {
+  document.getElementById('tah-edit-modal').classList.remove('open');
+}
+
+async function silTahsilatDuzenle() {
+  const id = document.getElementById('te-id').value;
+  if (!confirm('Bu tahsilat kaydı silinecek, emin misiniz?')) return;
+  const islemTur2 = document.getElementById('te-id').dataset.islemTur;
+  const foyNo2 = parseInt(document.getElementById('te-id').dataset.foyNo);
+  const tutar2 = parseFloat(document.getElementById('te-tutar').value);
+  const r = await api('/api/tahsilat/sil', {yev_id: parseInt(id), foy_no: foyNo2, tutar: tutar2, tur: islemTur2});
+  if (r.ok) { closeTahEdit(); toast('Tahsilat silindi ✓'); await loadDokum(selFoy); }
+  else toast('Hata: ' + r.error, 'error');
+}
+
+async function saveTahEdit() {
+  const id    = parseInt(document.getElementById('te-id').value);
+  const tur   = document.getElementById('te-tur').value;
+  const refId = parseInt(document.getElementById('te-ref-id').value);
+  const tutar = parseFloat(document.getElementById('te-tutar').value);
+  const odeme = document.getElementById('te-odeme').value;
+  const tarih = document.getElementById('te-tarih').value;
+  // Önce sil, sonra yeni kaydet
+  const islemTur = document.getElementById('te-id').dataset.islemTur;
+  const foyNoForSil = parseInt(document.getElementById('te-id').dataset.foyNo);
+  const silR = await api('/api/tahsilat/sil', {yev_id: id, foy_no: foyNoForSil, tutar, tur: islemTur});
+  if (!silR.ok) { toast('Silme hatası: ' + silR.error, 'error'); return; }
+  let kayitR;
+  if (tur === 'rez') {
+    kayitR = await api('/api/tahsilat/rez', {foy_no: refId, tutar, odeme, tarih});
+  } else {
+    kayitR = await api('/api/tahsilat/adis', {
+      foy_no: selFoy,
+      odeme,
+      adisyon_nolar: [refId],
+      adis_tutarlar: {[refId]: tutar},
+      tarih
+    });
+  }
+  if (kayitR.ok) { closeTahEdit(); toast('Tahsilat güncellendi ✓'); await loadDokum(selFoy); }
+  else toast('Kayıt hatası: ' + kayitR.error, 'error');
+}
+
+document.getElementById('tah-edit-modal').addEventListener('click', e => {
+  if (e.target.id === 'tah-edit-modal') closeTahEdit();
+});
+
 </script>
 {% endblock %}
