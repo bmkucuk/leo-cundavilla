@@ -559,36 +559,35 @@ def api_tahsilat_gecmis():
 def api_tahsilat_sil():
     try:
         d = request.get_json()
-        yev_id = d['yev_id']
-        foy_no = int(d['foy_no'])
-        tutar = float(d['tutar'])
-        tur = d['tur']
-        
+        yev_id = int(d.get('yev_id') or d.get('id', 0))
+        foy_no = int(d['foy_no']) if d.get('foy_no') else None
+        tutar  = float(d.get('tutar', 0))
+        tur    = d.get('tur', '')
+
         # Yevmiyeyi sil
         conn = mdb.get_conn()
         conn.execute("DELETE FROM yevmiye WHERE id=?", (yev_id,))
-        conn.commit()
-        conn.close()
-        
+        conn.commit(); conn.close()
+
         # Rezervasyon tablosunu güncelle
-        otel_conn = db.get_conn()
-        if 'Adisyon' in tur:
-            otel_conn.execute("""
-                UPDATE rezervasyonlar 
-                SET adis_tahsilat = adis_tahsilat - ?,
-                    adis_bakiye = adis_bakiye + ?
-                WHERE foy_no=?
-            """, (tutar, tutar, foy_no))
-        else:
-            otel_conn.execute("""
-                UPDATE rezervasyonlar 
-                SET rez_tahsilat = rez_tahsilat - ?,
-                    rez_bakiye = rez_bakiye + ?
-                WHERE foy_no=?
-            """, (tutar, tutar, foy_no))
-        otel_conn.commit()
-        otel_conn.close()
-        
+        if foy_no and tutar > 0:
+            otel_conn = db.get_conn()
+            if 'Adisyon' in tur:
+                otel_conn.execute("""
+                    UPDATE rezervasyonlar
+                    SET adis_tahsilat = adis_tahsilat - ?,
+                        adis_bakiye   = adis_bakiye   + ?
+                    WHERE foy_no=?
+                """, (tutar, tutar, foy_no))
+            else:
+                otel_conn.execute("""
+                    UPDATE rezervasyonlar
+                    SET rez_tahsilat = rez_tahsilat - ?,
+                        rez_bakiye   = rez_bakiye   + ?
+                    WHERE foy_no=?
+                """, (tutar, tutar, foy_no))
+            otel_conn.commit(); otel_conn.close()
+
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
