@@ -682,6 +682,69 @@ def api_adis_tah():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
+
+@app.route('/api/tahsilat/adis-guncelle', methods=['POST'])
+def api_adis_tah_guncelle():
+    """Adisyon ödemesini direkt güncelle (sil+ekle değil)."""
+    try:
+        d = request.get_json()
+        odeme_id = int(d['odeme_id'])   # adisyon_odemeler.id
+        foy_no   = int(d['foy_no'])
+        tutar    = float(d['tutar'])
+        odeme    = d['odeme']
+        tarih    = d.get('tarih') or date.today().isoformat()
+
+        otel_conn = db.get_conn()
+
+        # Eski tutarı al
+        eski = otel_conn.execute(
+            "SELECT tutar FROM adisyon_odemeler WHERE id=?", (odeme_id,)
+        ).fetchone()
+        eski_tutar = float(eski[0]) if eski else 0
+
+        # adisyon_odemeler güncelle
+        otel_conn.execute(
+            "UPDATE adisyon_odemeler SET tutar=?, odeme_sekli=?, tarih=? WHERE id=?",
+            (tutar, odeme, tarih, odeme_id)
+        )
+
+        # Rezervasyon adis_tahsilat farkını güncelle
+        fark = tutar - eski_tutar
+        otel_conn.execute("""
+            UPDATE rezervasyonlar
+            SET adis_tahsilat = adis_tahsilat + ?,
+                adis_bakiye   = adis_bakiye   - ?
+            WHERE foy_no=?
+        """, (fark, fark, foy_no))
+
+        db._sync_adisyon_totals(otel_conn, foy_no)
+        otel_conn.commit(); otel_conn.close()
+
+        # Yevmiyeyi de güncelle
+        hesap_kodu = ODEME_HESAP_KODU.get(odeme, '102-1')
+        conn = mdb.get_conn()
+        # Eski yevmiye kaydını bul ve güncelle
+        yev = conn.execute(
+            "SELECT id FROM yevmiye WHERE islem_tipi LIKE 'Adisyon Tahsilat%' AND aciklama LIKE ? ORDER BY id DESC LIMIT 1",
+            (f'%Adis%foy_no%',)
+        ).fetchone()
+        # Adisyon no üzerinden bul
+        adis_row = db.get_conn().execute(
+            "SELECT adisyon_no FROM adisyon_odemeler WHERE id=?", (odeme_id,)
+        ).fetchone()
+        if adis_row:
+            adis_no = adis_row[0]
+            conn.execute("""
+                UPDATE yevmiye SET tutar=?, borc_hesap=?, tarih=?
+                WHERE islem_tipi LIKE 'Adisyon Tahsilat%'
+                AND aciklama LIKE ? ORDER BY id DESC LIMIT 1
+            """, (tutar, hesap_kodu, tarih, f'%Adis#{adis_no}%'))
+        conn.commit(); conn.close()
+
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+
 @app.route('/api/adisyon/odemeler', methods=['GET'])
 def api_adisyon_odemeler():
     """Bir adisyona ait ödeme geçmişi."""

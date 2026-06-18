@@ -595,12 +595,11 @@ async function saveTahEdit() {
   if (tur === 'rez') {
     kayitR = await api('/api/tahsilat/rez', {foy_no: refId, tutar, odeme, tarih});
   } else {
-    kayitR = await api('/api/tahsilat/adis', {
+    // Adisyon için direkt güncelleme (sil+ekle değil)
+    kayitR = await api('/api/tahsilat/adis-guncelle', {
+      odeme_id: id,
       foy_no: selFoy,
-      odeme,
-      adisyon_nolar: [refId],
-      adis_tutarlar: {[refId]: tutar},
-      tarih
+      tutar, odeme, tarih
     });
   }
   if (kayitR.ok) { closeTahEdit(); toast('Tahsilat güncellendi ✓'); await loadDokum(selFoy); }
