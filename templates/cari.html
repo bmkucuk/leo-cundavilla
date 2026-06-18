@@ -368,6 +368,11 @@ function secimKaldir() {
   selectedAdisNolar = new Set();
   document.getElementById('alt-panel').style.display = 'none';
   document.getElementById('btn-secim-kaldir').style.display = 'none';
+  // Tüm satır outline'larını temizle
+  document.querySelectorAll('#cari-tbody tr').forEach(tr => {
+    tr.style.outline = '';
+    tr.style.background = '';
+  });
   updateCards();
   updateOdemePanel();
 }
