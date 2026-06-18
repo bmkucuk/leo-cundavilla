@@ -436,9 +436,11 @@ function updateOdemePanel() {
 function updateCards() {
   const r = selFoy ? allData.find(x => x.foy_no === selFoy) : null;
   if (r) {
+    const tekTahsilat = (r.rez_tahsilat||0) + (r.kapora||0);
+    const tekBakiye = Math.max(0, (r.toplam_fiyat||0) - tekTahsilat);
     document.getElementById('oz-rez-toplam').textContent = fmt(r.toplam_fiyat);
-    document.getElementById('oz-tahsilat').textContent = fmt(r.rez_tahsilat);
-    document.getElementById('oz-rez-bak').textContent = fmt(r.rez_bakiye);
+    document.getElementById('oz-tahsilat').textContent = fmt(tekTahsilat);
+    document.getElementById('oz-rez-bak').textContent = fmt(tekBakiye);
     document.getElementById('oz-adis-toplam').textContent = fmt(r.adisyon);
     document.getElementById('oz-adis-tah').textContent = fmt(r.adis_tahsilat);
     document.getElementById('oz-adis-bak').textContent = fmt(r.adis_bakiye);

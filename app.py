@@ -232,11 +232,13 @@ def api_cari():
     rezervasyonlar = db.get_rezervasyonlar()
     def _f(v): return float(v or 0)
     aktif_rez = [r for r in rezervasyonlar if r.get('durum') != 'Kapora Yandı']
+    def _tahsilat(r):
+        return _f(r.get('rez_tahsilat')) + _f(r.get('kapora'))
+
     ozet = {
         'toplam_rez':      sum(_f(r.get('toplam_fiyat')) for r in aktif_rez),
-        'toplam_kapora':   sum(_f(r.get('kapora')) for r in aktif_rez),
-        'toplam_tahsilat': sum(_f(r.get('rez_tahsilat')) + _f(r.get('kapora')) for r in aktif_rez),
-        'rez_bakiye':      sum(_f(r.get('rez_bakiye')) for r in aktif_rez),
+        'toplam_tahsilat': sum(_tahsilat(r) for r in aktif_rez),
+        'rez_bakiye':      sum(max(0, _f(r.get('toplam_fiyat')) - _tahsilat(r)) for r in aktif_rez),
         'adis_toplam':     sum(_f(r.get('adisyon')) for r in aktif_rez),
         'adis_tahsilat':   sum(_f(r.get('adis_tahsilat')) for r in aktif_rez),
         'adis_bakiye':     sum(_f(r.get('adis_bakiye')) for r in aktif_rez),
