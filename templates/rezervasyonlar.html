@@ -7,8 +7,14 @@
 <div class="toolbar">
   <input class="search-input" id="search" placeholder="🔍  Misafir adı, föy no, oda no ara..." oninput="load()">
   <select class="filter" id="otel-filter" onchange="load()">
-    <option value="">Tümü</option><option value="LEO">LEO</option><option value="CV">CV</option><option value="Aktif">Aktif</option><option value="Tamamlandı">Tamamlandı</option>
+    <option>Tümü</option><option>LEO</option><option>CV</option>
   </select>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
+    <input type="checkbox" id="cb-aktif" onchange="load()" style="width:15px;height:15px;accent-color:var(--accent)"> Aktif
+  </label>
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
+    <input type="checkbox" id="cb-tamamlandi" onchange="load()" style="width:15px;height:15px;accent-color:#5d5"> Tamamlandı
+  </label>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal()">＋ Yeni Rezervasyon</button>
 </div>
@@ -196,12 +202,18 @@ async function kaporaYandi(foy_no) {
 
 async function load() {
   const q = document.getElementById('search').value;
-  const filterVal = document.getElementById('otel-filter').value;
-  const otel = ['LEO','CV'].includes(filterVal) ? filterVal : '';
-  const durum = ['Aktif','Tamamlandı'].includes(filterVal) ? filterVal : '';
+  const otel = document.getElementById('otel-filter').value;
   const data = await api(`/api/rezervasyonlar?q=${encodeURIComponent(q)}&otel=${otel}`);
 
-  const filtered = durum ? data.filter(r => r.durum === durum) : data;
+  // Durum checkbox filtreleri
+  const showAktif = document.getElementById('cb-aktif').checked;
+  const showTamamlandi = document.getElementById('cb-tamamlandi').checked;
+  const filtered = data.filter(r => {
+    if (!showAktif && !showTamamlandi) return true;
+    if (showAktif && r.durum === 'Aktif') return true;
+    if (showTamamlandi && r.durum === 'Tamamlandı') return true;
+    return false;
+  });
   allData = filtered;
   const tbody = document.getElementById('rez-tbody');
   const todayStr = today;
