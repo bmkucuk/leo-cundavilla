@@ -559,8 +559,11 @@ async function onarAdis() {
 
 load();
 function duzenleTahsilat(tur, id, refId, tutar, odeme, tarih, islemTur) {
+  const el = document.getElementById('te-id');
+  el.value = id;
+  el.dataset.islemTur = islemTur || '';
+  el.dataset.foyNo = tur === 'rez' ? refId : selFoy;
   document.getElementById('te-tur').value = tur;
-  document.getElementById('te-id').value = id;
   document.getElementById('te-ref-id').value = refId;
   document.getElementById('te-tarih').value = tarih;
   document.getElementById('te-tutar').value = tutar;
