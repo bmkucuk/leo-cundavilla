@@ -603,6 +603,13 @@ def api_tahsilat_sil():
                 """, (tutar, tutar, foy_no))
             otel_conn.commit(); otel_conn.close()
 
+        # Sync sonrası yeniden hesapla
+        if foy_no:
+            sc = db.get_conn()
+            db.sync_rez_tahsilat(sc, foy_no)
+            db._sync_adisyon_totals(sc, foy_no)
+            sc.commit(); sc.close()
+
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
@@ -629,6 +636,10 @@ def api_rez_tah():
                               f'Föy#{foy_no} {musteri} rez tahsilat', otel)
             # Kapora mahsubu check-in anında yazılıyor, tahsilatta yazılmaz
             conn.commit(); conn.close()
+        # Sync: rez_tahsilat yeniden hesapla
+        sync_conn = db.get_conn()
+        db.sync_rez_tahsilat(sync_conn, foy_no)
+        sync_conn.commit(); sync_conn.close()
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
