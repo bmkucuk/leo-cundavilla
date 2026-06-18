@@ -644,69 +644,118 @@ def api_ortak_ekle():
 @muh.route('/api/muhasebe/mizan')
 @login_required
 def api_mizan():
+    """Mizan - dogrudan otel.db tablolarından hesaplar, yevmiyeye bagımlı değil."""
     yil = request.args.get('yil', date.today().year, type=int)
-    conn = mdb.get_conn()
+    yil_str = str(yil)
 
-    # Tüm hesapları al
-    hesaplar = [dict(r) for r in conn.execute(
-        "SELECT * FROM hesaplar WHERE aktif=1 ORDER BY kod").fetchall()]
+    import database as otel_db
+    otel = otel_db.get_conn()
+    muh_conn = mdb.get_conn()
 
-    # Her hesap için yevmiyeden borç/alacak toplamları
-    def hesap_toplam(kod):
-        borc = conn.execute(
-            "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?",
-            (yil, kod)).fetchone()[0] or 0
-        alacak = conn.execute(
-            "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?",
-            (yil, kod)).fetchone()[0] or 0
-        return borc, alacak
+    # Rezervasyonları yıldan filtrele (giriş tarihine göre)
+    rezler = [dict(r) for r in otel.execute(
+        "SELECT * FROM rezervasyonlar WHERE strftime('%Y',giris)=? AND durum!='Kapora Yandı'",
+        (yil_str,)).fetchall()]
 
+    def _f(v): return float(v or 0)
+
+    # ── AKTİF (VARLIKLAR) ──
+    # 100 Kasa - Nakit tahsilatlar
+    nakit_rez = sum(_f(r['rez_tahsilat']) for r in rezler if r.get('rez_odeme_sekli','') == 'Nakit')
+    nakit_adis = otel.execute(
+        "SELECT COALESCE(SUM(ao.tutar),0) FROM adisyon_odemeler ao JOIN rezervasyonlar r ON ao.foy_no=r.foy_no WHERE ao.odeme_sekli='Nakit' AND strftime('%Y',r.giris)=?",
+        (yil_str,)).fetchone()[0] or 0
+    # Manuel yevmiye nakit giriş/çıkışları
+    yev_nakit_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='100' AND islem_tipi NOT LIKE '%Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
+    yev_nakit_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap='100'", (yil,)).fetchone()[0] or 0
+    kasa_borc = nakit_rez + nakit_adis + yev_nakit_borc
+    kasa_alacak = yev_nakit_alacak
+    kasa_bak = kasa_borc - kasa_alacak
+
+    # 102-1 İş Bankası - banka tahsilatlar
+    banka_rez = sum(_f(r['rez_tahsilat']) for r in rezler if r.get('rez_odeme_sekli','') not in ('Nakit',''))
+    banka_kapora = sum(_f(r['kapora']) for r in rezler)
+    banka_adis = otel.execute(
+        "SELECT COALESCE(SUM(ao.tutar),0) FROM adisyon_odemeler ao JOIN rezervasyonlar r ON ao.foy_no=r.foy_no WHERE ao.odeme_sekli!='Nakit' AND strftime('%Y',r.giris)=?",
+        (yil_str,)).fetchone()[0] or 0
+    yev_banka_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='102-1' AND islem_tipi NOT LIKE '%Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
+    yev_banka_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap='102-1'", (yil,)).fetchone()[0] or 0
+    banka_borc = banka_rez + banka_kapora + banka_adis + yev_banka_borc
+    banka_alacak = yev_banka_alacak
+    banka_bak = banka_borc - banka_alacak
+
+    # 120 Müşteri Cari
+    muc_borc = sum(_f(r['toplam_fiyat']) for r in rezler)  # konaklama geliri
+    adis_gelir = otel.execute(
+        "SELECT COALESCE(SUM(a.tutar),0) FROM adisyonlar a JOIN rezervasyonlar r ON a.foy_no=r.foy_no WHERE strftime('%Y',r.giris)=?",
+        (yil_str,)).fetchone()[0] or 0
+    muc_borc += adis_gelir
+
+    muc_alacak = (banka_rez + banka_kapora + banka_adis +
+                  nakit_rez + nakit_adis)
+    muc_bak = muc_borc - muc_alacak
+
+    # ── GELİRLER ──
+    leo_kon = sum(_f(r['toplam_fiyat']) for r in rezler if r.get('otel')=='LEO')
+    cv_kon  = sum(_f(r['toplam_fiyat']) for r in rezler if r.get('otel')=='CV')
+    adis_gel = adis_gelir
+
+    # ── GİDERLER (yevmiyeden) ──
+    mizan_yev = mdb.get_mizan_ozet(yil)
+    maas  = mizan_yev.get('maas', 0) or 0
+    vergi = mizan_yev.get('vergi', 0) or 0
+    stok  = mizan_yev.get('stok', 0) or 0
+    dem   = mizan_yev.get('demirbaş', 0) or 0
+    ortak = (mizan_yev.get('ortak_lk',0) or 0) + (mizan_yev.get('ortak_bt',0) or 0)
+
+    otel.close(); muh_conn.close()
+
+    # Satirlar
     satirlar = []
-    gruplar = {
-        'Aktif':    ('AKTİF (VARLIKLAR)', []),
-        'Gelir':    ('GELİRLER', []),
-        'Gider':    ('GİDERLER', []),
-        'Ozkaynak': ('ÖZKAYNAKLAR', []),
-    }
+    toplam_borc = 0; toplam_alacak = 0
 
-    toplam_borc = 0
-    toplam_alacak = 0
+    def satir(kod, ad, borc, alacak, tip='Aktif'):
+        nonlocal toplam_borc, toplam_alacak
+        if borc==0 and alacak==0: return
+        toplam_borc += borc; toplam_alacak += alacak
+        bak = alacak-borc if tip in ('Gelir','Pasif','Ozkaynak') else borc-alacak
+        satirlar.append({'tip':'veri','kod':kod,'ad':ad,'borc':round(borc,2),'alacak':round(alacak,2),'bakiye':round(bak,2)})
 
-    for tip, (baslik, rows) in gruplar.items():
-        tip_hesaplar = [h for h in hesaplar if h['tip'] == tip]
-        if not tip_hesaplar:
-            continue
-        satirlar.append({'tip': 'baslik', 'kod': '━━', 'ad': baslik, 'borc': 0, 'alacak': 0})
-        for h in tip_hesaplar:
-            borc, alacak = hesap_toplam(h['kod'])
-            if borc == 0 and alacak == 0:
-                continue
-            toplam_borc += borc
-            toplam_alacak += alacak
-            bakiye = alacak - borc if tip in ('Gelir', 'Pasif', 'Ozkaynak') else borc - alacak
-            satirlar.append({
-                'tip': 'veri', 'kod': h['kod'], 'ad': h['ad'],
-                'borc': borc, 'alacak': alacak, 'bakiye': bakiye
-            })
-        satirlar.append({'tip': 'bos'})
+    satirlar.append({'tip':'baslik','kod':'━━','ad':'AKTİF (VARLIKLAR)','borc':0,'alacak':0})
+    satir('100',   'Kasa TL',     kasa_borc,  kasa_alacak)
+    satir('102-1', 'İş Bankası',  banka_borc, banka_alacak)
+    satir('120',   'Müşteri Cari',muc_borc,   muc_alacak)
+    satirlar.append({'tip':'bos'})
 
-    # Net kar/zarar
-    gelir_toplam = sum(s.get('alacak',0)-s.get('borc',0)
-                       for s in satirlar if s['tip']=='veri'
-                       and any(s['kod'].startswith(k) for k in ['600','601','610','611']))
-    gider_toplam = sum(s.get('borc',0)-s.get('alacak',0)
-                       for s in satirlar if s['tip']=='veri'
-                       and any(s['kod'].startswith(k) for k in ['720','730','740','741','742','743','744','745','770','780','500']))
+    satirlar.append({'tip':'baslik','kod':'━━','ad':'GELİRLER','borc':0,'alacak':0})
+    satir('600', 'Konaklama Geliri - Leo', 0, leo_kon, 'Gelir')
+    satir('601', 'Konaklama Geliri - CV',  0, cv_kon,  'Gelir')
+    satir('610', 'Adisyon Geliri',         0, adis_gel,'Gelir')
+    satirlar.append({'tip':'bos'})
+
+    satirlar.append({'tip':'baslik','kod':'━━','ad':'GİDERLER','borc':0,'alacak':0})
+    if maas:  satir('720','Personel Maaş', maas,  0, 'Gider')
+    if vergi: satir('770','Vergi',         vergi, 0, 'Gider')
+    if stok:  satir('740','Stok/Market',   stok,  0, 'Gider')
+    if dem:   satir('255','Demirbaş',      dem,   0, 'Gider')
+    if ortak: satir('500','Ortak Cari',    ortak, 0, 'Gider')
+    satirlar.append({'tip':'bos'})
+
+    satirlar.append({'tip':'baslik','kod':'━━','ad':'ÖZKAYNAKLAR','borc':0,'alacak':0})
+    satirlar.append({'tip':'bos'})
+
+    gelir_toplam = leo_kon + cv_kon + adis_gel
+    gider_toplam = maas + vergi + stok + dem + ortak
     net = gelir_toplam - gider_toplam
 
-    satirlar.append({'tip': 'net', 'kod': 'NET', 'ad': 'NET KÂR / ZARAR',
-                     'borc': abs(net) if net < 0 else 0,
-                     'alacak': net if net >= 0 else 0,
-                     'bakiye': net})
+    satirlar.append({'tip':'net','kod':'NET','ad':'NET KÂR / ZARAR',
+                     'borc': round(abs(net),2) if net<0 else 0,
+                     'alacak': round(net,2) if net>=0 else 0,
+                     'bakiye': round(net,2)})
 
-    conn.close()
-    return jsonify({'satirlar': satirlar, 'net': net,
-                    'toplam_borc': toplam_borc, 'toplam_alacak': toplam_alacak})
+    return jsonify({'satirlar': satirlar, 'net': round(net,2),
+                    'toplam_borc': round(toplam_borc,2),
+                    'toplam_alacak': round(toplam_alacak,2)})
 
 
 # ── API — Gelir Aktarım (Otel DB → Muhasebe DB) ───────────────────────────────
