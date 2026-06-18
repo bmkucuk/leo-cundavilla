@@ -453,9 +453,9 @@ def yevmiye_rez_kaydet(foy_no, toplam_fiyat, otel, giris, musteri,
             mdb._yevmiye_ekle(conn, tarih, 'Konaklama Geliri', '120', gelir_hesap,
                               toplam_fiyat, aciklama_kon, otel)
 
-        # Kapora: İş Bankası borç / Alınan Avanslar alacak (340)
+        # Kapora: İş Bankası borç / Müşteri Cari alacak (120)
         if kapora and kapora > 0:
-            mdb._yevmiye_ekle(conn, kap_tarih, 'Kapora', '102-1', '340',
+            mdb._yevmiye_ekle(conn, kap_tarih, 'Kapora', '102-1', '120',
                               kapora, aciklama_kap, otel)
 
         conn.commit(); conn.close()
