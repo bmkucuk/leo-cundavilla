@@ -218,25 +218,25 @@ def save_rez_tahsilat(foy_no, tutar, odeme):
     conn.commit(); conn.close()
 
 def sync_rez_tahsilat(conn, foy_no):
-    """Rezervasyon tahsilatını yevmiyeden yeniden hesapla."""
+    """Rezervasyon tahsilatını yevmiyedeki Rezervasyon Tahsilat kayıtlarından hesapla."""
     import muhasebe_db as mdb2
     mconn = mdb2.get_conn()
-    # Yevmiyedeki tüm rez tahsilatları topla (120 alacak, Föy#X içeren)
     row = mconn.execute(
-        "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE alacak_hesap='120' AND aciklama LIKE ? AND islem_tipi LIKE '%Tahsilat%'",
+        "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE islem_tipi LIKE 'Rezervasyon Tahsilat%' AND aciklama LIKE ?",
+        (f'Föy#{foy_no}%',)
+    ).fetchone()
+    # Kapora da tahsilata dahil
+    kap_row = mconn.execute(
+        "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE islem_tipi='Kapora' AND aciklama LIKE ?",
         (f'Föy#{foy_no}%',)
     ).fetchone()
     mconn.close()
-    tahsilat = float(row[0] or 0)
-    r = conn.execute("SELECT toplam_fiyat, kapora, adisyon, adis_tahsilat, rez_odeme_sekli FROM rezervasyonlar WHERE foy_no=?", (foy_no,)).fetchone()
+    rez_tah = float(row[0] or 0)
+    kapora  = float(kap_row[0] or 0)
+    toplam_tah = rez_tah + kapora
+    r = conn.execute("SELECT toplam_fiyat FROM rezervasyonlar WHERE foy_no=?", (foy_no,)).fetchone()
     if not r: return
-    # Rez tahsilat = toplam yevmiye 120 alacak - adisyon tahsilatlar
-    adis_row = conn.execute(
-        "SELECT COALESCE(SUM(tutar),0) FROM adisyon_odemeler WHERE foy_no=?", (foy_no,)
-    ).fetchone()
-    adis_tah = float(adis_row[0] or 0)
-    rez_tah = max(0, tahsilat - adis_tah)
-    bakiye = max(0, (r['toplam_fiyat'] or 0) - (r['kapora'] or 0) - rez_tah)
+    bakiye = max(0, (r['toplam_fiyat'] or 0) - toplam_tah)
     conn.execute("""
         UPDATE rezervasyonlar SET rez_tahsilat=?, rez_bakiye=?,
         updated_at=datetime('now','localtime') WHERE foy_no=?
