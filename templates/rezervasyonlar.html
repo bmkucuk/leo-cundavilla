@@ -7,7 +7,7 @@
 <div class="toolbar">
   <input class="search-input" id="search" placeholder="🔍  Misafir adı, föy no, oda no ara..." oninput="load()">
   <select class="filter" id="otel-filter" onchange="load()">
-    <option>Tümü</option><option>LEO</option><option>CV</option>
+    <option value="">Tümü</option><option value="LEO">LEO</option><option value="CV">CV</option><option value="Aktif">Aktif</option><option value="Tamamlandı">Tamamlandı</option>
   </select>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal()">＋ Yeni Rezervasyon</button>
@@ -196,20 +196,23 @@ async function kaporaYandi(foy_no) {
 
 async function load() {
   const q = document.getElementById('search').value;
-  const otel = document.getElementById('otel-filter').value;
+  const filterVal = document.getElementById('otel-filter').value;
+  const otel = ['LEO','CV'].includes(filterVal) ? filterVal : '';
+  const durum = ['Aktif','Tamamlandı'].includes(filterVal) ? filterVal : '';
   const data = await api(`/api/rezervasyonlar?q=${encodeURIComponent(q)}&otel=${otel}`);
 
-  allData = data;
+  const filtered = durum ? data.filter(r => r.durum === durum) : data;
+  allData = filtered;
   const tbody = document.getElementById('rez-tbody');
   const todayStr = today;
 
-  if (!data.length) {
+  if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Sonuç bulunamadı</td></tr>';
     document.getElementById('info-lbl').textContent = '0 rezervasyon';
     return;
   }
 
-  tbody.innerHTML = data.map(r => {
+  tbody.innerHTML = filtered.map(r => {
     const aktif = r.giris && r.cikis && r.giris <= todayStr && todayStr < r.cikis;
     const girisToday = r.giris === todayStr;
     const isHL = _urlQ && String(r.foy_no) === String(_urlQ);
