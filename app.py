@@ -294,7 +294,7 @@ def api_rez_sil():
         foy_no = int(d['foy_no'])
         # Yevmiyeden ilgili kayıtları sil
         conn = mdb.get_conn()
-        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ?", (f'%Föy#{foy_no}%',))
+        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ?", (f'Föy#{foy_no} %',))
         conn.commit(); conn.close()
         acente_cari_oto_sil(foy_no)
         # Rezervasyonu sil
@@ -540,7 +540,7 @@ def api_tahsilat_gecmis():
         WHERE (islem_tipi LIKE '%Tahsilat%' OR islem_tipi = 'Kapora' OR islem_tipi = 'Kapora Yanması') 
         AND aciklama LIKE ?
         ORDER BY tarih ASC
-    """, (f'%Föy#{foy_no}%',)).fetchall()
+    """, (f'Föy#{foy_no} %',)).fetchall()
     conn.close()
     odeme_map = {
         '100': 'Nakit', '102-1': 'İş Bankası', '102-2': 'Ziraat',
