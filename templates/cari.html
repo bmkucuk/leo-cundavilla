@@ -180,7 +180,7 @@
       <button class="btn btn-danger" onclick="silTahsilatDuzenle()">🗑 Sil</button>
       <div style="flex:1"></div>
       <button class="btn btn-default" onclick="closeTahEdit()">İptal</button>
-      <button class="btn btn-primary" onclick="saveTahEdit()">💾 Kaydet</button>
+      <button class="btn btn-primary" id="tah-kaydet-btn">💾 Kaydet</button>
     </div>
   </div>
 </div>
@@ -558,6 +558,10 @@ async function onarAdis() {
 }
 
 load();
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('tah-kaydet-btn').addEventListener('click', saveTahEdit);
+});
+
 function duzenleTahsilat(tur, id, refId, tutar, odeme, tarih, islemTur) {
   const el = document.getElementById('te-id');
   el.value = id;
