@@ -490,8 +490,10 @@ function updateCards() {
     document.getElementById('oz-adis-tah').textContent = fmt(r.adis_tahsilat);
     document.getElementById('oz-adis-bak').textContent = fmt(r.adis_bakiye);
     document.getElementById('oz-toplam-alacak').textContent = fmt((r.rez_bakiye||0)+(r.adis_bakiye||0));
-    document.querySelector('#cari-cards .stat-card:nth-child(3) .value').className = `value ${(r.rez_bakiye||0)>0?'red':'green'}`;
-    document.querySelector('#cari-cards .stat-card:nth-child(4) .value').className = `value ${(r.adis_bakiye||0)>0?'red':'green'}`;
+    const el3 = document.querySelector('#cari-cards .stat-card:nth-child(3) .value');
+    const el4 = document.querySelector('#cari-cards .stat-card:nth-child(4) .value');
+    if (el3) el3.className = `value ${(r.rez_bakiye||0)>0?'red':'green'}`;
+    if (el4) el4.className = `value ${(r.adis_bakiye||0)>0?'red':'green'}`;
   } else {
     document.getElementById('oz-rez-toplam').textContent = fmt(ozetData.toplam_rez);
     document.getElementById('oz-tahsilat').textContent = fmt(ozetData.toplam_tahsilat);
@@ -500,8 +502,10 @@ function updateCards() {
     document.getElementById('oz-adis-tah').textContent = fmt(ozetData.adis_tahsilat);
     document.getElementById('oz-adis-bak').textContent = fmt(ozetData.adis_bakiye);
     document.getElementById('oz-toplam-alacak').textContent = fmt((ozetData.rez_bakiye||0)+(ozetData.adis_bakiye||0));
-    document.querySelector('#cari-cards .stat-card:nth-child(3) .value').className = 'value red';
-    document.querySelector('#cari-cards .stat-card:nth-child(4) .value').className = 'value yellow';
+    const el3b = document.querySelector('#cari-cards .stat-card:nth-child(3) .value');
+    const el4b = document.querySelector('#cari-cards .stat-card:nth-child(4) .value');
+    if (el3b) el3b.className = 'value red';
+    if (el4b) el4b.className = 'value yellow';
   }
 }
 
