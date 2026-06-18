@@ -548,9 +548,17 @@ def api_tahsilat_gecmis():
     }
     result = []
     for r in rows:
+        islem_tipi = r[2]
+        # islem_tipi'nden ödeme adını çıkar: 'Rezervasyon Tahsilat - Kredi Kartı' → 'Kredi Kartı'
+        if ' - ' in islem_tipi:
+            odeme_adi = islem_tipi.split(' - ', 1)[1]
+        elif islem_tipi == 'Kapora':
+            odeme_adi = 'İş Bankası'
+        else:
+            odeme_adi = odeme_map.get(r[4], r[4])
         result.append({
             'id': r[0], 'tarih': r[1], 'tur': r[2],
-            'tutar': r[3], 'odeme': odeme_map.get(r[4], r[4]),
+            'tutar': r[3], 'odeme': odeme_adi,
             'foy_no': foy_no
         })
     return jsonify(result)
