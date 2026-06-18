@@ -94,7 +94,7 @@ let editAdisNo = null;
 async function load() {
   const d = await api('/api/adisyonlar');
   allAdisyonlar = d.adisyonlar;
-  foyListesi = d.foy_listesi;
+  foyListesi = d.foy_listesi.slice().sort((a,b) => b.foy_no - a.foy_no);
 
   // Föy select
   const foySelect = document.getElementById('a-foy');
