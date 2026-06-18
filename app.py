@@ -573,17 +573,32 @@ def api_tahsilat_sil():
         if foy_no and tutar > 0:
             otel_conn = db.get_conn()
             if 'Adisyon' in tur:
+                # adisyon_odemeler tablosundan da sil
+                # yevmiye aciklamasından adisyon_no'yu bul
+                mconn = mdb.get_conn()
+                row = mconn.execute(
+                    "SELECT aciklama FROM yevmiye WHERE id=?", (yev_id,)
+                ).fetchone()
+                mconn.close()
+                # adisyon_odemeler'de foy_no + tutar + eşleşen kaydı sil
+                otel_conn.execute("""
+                    DELETE FROM adisyon_odemeler
+                    WHERE foy_no=? AND tutar=?
+                    AND id=(SELECT id FROM adisyon_odemeler WHERE foy_no=? AND tutar=? LIMIT 1)
+                """, (foy_no, tutar, foy_no, tutar))
                 otel_conn.execute("""
                     UPDATE rezervasyonlar
-                    SET adis_tahsilat = adis_tahsilat - ?,
-                        adis_bakiye   = adis_bakiye   + ?
+                    SET adis_tahsilat = MAX(0, adis_tahsilat - ?),
+                        adis_bakiye   = adis_bakiye + ?
                     WHERE foy_no=?
                 """, (tutar, tutar, foy_no))
+                # adisyon toplamlarını senkronize et
+                db._sync_adisyon_totals(otel_conn, foy_no)
             else:
                 otel_conn.execute("""
                     UPDATE rezervasyonlar
-                    SET rez_tahsilat = rez_tahsilat - ?,
-                        rez_bakiye   = rez_bakiye   + ?
+                    SET rez_tahsilat = MAX(0, rez_tahsilat - ?),
+                        rez_bakiye   = rez_bakiye + ?
                     WHERE foy_no=?
                 """, (tutar, tutar, foy_no))
             otel_conn.commit(); otel_conn.close()
