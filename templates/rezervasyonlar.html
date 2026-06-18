@@ -210,8 +210,9 @@ async function load() {
   const showTamamlandi = document.getElementById('cb-tamamlandi').checked;
   const filtered = data.filter(r => {
     if (!showAktif && !showTamamlandi) return true;
-    if (showAktif && r.durum === 'Aktif') return true;
-    if (showTamamlandi && r.durum === 'Tamamlandı') return true;
+    const gercekDurum = r.durum === 'Kapora Yandı' ? 'Kapora Yandı' : r.rez_bakiye <= 0 ? 'Tamamlandı' : 'Aktif';
+    if (showAktif && gercekDurum === 'Aktif') return true;
+    if (showTamamlandi && gercekDurum === 'Tamamlandı') return true;
     return false;
   });
   allData = filtered;
