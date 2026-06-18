@@ -204,7 +204,8 @@ def update_rezervasyon(foy_no, data):
     conn.commit(); conn.close()
 
 def save_rez_tahsilat(foy_no, tutar, odeme):
-    """Yeni rez tahsilat ekler, sonra yevmiyeden yeniden hesaplar."""    conn = get_conn()
+    """Yeni rez tahsilat ekler, sonra yevmiyeden yeniden hesaplar."""
+    conn = get_conn()
     r = conn.execute("SELECT * FROM rezervasyonlar WHERE foy_no=?", (foy_no,)).fetchone()
     if not r: conn.close(); raise RuntimeError(f"Föy #{foy_no} bulunamadı")
     # Toplama değil, gerçek toplam = mevcut + yeni tutar
@@ -217,7 +218,8 @@ def save_rez_tahsilat(foy_no, tutar, odeme):
     conn.commit(); conn.close()
 
 def sync_rez_tahsilat(conn, foy_no):
-    """Rezervasyon tahsilatını yevmiyeden yeniden hesapla."""    import muhasebe_db as mdb2
+    """Rezervasyon tahsilatını yevmiyeden yeniden hesapla."""
+    import muhasebe_db as mdb2
     mconn = mdb2.get_conn()
     # Yevmiyedeki tüm rez tahsilatları topla (120 alacak, Föy#X içeren)
     row = mconn.execute(
@@ -241,7 +243,8 @@ def sync_rez_tahsilat(conn, foy_no):
     """, (rez_tah, bakiye, foy_no))
 
 def save_adis_tahsilat(foy_no, tutar, odeme):
-    """Adisyon tahsilatını adisyon_odemeler tablosundan yeniden hesaplar."""    conn = get_conn()
+    """Adisyon tahsilatını adisyon_odemeler tablosundan yeniden hesaplar."""
+    conn = get_conn()
     _sync_adisyon_totals(conn, foy_no)
     conn.commit(); conn.close()
 
