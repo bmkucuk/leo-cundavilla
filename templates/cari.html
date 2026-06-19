@@ -51,26 +51,32 @@
       <input type="checkbox" id="cb-cari-tamam" onchange="filterCari()" style="width:15px;height:15px;accent-color:#5d5"> Tamamlandı
     </label>
   </div>
-  <div class="table-wrap" style="max-height:420px;overflow-y:auto">
+  <div class="table-wrap" style="max-height:480px;overflow-y:auto">
     <table>
       <thead><tr>
-        <th>Föy</th><th>Oda</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th>
-        <th style="text-align:center">Durum</th>
+        <th>Misafir</th>
+        <th>Konaklama</th>
         <th style="text-align:right">Toplam</th>
-        <th style="text-align:right">Kapora</th>
-        <th style="text-align:right">Rez.Tahsilat</th>
-        <th style="text-align:right">Rez.Bakiye</th>
-        <th style="text-align:right">Adis.Toplam</th>
-        <th style="text-align:right">Adis.Tahsilat</th>
-        <th style="text-align:right">Adis.Bakiye</th>
+        <th style="text-align:right">Tahsil Edilen</th>
+        <th style="text-align:right">Kalan Borç</th>
+        <th style="text-align:center">Durum</th>
+        <th style="text-align:right">İşlem</th>
       </tr></thead>
-      <tbody id="cari-tbody"><tr class="loading-row"><td colspan="13"><span class="spinner"></span></td></tr></tbody>
+      <tbody id="cari-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
 </div>
 
-<!-- ALT: İki sütun -->
-<div id="alt-panel" style="display:none;gap:16px;grid-template-columns:3fr 2fr" class="panel-split">
+<!-- ALT: İşlem Detayı Modalı -->
+<div id="alt-panel" style="display:none;position:fixed;inset:0;z-index:150;background:rgba(6,11,18,.62);align-items:center;justify-content:center;padding:24px">
+<div style="width:100%;max-width:880px;max-height:88vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.6);padding:24px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="font-size:16px;font-weight:700;color:var(--text)">İşlem Detayı</div>
+    <div onclick="secimKaldir()" style="width:30px;height:30px;border-radius:8px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;font-size:15px">✕</div>
+  </div>
+
+  <div style="display:grid;gap:16px;grid-template-columns:3fr 2fr">
 
   <!-- Sol: Müşteri Cari Dökümü -->
   <div class="panel">
@@ -149,6 +155,8 @@
     </div>
   </div>
 
+  </div>
+</div>
 </div>
 
 
@@ -210,24 +218,42 @@ async function load() {
 
 function renderCari(data) {
   const tbody = document.getElementById('cari-tbody');
-  tbody.innerHTML = data.map(r => `
-    <tr onclick="selectRow(${r.foy_no})" style="cursor:pointer${selFoy===r.foy_no?';background:#162a42;outline:2px solid var(--accent);outline-offset:-2px':''}" id="row-${r.foy_no}">
-      <td>${r.foy_no}</td><td>${r.oda_no}</td>
-      <td><strong>${r.musteri}</strong></td>
-      <td>${fmtDate(r.giris)}</td><td>${fmtDate(r.cikis)}</td>
-      <td style="text-align:center">
-        <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;
-          background:${r.durum==='Kapora Yandı'?'#8B4513':r.durum==='Tamamlandı'?'#1a6b3a':'#1a3a6b'};color:#fff">
-          ${r.durum||'Aktif'}</span>
+  tbody.innerHTML = data.map(r => {
+    const otel = r.oda_no > 10 ? 'LEO' : 'CV';
+    const avBg = otel==='LEO' ? 'rgba(84,182,255,.15)' : 'rgba(61,220,132,.15)';
+    const avC  = otel==='LEO' ? 'var(--leo)' : 'var(--cv)';
+    const ini = (r.musteri||'').split(' ').filter(Boolean).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+    const toplam = (r.toplam_fiyat||0) + (r.adisyon||0);
+    const tahsil = (r.kapora||0) + (r.rez_tahsilat||0) + (r.adis_tahsilat||0);
+    const kalan = (r.rez_bakiye||0) + (r.adis_bakiye||0);
+    const durum = r.durum || 'Aktif';
+    const durumBg = durum==='Kapora Yandı' ? 'rgba(255,210,63,.15)' : durum==='Tamamlandı' ? 'rgba(47,221,155,.15)' : 'rgba(84,182,255,.15)';
+    const durumC  = durum==='Kapora Yandı' ? 'var(--accent4)' : durum==='Tamamlandı' ? 'var(--pos)' : 'var(--leo)';
+    const sel = selFoy===r.foy_no;
+    return `<tr onclick="selectRow(${r.foy_no})" style="cursor:pointer${sel?';background:var(--card2);box-shadow:inset 3px 0 0 var(--accent)':''}" id="row-${r.foy_no}">
+      <td>
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;font-weight:600;flex:none;background:${avBg};color:${avC}">${ini}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">${r.musteri}</div>
+          </div>
+        </div>
       </td>
-      <td style="text-align:right">${fmt(r.toplam_fiyat)}</td>
-      <td style="text-align:right">${fmt(r.kapora)}</td>
-      <td style="text-align:right">${fmt(r.rez_tahsilat)}</td>
-      <td style="text-align:right" class="${(r.rez_bakiye||0)>0?'red':'green'}">${fmt(r.rez_bakiye)}</td>
-      <td style="text-align:right">${fmt(r.adisyon)}</td>
-      <td style="text-align:right">${fmt(r.adis_tahsilat)}</td>
-      <td style="text-align:right" class="${(r.adis_bakiye||0)>0?'red':'green'}">${fmt(r.adis_bakiye)}</td>
-    </tr>`).join('') || '<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text2)">Kayıt yok</td></tr>';
+      <td>
+        <span style="font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:5px;background:${avBg};color:${avC}">${otel} ${r.oda_no}</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--text2);margin-left:4px">#${r.foy_no}</span>
+        <div style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--text2);margin-top:3px">${fmtDate(r.giris)} → ${fmtDate(r.cikis)}</div>
+      </td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600">${fmt(toplam)}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--pos)">${fmt(tahsil)}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:700;color:${kalan>0?'var(--accent3)':'var(--pos)'}">${kalan>0?fmt(kalan):'Temiz'}</td>
+      <td style="text-align:center"><span style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${durumBg};color:${durumC}">${durum}</span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-default" style="padding:5px 13px;font-size:11.5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
+        ${kalan>0 ? `<button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;margin-left:5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">Ödeme Al</button>` : ''}
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text2)">Kayıt yok</td></tr>';
 }
 
 function filterCari() {
@@ -260,7 +286,7 @@ async function selectRow(foy) {
   selectedRez = false;
   selectedAdisNolar = new Set();
   renderCari(allData);
-  document.getElementById('alt-panel').style.display = 'grid';
+  document.getElementById('alt-panel').style.display = 'flex';
   document.getElementById('btn-secim-kaldir').style.display = 'inline-block';
   await loadDokum(foy);
   updateCards();

@@ -4,18 +4,33 @@
 {% block page_title %}🧾 Adisyon{% endblock %}
 
 {% block content %}
-<div style="display:grid;grid-template-columns:320px 1fr;gap:16px">
+<style>
+.adis-tag{font-size:11.5px;color:var(--text2);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:4px 11px;cursor:pointer;transition:.15s}
+.adis-tag:hover{color:var(--accent);border-color:var(--accent)}
+.adis-stat{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:14px 17px}
+.adis-stat .label{font-size:10.5px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.adis-stat .value{font-family:'Geist Mono',monospace;font-size:22px;font-weight:700;color:var(--text);margin-top:6px;line-height:1}
+.adis-search{flex:1;min-width:260px;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 14px}
+.adis-search input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;width:100%;font-family:Geist,sans-serif}
+.adis-chip{display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:11px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--card);color:var(--text2);border:1px solid var(--border)}
+.adis-chip.active{background:rgba(255,111,125,.13);color:var(--accent3);border-color:var(--accent3)}
+.adis-avatar{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;flex:none}
+.adis-oda-pill{font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;padding:1px 6px;border-radius:5px}
+.adis-durum-pill{padding:3px 12px;border-radius:9px;font-size:11px;font-weight:700}
+.adis-ibtn{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+</style>
+<div style="display:grid;grid-template-columns:300px 1fr;gap:20px">
   <!-- Sol: Yeni Adisyon -->
   <div class="panel">
-    <div class="section-title">🧾 Yeni Adisyon Girişi</div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label>Föy No</label>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:16px">＋ Yeni Adisyon</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Föy / Misafir</label>
       <select id="a-foy" onchange="onFoyChange()"></select>
+      <div id="a-misafir-info" style="color:var(--text2);font-size:11.5px;margin-top:6px;min-height:16px"></div>
     </div>
-    <div id="a-misafir-info" style="color:var(--text2);font-size:12px;margin-bottom:12px;min-height:18px"></div>
-    <div class="form-row" style="display:grid;grid-template-columns:90px 1fr;gap:10px;margin-bottom:12px">
+    <div class="form-row" style="display:grid;grid-template-columns:90px 1fr;gap:10px;margin-bottom:14px">
       <div class="form-group">
-        <label>Adisyon No</label>
+        <label>Adis. No</label>
         <input type="number" id="a-no" min="1" value="1">
       </div>
       <div class="form-group">
@@ -23,31 +38,50 @@
         <input type="date" id="a-tarih">
       </div>
     </div>
-    <div class="form-group" style="margin-bottom:10px">
+    <div class="form-group" style="margin-bottom:14px">
       <label>Açıklama</label>
-      <input type="text" id="a-aciklama" placeholder="Yemek, içecek, servis...">
+      <input type="text" id="a-aciklama" placeholder="Restoran, bar, minibar, spa...">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">
+        <div class="adis-tag" onclick="quickTag('Restoran')">Restoran</div>
+        <div class="adis-tag" onclick="quickTag('Bar')">Bar</div>
+        <div class="adis-tag" onclick="quickTag('Minibar')">Minibar</div>
+        <div class="adis-tag" onclick="quickTag('Spa')">Spa</div>
+        <div class="adis-tag" onclick="quickTag('Kahvaltı')">Kahvaltı</div>
+        <div class="adis-tag" onclick="quickTag('Oda servisi')">Oda servisi</div>
+      </div>
     </div>
-    <div class="form-group" style="margin-bottom:10px">
+    <div class="form-group" style="margin-bottom:14px">
       <label>Tutar (₺)</label>
-      <input type="number" id="a-tutar" value="0" min="0" onfocus="if(this.value=='0'||this.value=='')this.value=''" onblur="if(this.value=='')this.value='0'">
+      <input type="number" id="a-tutar" value="0" min="0" style="font-size:18px;font-family:'Geist Mono',monospace;font-weight:700;text-align:right" onfocus="if(this.value=='0'||this.value=='')this.value=''" onblur="if(this.value=='')this.value='0'">
     </div>
-    <button class="btn btn-primary" style="width:100%" onclick="addAdisyon()">➕ Adisyon Ekle</button>
+    <button class="btn btn-primary" style="width:100%;padding:12px" onclick="addAdisyon()">＋ Adisyon Ekle</button>
   </div>
 
   <!-- Sağ: Adisyon Listesi -->
-  <div>
-    <div class="toolbar" style="margin-bottom:12px">
-      <div class="section-title" style="margin-bottom:0;border-bottom:none">📋 Adisyon Listesi</div>
-      <select class="filter" id="foy-filter" onchange="filterTable()">
+  <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div class="adis-stat"><div class="label">Kayıt</div><div class="value" id="st-kayit">—</div></div>
+      <div class="adis-stat"><div class="label">Toplam Tutar</div><div class="value" id="st-toplam">—</div></div>
+      <div class="adis-stat"><div class="label">Açık Bakiye</div><div class="value" id="st-acik" style="color:var(--accent3)">—</div></div>
+      <div class="adis-stat"><div class="label">Bugün</div><div class="value" id="st-bugun" style="color:var(--pos)">—</div></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="adis-search">
+        <span style="width:15px;height:15px;border-radius:50%;border:1.5px solid var(--text2);flex:none"></span>
+        <input id="adis-q" placeholder="Her şeyi ara — misafir, açıklama, föy, oda, tutar, tarih…" oninput="filterTable()">
+      </div>
+      <select class="filter" id="foy-filter" onchange="filterTable()" style="border-radius:11px">
         <option value="">Tüm Föyler</option>
       </select>
-      <div style="flex:1"></div>
-      <button class="btn btn-default" onclick="reload()">🔄 Yenile</button>
+      <div class="adis-chip" id="chip-acik" onclick="toggleAcik()"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent3)"></span>Sadece açık</div>
     </div>
+    <div style="font-size:12px;color:var(--text2)" id="adis-result-lbl"></div>
+
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Adis.No</th><th>Föy</th><th>Oda</th><th>Misafir</th><th>Tarih</th><th>Açıklama</th><th>Tutar</th><th>İşlem</th></tr></thead>
-        <tbody id="adis-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
+        <thead><tr><th>No</th><th>Misafir / Oda</th><th>Tarih</th><th>Açıklama</th><th style="text-align:right">Tutar</th><th style="text-align:center">Durum</th><th style="text-align:right">İşlem</th></tr></thead>
+        <tbody id="adis-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -90,6 +124,21 @@ document.getElementById('a-tarih').value = today;
 let allAdisyonlar = [];
 let foyListesi = [];
 let editAdisNo = null;
+let onlyAcik = false;
+
+function quickTag(t){
+  document.getElementById('a-aciklama').value = t;
+}
+
+function toggleAcik(){
+  onlyAcik = !onlyAcik;
+  document.getElementById('chip-acik').classList.toggle('active', onlyAcik);
+  filterTable();
+}
+
+function initials(name){
+  return (name||'').split(' ').filter(Boolean).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+}
 
 async function load() {
   const d = await api('/api/adisyonlar');
@@ -114,7 +163,18 @@ async function load() {
   document.getElementById('a-no').value = maxNo + 1;
 
   onFoyChange();
-  renderTable();
+  renderStats();
+  filterTable();
+}
+
+function renderStats(){
+  const toplam = allAdisyonlar.reduce((s,a)=>s+(a.tutar||0),0);
+  const acik   = allAdisyonlar.filter(a=>a.odendi!==1).reduce((s,a)=>s+(a.tutar||0),0);
+  const bugun  = allAdisyonlar.filter(a=>a.tarih===today).reduce((s,a)=>s+(a.tutar||0),0);
+  document.getElementById('st-kayit').textContent  = allAdisyonlar.length;
+  document.getElementById('st-toplam').textContent = fmt(toplam);
+  document.getElementById('st-acik').textContent   = fmt(acik);
+  document.getElementById('st-bugun').textContent  = fmt(bugun);
 }
 
 function onFoyChange() {
@@ -122,7 +182,7 @@ function onFoyChange() {
   const r = foyListesi.find(f => f.foy_no === foy);
   if (r) {
     document.getElementById('a-misafir-info').textContent =
-      `Misafir: ${r.musteri}  |  Oda: ${r.oda_no}`;
+      `Misafir: ${r.musteri} · Oda ${r.oda_no}`;
   }
 }
 
@@ -132,31 +192,51 @@ function filterTable() {
 
 function renderTable() {
   const foyF = document.getElementById('foy-filter').value;
+  const ql = (document.getElementById('adis-q').value||'').toLowerCase().trim();
   let data = allAdisyonlar;
   if (foyF) data = data.filter(a => a.foy_no == foyF);
+  if (onlyAcik) data = data.filter(a => a.odendi !== 1);
+  if (ql) data = data.filter(a => {
+    const hay = `${a.musteri||''} ${a.aciklama||''} ${a.foy_no} ${a.oda_no||''} ${a.tutar} ${a.tarih||''}`.toLowerCase();
+    return hay.includes(ql);
+  });
+
+  document.getElementById('adis-result-lbl').textContent = `${data.length} adisyon · ${fmt(data.reduce((s,a)=>s+(a.tutar||0),0))}`;
 
   const tbody = document.getElementById('adis-tbody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Adisyon bulunamadı</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Adisyon bulunamadı</td></tr>';
     return;
   }
-  tbody.innerHTML = data.map((a, i) => `
-    <tr>
-      <td>${a.adisyon_no}</td>
-      <td>${a.foy_no}</td>
-      <td>${a.oda_no||'—'}</td>
-      <td>${a.musteri||'—'}</td>
-      <td>${fmtDate(a.tarih)}</td>
-      <td style="color:var(--text2);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.aciklama||'—'}</td>
-      <td>${fmt(a.tutar)}</td>
+  tbody.innerHTML = data.map((a) => {
+    const otel = (a.oda_no||0) > 10 ? 'LEO' : 'CV';
+    const avBg = otel==='LEO' ? 'rgba(84,182,255,.15)' : 'rgba(61,220,132,.15)';
+    const avC  = otel==='LEO' ? 'var(--leo)' : 'var(--cv)';
+    const durumHtml = a.odendi===1
+      ? '<span class="adis-durum-pill" style="background:rgba(47,221,155,.15);color:var(--pos)">Ödendi</span>'
+      : '<span class="adis-durum-pill" style="background:rgba(255,111,125,.15);color:var(--accent3)">Açık</span>';
+    const islemHtml = a.odendi===1
+      ? ''
+      : `<button class="adis-ibtn" style="background:var(--card2);color:var(--text2);border:1px solid var(--border)" onclick='openEdit(${JSON.stringify(a)})'>Düzenle</button>
+         <button class="adis-ibtn" style="background:rgba(255,111,125,.12);color:var(--accent3);border:1px solid rgba(255,111,125,.3)" onclick="delAdisyon(${a.adisyon_no},${a.tutar})">🗑</button>`;
+    return `<tr>
+      <td style="font-family:'Geist Mono',monospace;color:var(--accent);font-weight:600">#${a.adisyon_no}</td>
       <td>
-        ${a.odendi===1 ? 
-          `<span style="padding:3px 12px;border-radius:9px;font-size:11px;font-weight:700;background:#1a4a2a;color:#5d5">✓ Ödendi</span>` :
-          `<button class="btn btn-default" style="padding:3px 8px;font-size:11px;margin-right:4px" onclick='openEdit(${JSON.stringify(a)})'>Düzenle</button>
-           <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="delAdisyon(${a.adisyon_no},${a.tutar})">Sil</button>`
-        }
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="adis-avatar" style="background:${avBg};color:${avC}">${initials(a.musteri)}</div>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">${a.musteri||'—'}</div>
+            <div style="margin-top:2px"><span class="adis-oda-pill" style="background:${avBg};color:${avC}">${otel} ${a.oda_no||'—'}</span> <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--text2)">#${a.foy_no}</span></div>
+          </div>
+        </div>
       </td>
-    </tr>`).join('');
+      <td style="font-family:'Geist Mono',monospace;font-size:12.5px;color:var(--text2)">${fmtDate(a.tarih)}</td>
+      <td style="color:var(--text2);font-size:12px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.aciklama||'—'}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600">${fmt(a.tutar)}</td>
+      <td style="text-align:center">${durumHtml}</td>
+      <td style="text-align:right;white-space:nowrap">${islemHtml}</td>
+    </tr>`;
+  }).join('');
 }
 
 async function addAdisyon() {
