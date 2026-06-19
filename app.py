@@ -198,7 +198,7 @@ def api_oda_durumu():
         start = date.fromisoformat(start_str)
     except:
         start = bugun()
-    days  = 14
+    days  = 30
     dates = [start + timedelta(i) for i in range(days)]
     today = bugun().isoformat()
 
