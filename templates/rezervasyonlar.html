@@ -4,41 +4,57 @@
 {% block page_title %}📋 Rezervasyonlar{% endblock %}
 
 {% block content %}
-<div class="toolbar">
-  <input class="search-input" id="search" placeholder="🔍  Misafir adı, föy no, oda no ara..." oninput="load()">
-  <select class="filter" id="otel-filter" onchange="load()">
+<style>
+.rez-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.rez-search{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 13px;width:300px}
+.rez-search input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;width:100%;font-family:Geist,sans-serif}
+.rez-chip{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;background:var(--card);color:var(--text2);border:1px solid var(--border);transition:.15s}
+.rez-chip.active{background:var(--card2);color:var(--text);border-color:var(--accent)}
+.rez-summary{font-size:12.5px;color:var(--text2);margin-bottom:12px}
+.rez-avatar{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Geist Mono',monospace;font-size:11px;font-weight:600;flex:none}
+.rez-oda-pill{font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:5px}
+.rez-durum-pill{display:inline-block;padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600}
+.rez-tahsil-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:600;background:rgba(47,221,155,.13);color:var(--pos);border:1px solid rgba(47,221,155,.32)}
+.rez-btn{padding:5px 11px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;border:none;display:inline-block}
+.rez-btn-def{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+.rez-btn-gold{background:rgba(255,194,77,.16);color:var(--accent);border:1px solid rgba(255,194,77,.4)}
+.rez-btn-danger{background:rgba(255,111,125,.12);color:var(--accent3);border:1px solid rgba(255,111,125,.34)}
+.rez-btn-warn{background:#8B4513;color:#fff;border:none}
+</style>
+
+<div class="rez-summary" id="rez-summary">— kayıt</div>
+
+<div class="rez-toolbar">
+  <div class="rez-search">
+    <span style="width:14px;height:14px;border-radius:50%;border:1.5px solid var(--text2);flex:none"></span>
+    <input id="search" placeholder="Misafir, föy no, oda ara…" oninput="load()">
+  </div>
+  <select class="filter" id="otel-filter" onchange="load()" style="border-radius:10px">
     <option>Tümü</option><option>LEO</option><option>CV</option>
   </select>
-  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
-    <input type="checkbox" id="cb-aktif" onchange="load()" style="width:15px;height:15px;accent-color:var(--accent)"> Aktif
-  </label>
-  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
-    <input type="checkbox" id="cb-tamamlandi" onchange="load()" style="width:15px;height:15px;accent-color:#5d5"> Tamamlandı
-  </label>
+  <div class="rez-chip" id="chip-aktif" onclick="toggleChip('aktif')"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent2)"></span>Aktif</div>
+  <div class="rez-chip" id="chip-tamam" onclick="toggleChip('tamam')"><span style="width:7px;height:7px;border-radius:50%;background:var(--pos)"></span>Tamamlandı</div>
+  <input type="checkbox" id="cb-aktif" style="display:none">
+  <input type="checkbox" id="cb-tamamlandi" style="display:none">
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal()">＋ Yeni Rezervasyon</button>
 </div>
 
-<div class="table-wrap" style="max-height:calc(100vh - 220px);overflow-y:auto">
+<div class="table-wrap" style="max-height:calc(100vh - 240px);overflow-y:auto">
   <table>
     <thead>
       <tr>
-        <th>Föy</th><th>Oda</th><th>Otel</th><th>Misafir</th>
-        <th style="text-align:center">Yetişkin</th>
-        <th style="text-align:center">Çocuk</th>
-        <th style="text-align:center">Ek Yatak</th>
-        <th>Kanal</th>
-        <th>Giriş</th><th>Çıkış</th>
-        <th style="text-align:center">Gün</th>
+        <th>Föy</th><th>Misafir</th><th>Kişi</th><th>Kanal</th><th>Konaklama</th>
         <th style="text-align:right">Gün Fiyat</th>
         <th style="text-align:right">Toplam</th>
         <th style="text-align:right">Kapora</th>
+        <th style="text-align:right">Bakiye</th>
         <th style="text-align:center">Durum</th>
-        <th>İşlem</th>
+        <th style="text-align:right">İşlem</th>
       </tr>
     </thead>
     <tbody id="rez-tbody">
-      <tr class="loading-row"><td colspan="15"><span class="spinner"></span></td></tr>
+      <tr class="loading-row"><td colspan="11"><span class="spinner"></span></td></tr>
     </tbody>
   </table>
 </div>
@@ -200,6 +216,18 @@ async function kaporaYandi(foy_no) {
   else toast(r.error || 'Hata', 'error');
 }
 
+function toggleChip(which){
+  const cb = which==='aktif' ? document.getElementById('cb-aktif') : document.getElementById('cb-tamamlandi');
+  const chip = which==='aktif' ? document.getElementById('chip-aktif') : document.getElementById('chip-tamam');
+  cb.checked = !cb.checked;
+  chip.classList.toggle('active', cb.checked);
+  load();
+}
+
+function initials(name){
+  return (name||'').split(' ').filter(Boolean).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+}
+
 async function load() {
   const q = document.getElementById('search').value;
   const otel = document.getElementById('otel-filter').value;
@@ -218,54 +246,67 @@ async function load() {
   allData = filtered;
   const tbody = document.getElementById('rez-tbody');
   const todayStr = today;
+  const toplam = filtered.reduce((s, r) => s + (r.toplam_fiyat||0), 0);
+  document.getElementById('rez-summary').textContent = `${filtered.length} kayıt · Toplam ${fmt(toplam)}`;
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;color:var(--text2);padding:24px">Sonuç bulunamadı</td></tr>';
-    document.getElementById('info-lbl').textContent = '0 rezervasyon';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:24px">Sonuç bulunamadı</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map(r => {
-    const aktif = r.giris && r.cikis && r.giris <= todayStr && todayStr < r.cikis;
-    const girisToday = r.giris === todayStr;
     const isHL = _urlQ && String(r.foy_no) === String(_urlQ);
-    const rowBg = isHL ? 'background:#7a5c00;outline:2px solid #ffd700' : aktif ? 'background:#0e2038' : girisToday ? 'background:#0e2a14' : '';
     const rowId = isHL ? 'id="hl-row"' : '';
+    const rowBg = isHL ? 'background:rgba(255,194,77,.12);box-shadow:inset 3px 0 0 var(--accent)' : '';
+    const HC = r.otel==='LEO' ? 'var(--leo)' : 'var(--cv)';
+    const HBG = r.otel==='LEO' ? 'rgba(84,182,255,.15)' : 'rgba(61,220,132,.15)';
+    const gercekDurum = r.durum === 'Kapora Yandı' ? 'Kapora Yandı' : r.rez_bakiye <= 0 ? 'Tamamlandı' : 'Aktif';
+    const durumBg = gercekDurum==='Aktif' ? 'rgba(84,182,255,.15)' : gercekDurum==='Tamamlandı' ? 'rgba(47,221,155,.15)' : 'rgba(255,210,63,.15)';
+    const durumC  = gercekDurum==='Aktif' ? 'var(--leo)' : gercekDurum==='Tamamlandı' ? 'var(--pos)' : 'var(--accent4)';
+    const subParts = [];
+    if (r.cocuk>0) subParts.push(r.cocuk+' çocuk');
+    if (r.ek_yatak && r.ek_yatak!=='Yok') subParts.push(r.ek_yatak);
+
+    let islemHtml;
+    if (gercekDurum === 'Tamamlandı') {
+      islemHtml = '<span class="rez-tahsil-pill">✓ Tahsil edildi</span>';
+    } else {
+      const rObjJson = JSON.stringify(r).replace(/"/g,'&quot;');
+      islemHtml =
+        `<button class="rez-btn rez-btn-def" onclick="openEdit(${rObjJson})">Düzenle</button> ` +
+        checkinBtn(r) +
+        `<button class="rez-btn rez-btn-danger" onclick="silRez(${r.foy_no})">Sil</button>` +
+        (r.kapora>0 && r.durum!=='Kapora Yandı' ? ` <button class="rez-btn rez-btn-warn" onclick="kaporaYandi(${r.foy_no})">🔥 Kapora Yandı</button>` : '');
+    }
+
     return `<tr ${rowId} style="${rowBg}">
-      <td>${r.foy_no}</td>
-      <td>${r.oda_no}</td>
-      <td class="${r.otel=='LEO'?'leo-tag':'cv-tag'}">${r.otel}</td>
-      <td><strong>${r.musteri}</strong></td>
-      <td style="text-align:center">${r.yetiskin||1}</td>
-      <td style="text-align:center">${r.cocuk||0}</td>
-      <td style="text-align:center">${r.ek_yatak||0}</td>
-      <td>${r.kanal||'—'}</td>
-      <td>${fmtDate(r.giris)}</td>
-      <td>${fmtDate(r.cikis)}</td>
-      <td style="text-align:center">${r.toplam_gun}</td>
-      <td style="text-align:right">${fmt(r.gun_fiyat)}</td>
-      <td style="text-align:right"><strong>${fmt(r.toplam_fiyat)}</strong></td>
-      <td style="text-align:right">${r.kapora>0?fmt(r.kapora):'—'}</td>
-      <td style="text-align:center">
-        <span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;
-          background:${r.durum==='Kapora Yandı'?'#8B4513':r.rez_bakiye<=0&&r.durum!=='Kapora Yandı'?'#1a6b3a':'#1a3a6b'};
-          color:#fff">${r.durum==='Kapora Yandı'?'Kapora Yandı':r.rez_bakiye<=0?'Tamamlandı':'Aktif'}</span>
+      <td style="font-family:'Geist Mono',monospace;color:var(--text2)">#${r.foy_no}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:11px">
+          <div class="rez-avatar" style="background:${HBG};color:${HC}">${initials(r.musteri)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap">${r.musteri}</div>
+            <div style="margin-top:3px"><span class="rez-oda-pill" style="background:${HBG};color:${HC}">${r.otel} ${r.oda_no}</span></div>
+          </div>
+        </div>
       </td>
-      <td style="white-space:nowrap">
-        ${(r.rez_bakiye<=0 && r.durum!=='Kapora Yandı') ? 
-          '<span style="padding:4px 12px;border-radius:9px;font-size:11px;font-weight:700;background:#1a4a2a;color:#5d5">\u2713 Rez. Tahsil Edildi</span>' :
-          ('<button class="btn btn-default" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="openEdit('+ JSON.stringify(r).replace(/"/g,"&quot;") +')">Düzenle</button>' +
-          '<button class="btn btn-danger" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="silRez(' + r.foy_no + ')">Sil</button>' +
-          (r.kapora>0 && r.durum!=='Kapora Yand\u0131' ? '<button class="btn" style="padding:4px 10px;font-size:11px;background:#8B4513;color:#fff;margin-right:4px" onclick="kaporaYandi(' + r.foy_no + ')">\ud83d\udd25 Kapora Yand\u0131</button>' : '') +
-          checkinBtn(r))
-        }
+      <td>
+        <div style="font-size:12.5px">${r.yetiskin||1} yetişkin</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${subParts.length?subParts.join(' · '):'—'}</div>
       </td>
+      <td style="color:var(--text2)">${r.kanal||'—'}</td>
+      <td>
+        <div style="font-family:'Geist Mono',monospace;font-size:12px;white-space:nowrap">${fmtDate(r.giris)} → ${fmtDate(r.cikis)}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${r.toplam_gun} gün</div>
+      </td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--text2)">${fmt(r.gun_fiyat)}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600">${fmt(r.toplam_fiyat)}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--text2)">${r.kapora>0?fmt(r.kapora):'—'}</td>
+      <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600;color:${r.rez_bakiye>0?'var(--accent3)':'var(--pos)'}">${r.rez_bakiye>0?fmt(r.rez_bakiye):'Temiz'}</td>
+      <td style="text-align:center"><span class="rez-durum-pill" style="background:${durumBg};color:${durumC}">${gercekDurum}</span></td>
+      <td style="text-align:right;white-space:nowrap">${islemHtml}</td>
     </tr>`;
   }).join('');
-
-  const toplam = data.reduce((s, r) => s + (r.toplam_fiyat||0), 0);
-  document.getElementById('info-lbl').textContent =
-    `  ${data.length} rezervasyon  |  Toplam: ${fmt(toplam)}  |  `;
 }
 
 function onOdaChange() {
