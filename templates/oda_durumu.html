@@ -5,37 +5,37 @@
 
 {% block content %}
 <style>
-.oda-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.oda-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .nav-buttons-group{display:flex;gap:6px;align-items:center}
-.oda-nav button{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+.oda-nav button{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
 .oda-nav button:hover{border-color:var(--accent);color:var(--accent)}
-.oda-nav .period{flex:1;text-align:center;font-weight:700;font-size:14px;color:var(--text)}
-.legend{display:flex;gap:18px;margin-bottom:8px;font-size:13px;align-items:center;flex-wrap:wrap}
+.oda-nav .period{flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.2px}
+.legend{display:flex;gap:14px;margin-bottom:14px;font-size:12.5px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px}
 .legend span{display:flex;align-items:center;gap:8px;font-weight:500}
-.leg-dot{width:18px;height:18px;border-radius:4px}
+.leg-dot{width:14px;height:14px;border-radius:5px}
 
 /* Tarih satırı sticky-bar içinde, yatay scroll ile senkron */
 .dates-row-wrap{overflow:hidden;}
 .dates-row{display:flex;gap:2px;margin-left:102px;}
 .day-header{
   background:var(--card2);color:var(--text2);font-size:11px;font-weight:700;
-  padding:6px 4px;text-align:center;min-width:60px;width:60px;
-  border:1px solid var(--border);border-radius:3px;white-space:pre-line;flex-shrink:0;
+  padding:7px 4px;text-align:center;min-width:60px;width:60px;
+  border:1px solid var(--border);border-radius:7px;white-space:pre-line;flex-shrink:0;
 }
 .day-header.today{color:#fff;border-color:#fff;background:#ffffff22;font-weight:900}
 
 /* Grid sadece oda satırları, scroll burada */
 .grid-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px)}
-.oda-grid{display:grid;gap:2px;min-width:max-content}
+.oda-grid{display:grid;gap:3px;min-width:max-content}
 
 .oda-label{background:var(--card);padding:5px 8px;font-size:12px;font-weight:700;
-  border-radius:4px;border:1px solid var(--border);width:100px;white-space:nowrap;display:flex;align-items:center}
+  border-radius:7px;border:1px solid var(--border);width:100px;white-space:nowrap;display:flex;align-items:center}
 .oda-label.leo{color:var(--leo)}
 .oda-label.cv{color:var(--cv)}
 .oda-label.genel{color:var(--accent)}
 .section-header{background:var(--header);color:var(--text);font-size:15px;font-weight:800;
-  padding:10px 8px;border-radius:3px;grid-column:1/-1;margin:8px 0 2px;text-align:center;letter-spacing:2px}
-.cell{width:60px;height:34px;border-radius:3px;border:1px solid var(--border);
+  padding:10px 8px;border-radius:9px;grid-column:1/-1;margin:10px 0 3px;text-align:center;letter-spacing:2px}
+.cell{width:60px;height:34px;border-radius:7px;border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;position:relative}
 .cell.dolu-leo,.cell.dolu-cv,.cell.dolu-genel{cursor:pointer}
 .cell.bos{background:var(--sidebar)}
@@ -51,11 +51,11 @@
 .cell.dolu-genel.giris{background:#0070cc;color:#fff;border-color:#00cfff}
 .cell:hover .tooltip{display:block}
 .tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;
-  transform:translateX(-50%);background:#0a1628;border:1px solid var(--border);
-  padding:8px 12px;border-radius:6px;white-space:nowrap;font-size:12px;
+  transform:translateX(-50%);background:var(--sidebar);border:1px solid var(--border);
+  padding:8px 12px;border-radius:10px;white-space:nowrap;font-size:12px;
   color:var(--text);z-index:30;pointer-events:none;box-shadow:0 4px 16px #0006}
 .tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  border:5px solid transparent;border-top-color:#0a1628}
+  border:5px solid transparent;border-top-color:var(--sidebar)}
 </style>
 
 <!-- SABİT KISIM: nav + legend + tarih satırı -->
