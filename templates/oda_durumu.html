@@ -9,10 +9,26 @@
 .nav-buttons-group{display:flex;gap:6px;align-items:center}
 .oda-nav button{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
 .oda-nav button:hover{border-color:var(--accent);color:var(--accent)}
+.oda-nav button.today-btn{background:linear-gradient(150deg,#ffc24d,#f0a52e);color:#1a1206;font-weight:700;border:none}
 .oda-nav .period{flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.2px}
+.hotel-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);padding:5px 12px;border-radius:20px}
+.hotel-pill .dot{width:8px;height:8px;border-radius:50%}
 .legend{display:flex;gap:14px;margin-bottom:14px;font-size:12.5px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px}
 .legend span{display:flex;align-items:center;gap:8px;font-weight:500}
 .leg-dot{width:14px;height:14px;border-radius:5px}
+
+/* Müsaitlik Sorgu paneli */
+.ms-panel{display:flex;gap:24px;margin-bottom:18px;align-items:stretch}
+.ms-left{flex:1.25;min-width:280px}
+.ms-right{flex:1.4;min-width:320px;border-left:1px solid var(--border);padding-left:24px;display:flex;flex-direction:column}
+.ms-field label{display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:5px}
+.ms-field input,.ms-field select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:9px;font-size:13px;outline:none}
+.ms-field input:focus,.ms-field select:focus{border-color:var(--accent)}
+.ms-count{font-family:'Geist Mono',monospace;font-size:42px;font-weight:700;color:var(--pos);line-height:1}
+.ms-room-pill{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer;text-decoration:none;transition:.15s}
+.ms-room-pill:hover{border-color:var(--accent);color:var(--accent)}
+.ms-room-pill.leo{color:var(--leo)}
+.ms-room-pill.cv{color:var(--cv)}
 
 /* Tarih satırı sticky-bar içinde, yatay scroll ile senkron */
 .dates-row-wrap{overflow:hidden;}
@@ -35,34 +51,62 @@
 .oda-label.genel{color:var(--accent)}
 .section-header{background:var(--header);color:var(--text);font-size:15px;font-weight:800;
   padding:10px 8px;border-radius:9px;grid-column:1/-1;margin:10px 0 3px;text-align:center;letter-spacing:2px}
-.cell{width:60px;height:34px;border-radius:7px;border:1px solid var(--border);
-  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;position:relative}
-.cell.dolu-leo,.cell.dolu-cv,.cell.dolu-genel{cursor:pointer}
+
+.cell{height:34px;border-radius:7px;border:1px solid var(--border)}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
-.cell.dolu-leo{background:#0a4a7a;color:#00cfff;border-color:#00cfff}
 
-.cell.dolu-leo.giris{background:#0070cc;color:#fff;border-color:#00cfff}
-.cell.dolu-cv{background:#7a2e00;color:#ff6b00;border-color:#ff6b00}
-
-.cell.dolu-cv.giris{background:#cc4a00;color:#fff;border-color:#ff6b00}
-.cell.dolu-genel{background:#0a4a7a;color:#00cfff;border-color:#00cfff}
-
-.cell.dolu-genel.giris{background:#0070cc;color:#fff;border-color:#00cfff}
-.cell:hover .tooltip{display:block}
-.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;
-  transform:translateX(-50%);background:var(--sidebar);border:1px solid var(--border);
+/* Rezervasyon çubuğu: birden çok güne yayılan tek parça yuvarlatılmış bar */
+.bar{height:34px;border-radius:9px;display:flex;align-items:center;padding:0 10px;
+  font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;position:relative;border:1.5px solid transparent}
+.bar.leo{background:rgba(84,182,255,.16);color:var(--leo);border-color:rgba(84,182,255,.45)}
+.bar.cv{background:rgba(61,220,132,.16);color:var(--cv);border-color:rgba(61,220,132,.45)}
+.bar:hover{filter:brightness(1.25)}
+.bar:hover .tooltip{display:block}
+.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:0;
+  background:var(--sidebar);border:1px solid var(--border);
   padding:8px 12px;border-radius:10px;white-space:nowrap;font-size:12px;
   color:var(--text);z-index:30;pointer-events:none;box-shadow:0 4px 16px #0006}
-.tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  border:5px solid transparent;border-top-color:var(--sidebar)}
 </style>
+
+<!-- Müsaitlik Sorgu -->
+<div class="panel ms-panel">
+  <div class="ms-left">
+    <div class="section-title" style="border:none;margin:0 0 4px;color:var(--accent)">🔎 Müsaitlik Sorgu</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Misafirin istediği tarihleri gir, boş odaları anında gör.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <div class="ms-field"><label>Giriş</label><input type="date" id="ms-giris"></div>
+      <div class="ms-field"><label>Çıkış</label><input type="date" id="ms-cikis"></div>
+      <div class="ms-field"><label>Otel</label><select id="ms-otel"><option>Tümü</option><option>LEO</option><option>CV</option></select></div>
+      <button class="btn btn-primary" onclick="sorgula()" style="padding:9px 18px">Sorgula</button>
+    </div>
+  </div>
+  <div class="ms-right">
+    <div id="ms-empty" style="color:var(--text2);font-size:13px;margin:auto">Tarih seçip sorgula'ya bas</div>
+    <div id="ms-result" style="display:none">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span class="ms-count" id="ms-toplam">—</span>
+          <span style="font-size:13px;color:var(--text2)">oda müsait</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span class="hotel-pill"><span class="dot" style="background:var(--leo)"></span>Leo <b id="ms-leo-sayi">0</b></span>
+          <span class="hotel-pill"><span class="dot" style="background:var(--cv)"></span>Cunda <b id="ms-cv-sayi">0</b></span>
+        </div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text2);margin-bottom:12px" id="ms-tarih-bilgi"></div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text2);text-transform:uppercase;margin-bottom:8px">Müsait Odalar — tıklayıp rezervasyona başla</div>
+      <div id="ms-pills" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+  </div>
+</div>
 
 <!-- SABİT KISIM: nav + legend + tarih satırı -->
 <div class="oda-nav">
   <div class="nav-buttons-group">
     <button onclick="shift(-7)">◀ Önceki Hafta</button>
-    <button onclick="goToday()" style="color:var(--accent)">Bugün</button>
+    <button class="today-btn" onclick="goToday()">Bugün</button>
     <button onclick="shift(7)">Sonraki Hafta ▶</button>
     <button onclick="reload()" id="yenile-btn">🔄 Yenile</button>
   </div>
@@ -111,16 +155,12 @@ function render(d){
     last.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
 
   const dayNames=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
-  const isTwoHotel=grid.some(r=>r.otel==='LEO'||r.otel==='CV');
 
-  document.getElementById('legend-area').innerHTML = isTwoHotel ? `
-    <span><div class="leg-dot" style="background:#0070cc;border:2px solid #00cfff"></div> Otel Leo (Dolu)</span>
-    <span><div class="leg-dot" style="background:#cc4a00;border:2px solid #ff6b00"></div> Cunda Villa (Dolu)</span>
+  document.getElementById('legend-area').innerHTML = `
+    <span><div class="leg-dot" style="background:var(--leo)"></div> Otel Leo</span>
+    <span><div class="leg-dot" style="background:var(--cv)"></div> Cunda Villa</span>
     <span><div class="leg-dot" style="background:var(--sidebar);border:1px solid var(--border)"></div> Boş</span>
-    <span style="color:#fff;font-weight:600">★ Parlak renk = Bugünkü Tarih</span>` : `
-    <span><div class="leg-dot" style="background:#0070cc;border:2px solid #00cfff"></div> Dolu Oda</span>
-    <span><div class="leg-dot" style="background:var(--sidebar);border:1px solid var(--border)"></div> Boş</span>
-    <span style="color:#fff;font-weight:600">★ Parlak renk = Bugünkü Tarih</span>`;
+    <span style="color:var(--text2)">Sorgu aralığı &nbsp;|&nbsp; <b style="color:var(--text)">Bugün</b> sütunu vurgulu</span>`;
 
   // Tarih satırını üstte render et (sabit kısımda)
   document.getElementById('dates-row').innerHTML = dates.map(dt=>{
@@ -142,32 +182,76 @@ function render(d){
   for(const room of grid){
     if(room.otel!==lastOtel){
       lastOtel=room.otel;
-      if(isTwoHotel){
-        const title=room.otel==='LEO'?'OTEL LEO':'CUNDA VİLLA';
-        html+=`<div class="section-header">${title}</div>`;
-      }
+      const title=room.otel==='LEO'?'OTEL LEO':'CUNDA VİLLA';
+      html+=`<div class="section-header">${title}</div>`;
     }
-    const otelClass=room.otel==='LEO'?'leo':room.otel==='CV'?'cv':'genel';
-    const label=room.otel==='LEO'?`LEO – ${room.oda_no}`:room.otel==='CV'?`CV – ${room.oda_no}`:`Oda-${room.oda_no}`;
+    const otelClass=room.otel==='LEO'?'leo':'cv';
+    const label=room.otel==='LEO'?`LEO – ${room.oda_no}`:`CV – ${room.oda_no}`;
     html+=`<div class="oda-label ${otelClass}">${label}</div>`;
 
-    for(let i=0;i<dates.length;i++){
+    // Ardışık dolu günleri tek bir çubuğa (bar) birleştir
+    let i=0;
+    while(i<dates.length){
       const dt=dates[i], cell=room.cells[i], isToday=dt===today;
       if(cell.dolu){
-        const base=room.otel==='LEO'?'dolu-leo':room.otel==='CV'?'dolu-cv':'dolu-genel';
-        const cls=base+(cell.is_giris?' giris':'');
+        const foy=cell.foy_no;
+        let span=1;
+        while(i+span<dates.length && room.cells[i+span].dolu && room.cells[i+span].foy_no===foy){
+          span++;
+        }
         const gF=cell.giris?new Date(cell.giris+'T00:00:00').toLocaleDateString('tr-TR'):'';
         const cF=cell.cikis?new Date(cell.cikis+'T00:00:00').toLocaleDateString('tr-TR'):'';
-        const todayStyleD = '';
-        html+=`<div class="cell ${cls}${isToday?' today':''}" style="${todayStyleD}" onclick="window.location='/rezervasyonlar?q=${cell.foy_no}'">${cell.initials}<div class="tooltip">${cell.musteri}<br>${gF} – ${cF}<br>Föy: ${cell.foy_no}</div></div>`;
+        html+=`<div class="bar ${otelClass}" style="grid-column:span ${span}" onclick="window.location='/rezervasyonlar?q=${foy}'">
+          ${cell.musteri}
+          <div class="tooltip">${cell.musteri}<br>${gF} – ${cF}<br>Föy: ${foy}</div>
+        </div>`;
+        i+=span;
       } else {
         const todayStyle = isToday ? 'background:#2a4a6a;border:1px solid #6ab0ff' : '';
         html+=`<div class="cell bos${isToday?' today':''}" style="${todayStyle}"></div>`;
+        i++;
       }
     }
   }
   gridEl.innerHTML=html;
 }
+
+// ── Müsaitlik Sorgu ──────────────────────────────────────────────────────
+async function sorgula(){
+  const giris = document.getElementById('ms-giris').value;
+  const cikis = document.getElementById('ms-cikis').value;
+  const otel  = document.getElementById('ms-otel').value;
+  if(!giris || !cikis || cikis<=giris){
+    toast('Geçerli bir giriş/çıkış tarihi seç', 'error');
+    return;
+  }
+  const d = await api(`/api/musaitlik?giris=${giris}&cikis=${cikis}&otel=${otel}`);
+  const odalar = d.odalar || [];
+  const leo = odalar.filter(o=>o.otel==='LEO').length;
+  const cv  = odalar.filter(o=>o.otel==='CV').length;
+  const gece = Math.round((new Date(cikis)-new Date(giris))/86400000);
+
+  document.getElementById('ms-empty').style.display='none';
+  document.getElementById('ms-result').style.display='block';
+  document.getElementById('ms-toplam').textContent = odalar.length;
+  document.getElementById('ms-leo-sayi').textContent = leo;
+  document.getElementById('ms-cv-sayi').textContent = cv;
+  document.getElementById('ms-tarih-bilgi').textContent =
+    `${new Date(giris).toLocaleDateString('tr-TR')} → ${new Date(cikis).toLocaleDateString('tr-TR')} · ${gece} gece`;
+
+  document.getElementById('ms-pills').innerHTML = odalar.length ? odalar.map(o=>{
+    const cls = o.otel==='LEO'?'leo':'cv';
+    const lbl = o.otel==='LEO'?`LEO ${o.oda_no}`:`CV ${o.oda_no}`;
+    return `<a class="ms-room-pill ${cls}" href="/rezervasyonlar">${lbl}</a>`;
+  }).join('') : '<span style="color:var(--text2);font-size:12.5px">Bu tarih aralığında müsait oda yok</span>';
+}
+
+// Varsayılan tarihleri bugün/yarın yap
+(function initMs(){
+  const t = new Date(); const y = new Date(); y.setDate(t.getDate()+1);
+  document.getElementById('ms-giris').value = toISO(t);
+  document.getElementById('ms-cikis').value = toISO(y);
+})();
 
 load();
 </script>

@@ -227,6 +227,32 @@ def api_oda_durumu():
 
     return jsonify({'dates': [d.isoformat() for d in dates], 'today': today, 'grid': grid})
 
+@app.route('/api/musaitlik')
+def api_musaitlik():
+    # Verilen giriş/çıkış aralığında ve (varsa) otelde boş odaları döner. Salt-okunur, mevcut hiçbir kayda dokunmaz.
+    giris = request.args.get('giris', '')
+    cikis = request.args.get('cikis', '')
+    otel  = request.args.get('otel', 'Tümü')
+    if not giris or not cikis or cikis <= giris:
+        return jsonify({'odalar': [], 'error': 'Geçersiz tarih aralığı'})
+
+    rezervasyonlar = [r for r in db.get_rezervasyonlar() if r.get('durum') != 'Kapora Yandı']
+    cv_odalar  = [('CV', o) for o in range(1, 11)]
+    leo_odalar = [('LEO', o) for o in range(11, 30)]
+    all_rooms  = cv_odalar + leo_odalar
+    if otel in ('LEO', 'CV'):
+        all_rooms = [r for r in all_rooms if r[0] == otel]
+
+    musait = []
+    for otel_label, oda_no in all_rooms:
+        cakisan = next((r for r in rezervasyonlar
+                         if r['oda_no'] == oda_no
+                         and r['giris'] and r['cikis']
+                         and r['giris'] < cikis and r['cikis'] > giris), None)
+        if not cakisan:
+            musait.append({'otel': otel_label, 'oda_no': oda_no})
+    return jsonify({'odalar': musait})
+
 @app.route('/api/cari')
 def api_cari():
     rezervasyonlar = db.get_rezervasyonlar()
