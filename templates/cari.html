@@ -9,7 +9,7 @@
 <div id="cari-cards" style="margin-bottom:16px">
   <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">
     <!-- Rezervasyon Grubu -->
-    <div style="border:2px solid var(--accent);border-radius:8px;padding:6px 10px;flex:4;min-width:0">
+    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:14px;padding:10px 14px;flex:4;min-width:0">
       <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">🏨 Rezervasyon</div>
       <div style="display:flex;gap:8px">
         <div class="stat-card" style="flex:1"><div class="label">Toplam Tutar</div><div class="value blue" id="oz-rez-toplam">—</div></div>
@@ -18,7 +18,7 @@
       </div>
     </div>
     <!-- Adisyon Grubu -->
-    <div style="border:2px solid var(--accent2);border-radius:8px;padding:6px 10px;flex:3;min-width:0">
+    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent2);border-radius:14px;padding:10px 14px;flex:3;min-width:0">
       <div style="font-size:10px;font-weight:700;color:var(--accent2);text-transform:uppercase;margin-bottom:4px">🍽️ Adisyon</div>
       <div style="display:flex;gap:8px">
         <div class="stat-card" style="flex:1"><div class="label">Toplam Tutar</div><div class="value blue" id="oz-adis-toplam">—</div></div>
@@ -27,7 +27,7 @@
       </div>
     </div>
     <!-- Toplam Alacak -->
-    <div class="stat-card" style="border:2px solid var(--accent3);flex:1;min-width:120px">
+    <div class="stat-card" style="border-top:3px solid var(--accent3);flex:1;min-width:120px">
       <div class="label">💰 Toplam Alacak</div>
       <div class="value red" id="oz-toplam-alacak">—</div>
       <div class="sub">rez + adisyon</div>
@@ -42,7 +42,7 @@
     <div style="flex:1"></div>
     <button id="btn-secim-kaldir" class="btn btn-default" style="font-size:11px;padding:4px 10px;display:none" onclick="secimKaldir()">✕ Seçimi Kaldır</button>
     <input type="text" id="cari-search" placeholder="🔍 Misafir, föy, oda ara..."
-      style="padding:6px 12px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:250px"
+      style="padding:6px 12px;background:var(--card2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;width:250px"
       oninput="filterCari()">
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
       <input type="checkbox" id="cb-cari-aktif" onchange="filterCari()" style="width:15px;height:15px;accent-color:var(--accent)"> Aktif
@@ -307,14 +307,14 @@ function renderDokum(r) {
       const rezBak = r.rez_bakiye || 0;
       rows.push(`<tr style="${selectedRez?'background:#162a42':''}">
         <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
-        <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">REZ</span></td>
+        <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
         <td style="font-size:12px;color:var(--text2)">—</td>
         <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Rez. Borcu</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(rezBak)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
         <td style="text-align:right;font-weight:700;font-size:14px;color:#e55">${fmt(rezBak)}</td>
-        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
+        <td style="text-align:center"><span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
       </tr>`);
     } else {
       // Her tahsilat için geçmiş satır + hala borç varsa yeni borç satırı
@@ -325,7 +325,7 @@ function renderDokum(r) {
         const tamamlandi = kalanBakiye <= 0;
         rows.push(`<tr>
           <td></td>
-          <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">REZ</span></td>
+          <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px">${fmtDate(t.tarih)}</td>
           <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Rez. Borcu</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(oncekiBakiye)}</td>
@@ -333,8 +333,8 @@ function renderDokum(r) {
           <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${t.odeme}</td>
           <td style="text-align:right;font-weight:700;font-size:14px" class="${tamamlandi?'green':'orange'}">${fmt(Math.max(0,kalanBakiye))}</td>
           <td style="text-align:center">
-            <span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${tamamlandi?'#1a6b3a':'#4a3a0a'};color:#fff">${tamamlandi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
-            <button onclick="duzenleTahsilat('rez',${t.id},${r.foy_no},${t.tutar},'${t.odeme||''}','${t.tarih||''}','${t.tur||''}')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer">✏️</button>
+            <span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:${tamamlandi?'#1a6b3a':'#4a3a0a'};color:#fff">${tamamlandi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
+            <button onclick="duzenleTahsilat('rez',${t.id},${r.foy_no},${t.tutar},'${t.odeme||''}','${t.tarih||''}','${t.tur||''}')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:7px;cursor:pointer">✏️</button>
           </td>
         </tr>`);
       });
@@ -342,14 +342,14 @@ function renderDokum(r) {
       if (kalanBakiye > 0) {
         rows.push(`<tr style="${selectedRez?'background:#162a42':''}">
           <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
-          <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">REZ</span></td>
+          <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px;color:var(--text2)">—</td>
           <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Kalan Borç</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
           <td style="text-align:right;color:var(--text2)">—</td>
           <td style="text-align:center;color:var(--text2)">—</td>
           <td style="text-align:right;font-weight:700;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
-          <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
+          <td style="text-align:center"><span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
         </tr>`);
       }
     }
@@ -369,7 +369,7 @@ function renderDokum(r) {
     odemeler.forEach(o => {
       rows.push(`<tr>
         <td></td>
-        <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
+        <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${fmtDate(o.tarih)}</td>
         <td style="font-size:13px">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(a.tutar)}</td>
@@ -377,8 +377,8 @@ function renderDokum(r) {
         <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${o.odeme_sekli}</td>
         <td style="text-align:right;font-weight:700;font-size:14px" class="${odendi?'green':'orange'}">${fmt(Math.max(0, a.tutar - odenenTutar))}</td>
         <td style="text-align:center">
-            <span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:${odendi?'#1a6b3a':'#4a3a0a'};color:#fff">${odendi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
-            <button onclick="duzenleTahsilat('adis',${o.id},${a.adisyon_no},${o.tutar},'${o.odeme_sekli||''}','${o.tarih||''}','Adisyon Tahsilat')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer">✏️</button>
+            <span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:${odendi?'#1a6b3a':'#4a3a0a'};color:#fff">${odendi?'✓ Tamamlandı':'◑ Kısmi Ödeme'}</span>
+            <button onclick="duzenleTahsilat('adis',${o.id},${a.adisyon_no},${o.tutar},'${o.odeme_sekli||''}','${o.tarih||''}','Adisyon Tahsilat')" style="margin-left:6px;padding:2px 7px;font-size:11px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:7px;cursor:pointer">✏️</button>
         </td>
       </tr>`);
     });
@@ -387,14 +387,14 @@ function renderDokum(r) {
     if (!odendi) {
       rows.push(`<tr style="${chk?'background:#1a2a1a':''}">
         <td style="text-align:center"><input type="checkbox" ${chk?'checked':''} onchange="toggleAdis(${itemKey}, this.checked)"></td>
-        <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
+        <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${a.tarih||'—'}</td>
         <td style="font-size:13px">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
         <td style="text-align:right;font-weight:700;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
-        <td style="text-align:center"><span style="padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
+        <td style="text-align:center"><span style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#5a1a1a;color:#fff">⚠ Borç</span></td>
       </tr>`);
     }
   });

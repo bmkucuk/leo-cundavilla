@@ -158,13 +158,13 @@ function checkinBtn(r) {
   const bugun = new Date().toISOString().split('T')[0];
   if (r.durum === 'Kapora Yandı') return '';
   if (r.checkin) {
-    return '<span style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;background:#1a3a6b;color:#7af;margin-right:4px">✓ Check-in</span>' +
+    return '<span style="padding:4px 10px;border-radius:9px;font-size:11px;font-weight:700;background:#1a3a6b;color:#7af;margin-right:4px">✓ Check-in</span>' +
            '<button class="btn" style="padding:4px 8px;font-size:10px;background:#5a1a1a;color:#fff" onclick="checkinIptal(' + r.foy_no + ')">↩ İptal</button>';
   }
   if (r.giris <= bugun) {
     return '<button class="btn" style="padding:4px 10px;font-size:11px;background:#1a6b3a;color:#fff;margin-right:4px" onclick="checkin(' + r.foy_no + ')">▶ Giriş Yap</button>';
   }
-  return '<span style="padding:4px 10px;border-radius:6px;font-size:10px;color:var(--text2)">Giriş: ' + fmtDate(r.giris) + '</span>';
+  return '<span style="padding:4px 10px;border-radius:9px;font-size:10px;color:var(--text2)">Giriş: ' + fmtDate(r.giris) + '</span>';
 }
 
 async function checkin(foy_no) {
@@ -253,7 +253,7 @@ async function load() {
       </td>
       <td style="white-space:nowrap">
         ${(r.rez_bakiye<=0 && r.durum!=='Kapora Yandı') ? 
-          '<span style="padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;background:#1a4a2a;color:#5d5">\u2713 Rez. Tahsil Edildi</span>' :
+          '<span style="padding:4px 12px;border-radius:9px;font-size:11px;font-weight:700;background:#1a4a2a;color:#5d5">\u2713 Rez. Tahsil Edildi</span>' :
           ('<button class="btn btn-default" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="openEdit('+ JSON.stringify(r).replace(/"/g,"&quot;") +')">Düzenle</button>' +
           '<button class="btn btn-danger" style="padding:4px 10px;font-size:11px;margin-right:4px" onclick="silRez(' + r.foy_no + ')">Sil</button>' +
           (r.kapora>0 && r.durum!=='Kapora Yand\u0131' ? '<button class="btn" style="padding:4px 10px;font-size:11px;background:#8B4513;color:#fff;margin-right:4px" onclick="kaporaYandi(' + r.foy_no + ')">\ud83d\udd25 Kapora Yand\u0131</button>' : '') +
