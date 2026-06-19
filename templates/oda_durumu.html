@@ -55,19 +55,24 @@
 .cell{height:34px;border-radius:7px;border:1px solid var(--border)}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
+.cell.ms-highlight{outline:2px dashed var(--accent2);outline-offset:-2px;background:rgba(67,198,255,.18);animation:pulse-hl 1.1s ease-in-out 3}
+@keyframes pulse-hl{0%,100%{outline-color:var(--accent2)}50%{outline-color:var(--accent)}}
 
 /* Rezervasyon çubuğu: birden çok güne yayılan tek parça yuvarlatılmış bar */
 .bar{height:34px;border-radius:9px;display:flex;align-items:center;padding:0 10px;
-  font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:12px;font-weight:600;
   cursor:pointer;position:relative;border:1.5px solid transparent}
 .bar.leo{background:rgba(84,182,255,.16);color:var(--leo);border-color:rgba(84,182,255,.45)}
 .bar.cv{background:rgba(61,220,132,.16);color:var(--cv);border-color:rgba(61,220,132,.45)}
-.bar:hover{filter:brightness(1.25)}
+.bar:hover{filter:brightness(1.25);z-index:10}
 .bar:hover .tooltip{display:block}
 .tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:0;
   background:var(--sidebar);border:1px solid var(--border);
-  padding:8px 12px;border-radius:10px;white-space:nowrap;font-size:12px;
-  color:var(--text);z-index:30;pointer-events:none;box-shadow:0 4px 16px #0006}
+  padding:10px 13px;border-radius:10px;white-space:nowrap;font-size:12px;
+  color:var(--text);z-index:50;pointer-events:none;box-shadow:0 8px 24px #000a;min-width:170px}
+
+/* Bugün için tüm satırları kat eden kesik dikey çizgi */
+.today-line{width:0;border-left:2px dashed var(--accent);pointer-events:none;justify-self:center;z-index:8}
 </style>
 
 <!-- Müsaitlik Sorgu -->
@@ -129,7 +134,10 @@
 let startDate = new Date();
 startDate.setHours(0,0,0,0);
 
-function toISO(d){ return d.toISOString().split('T')[0]; }
+function toISO(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
 function shift(days){ startDate.setDate(startDate.getDate()+days); load(); }
 function goToday(){ startDate=new Date(); startDate.setHours(0,0,0,0); load(); }
 
@@ -145,8 +153,11 @@ async function load(){
   render(d);
 }
 
+let lastDates = [];
+
 function render(d){
   const today=d.today, dates=d.dates, grid=d.grid;
+  lastDates = dates;
 
   const first=new Date(dates[0]+'T00:00:00');
   const last=new Date(dates[dates.length-1]+'T00:00:00');
@@ -160,9 +171,11 @@ function render(d){
     <span><div class="leg-dot" style="background:var(--leo)"></div> Otel Leo</span>
     <span><div class="leg-dot" style="background:var(--cv)"></div> Cunda Villa</span>
     <span><div class="leg-dot" style="background:var(--sidebar);border:1px solid var(--border)"></div> Boş</span>
-    <span style="color:var(--text2)">Sorgu aralığı &nbsp;|&nbsp; <b style="color:var(--text)">Bugün</b> sütunu vurgulu</span>`;
+    <span><div style="width:14px;height:0;border-top:2px dashed var(--accent)"></div> Bugün</span>
+    <span><div style="width:14px;height:10px;border:2px dashed var(--accent2);border-radius:3px"></div> Sorgu sonucu</span>`;
 
   // Tarih satırını üstte render et (sabit kısımda)
+  const todayIdx = dates.indexOf(today);
   document.getElementById('dates-row').innerHTML = dates.map(dt=>{
     const d2=new Date(dt+'T00:00:00');
     return `<div class="day-header${dt===today?' today':''}">${dayNames[d2.getDay()]}\n${d2.getDate()}</div>`;
@@ -176,6 +189,7 @@ function render(d){
   // Sadece oda satırları (tarih header yok)
   const gridEl=document.getElementById('oda-grid');
   gridEl.style.gridTemplateColumns=`100px repeat(${dates.length},60px)`;
+  gridEl.style.position='relative';
 
   let html='';
   let lastOtel=null;
@@ -187,6 +201,7 @@ function render(d){
     }
     const otelClass=room.otel==='LEO'?'leo':'cv';
     const label=room.otel==='LEO'?`LEO – ${room.oda_no}`:`CV – ${room.oda_no}`;
+    const roomKey=`${room.otel}-${room.oda_no}`;
     html+=`<div class="oda-label ${otelClass}">${label}</div>`;
 
     // Ardışık dolu günleri tek bir çubuğa (bar) birleştir
@@ -201,19 +216,41 @@ function render(d){
         }
         const gF=cell.giris?new Date(cell.giris+'T00:00:00').toLocaleDateString('tr-TR'):'';
         const cF=cell.cikis?new Date(cell.cikis+'T00:00:00').toLocaleDateString('tr-TR'):'';
-        html+=`<div class="bar ${otelClass}" style="grid-column:span ${span}" onclick="window.location='/rezervasyonlar?q=${foy}'">
-          ${cell.musteri}
-          <div class="tooltip">${cell.musteri}<br>${gF} – ${cF}<br>Föy: ${foy}</div>
+        const gece = (cell.giris && cell.cikis) ? Math.round((new Date(cell.cikis)-new Date(cell.giris))/86400000) : '—';
+        const bakiye = cell.rez_bakiye||0;
+        const bakiyeStr = bakiye>0 ? fmt(bakiye) : 'Temiz';
+        const bakiyeColor = bakiye>0 ? 'var(--accent3)' : 'var(--pos)';
+        html+=`<div class="bar ${otelClass}" data-room="${roomKey}" data-date="${dt}" style="grid-column:span ${span}" onclick="window.location='/rezervasyonlar?q=${foy}'">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block">${cell.musteri}</span>
+          <div class="tooltip">
+            <div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--${otelClass==='leo'?'leo':'cv'})"></span>${cell.musteri}</div>
+            <div style="display:flex;justify-content:space-between;gap:14px;margin-top:3px"><span style="color:var(--text2)">Oda</span><b>${roomKey.replace('-',' ')}</b></div>
+            <div style="display:flex;justify-content:space-between;gap:14px;margin-top:3px"><span style="color:var(--text2)">Tarih</span><b>${gF} → ${cF}</b></div>
+            <div style="display:flex;justify-content:space-between;gap:14px;margin-top:3px"><span style="color:var(--text2)">Gece</span><b>${gece}</b></div>
+            <div style="display:flex;justify-content:space-between;gap:14px;margin-top:3px"><span style="color:var(--text2)">Föy No</span><b>#${foy}</b></div>
+            <div style="display:flex;justify-content:space-between;gap:14px;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span style="color:var(--text2)">Bakiye</span><b style="color:${bakiyeColor}">${bakiyeStr}</b></div>
+          </div>
         </div>`;
         i+=span;
       } else {
         const todayStyle = isToday ? 'background:#2a4a6a;border:1px solid #6ab0ff' : '';
-        html+=`<div class="cell bos${isToday?' today':''}" style="${todayStyle}"></div>`;
+        html+=`<div class="cell bos${isToday?' today':''}" data-room="${roomKey}" data-date="${dt}" style="${todayStyle}"></div>`;
         i++;
       }
     }
   }
   gridEl.innerHTML=html;
+
+  // "Bugün" için tüm satırları kat eden kesik çizgi
+  const oldLine = gridEl.querySelector('.today-line');
+  if(oldLine) oldLine.remove();
+  if(todayIdx>=0){
+    const line=document.createElement('div');
+    line.className='today-line';
+    line.style.gridColumn = (todayIdx+2);
+    line.style.gridRow = '1 / -1';
+    gridEl.appendChild(line);
+  }
 }
 
 // ── Müsaitlik Sorgu ──────────────────────────────────────────────────────
@@ -242,8 +279,33 @@ async function sorgula(){
   document.getElementById('ms-pills').innerHTML = odalar.length ? odalar.map(o=>{
     const cls = o.otel==='LEO'?'leo':'cv';
     const lbl = o.otel==='LEO'?`LEO ${o.oda_no}`:`CV ${o.oda_no}`;
-    return `<a class="ms-room-pill ${cls}" href="/rezervasyonlar">${lbl}</a>`;
+    return `<div class="ms-room-pill ${cls}" onclick="lokalizeOda('${o.otel}',${o.oda_no},'${giris}','${cikis}')">${lbl}</div>`;
   }).join('') : '<span style="color:var(--text2);font-size:12.5px">Bu tarih aralığında müsait oda yok</span>';
+}
+
+// Müsait oda etiketine tıklanınca: ilgili satıra git, sorgulanan tarih aralığını kare içine al
+async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
+  // Sorgulanan tarih aralığı şu an görünen pencerede değilse, pencereyi oraya kaydır
+  if(!lastDates.length || girisStr < lastDates[0] || girisStr > lastDates[lastDates.length-1]){
+    startDate = new Date(girisStr+'T00:00:00');
+    await load();
+  }
+  const roomKey = `${otel}-${odaNo}`;
+  const cells = document.querySelectorAll(`[data-room="${CSS.escape(roomKey)}"]`);
+  if(!cells.length){
+    toast('Bu oda görünür takvim penceresinde değil', 'error');
+    return;
+  }
+  cells[0].scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+  let any=false;
+  cells.forEach(el=>{
+    const d = el.dataset.date;
+    if(d>=girisStr && d<cikisStr){ el.classList.add('ms-highlight'); any=true; }
+  });
+  if(any) toast(`${roomKey.replace('-',' ')} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} işaretlendi`);
+  setTimeout(()=>{
+    document.querySelectorAll('.ms-highlight').forEach(el=>el.classList.remove('ms-highlight'));
+  }, 4000);
 }
 
 // Varsayılan tarihleri bugün/yarın yap

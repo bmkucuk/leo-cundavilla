@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """Otel Leo & Cunda Villa — Web Yönetim (SQLite sürümü)"""
 import os
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file
 import hashlib
 from functools import wraps
@@ -12,6 +13,11 @@ import muhasebe_db as mdb
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'otelleo2026x!9k')
+
+# Sunucu (Render) UTC'de çalışabilir; otelin gerçek "bugün"ü her zaman Türkiye saatine göre hesaplanır.
+TR_TZ = ZoneInfo('Europe/Istanbul')
+def bugun():
+    return datetime.now(TR_TZ).date()
 
 # ── Kullanıcılar ──────────────────────────────────────────────────────────────
 USERS = {
@@ -117,7 +123,7 @@ def yedekleme_talimati():
 @app.route('/api/gunluk-liste')
 @login_required
 def api_gunluk_liste():
-    tarih = request.args.get('tarih', date.today().isoformat())
+    tarih = request.args.get('tarih', bugun().isoformat())
     conn = db.get_conn()
     # Giriş listesi
     girisler = conn.execute(
@@ -156,7 +162,7 @@ def api_gunluk_liste():
 
 @app.route('/api/dashboard')
 def api_dashboard():
-    today = date.today().isoformat()
+    today = bugun().isoformat()
     girisler, cikislar, aktifler, kahvalti = db.get_dashboard(today)
     leo_aktif = sum(1 for r in aktifler if r['otel'] == 'LEO')
     cv_aktif  = sum(1 for r in aktifler if r['otel'] == 'CV')
@@ -164,7 +170,7 @@ def api_dashboard():
                         for r in db.get_rezervasyonlar()
                         if r.get('durum') != 'Kapora Yandı')
     return jsonify({
-        'today': date.today().strftime('%d %B %Y, %A'),
+        'today': bugun().strftime('%d %B %Y, %A'),
         'stats': {
             'bugun_giris':   len(girisler),
             'bugun_cikis':   len(cikislar),
@@ -187,14 +193,14 @@ def api_rezervasyonlar():
 @app.route('/api/oda-durumu')
 def api_oda_durumu():
     from datetime import timedelta
-    start_str = request.args.get('start', date.today().isoformat())
+    start_str = request.args.get('start', bugun().isoformat())
     try:
         start = date.fromisoformat(start_str)
     except:
-        start = date.today()
+        start = bugun()
     days  = 14
     dates = [start + timedelta(i) for i in range(days)]
-    today = date.today().isoformat()
+    today = bugun().isoformat()
 
     rezervasyonlar = [r for r in db.get_rezervasyonlar() if r.get("durum") != "Kapora Yandı"]
     cv_odalar  = list(range(1, 11))
@@ -217,6 +223,7 @@ def api_oda_durumu():
                     'dolu': True, 'initials': initials,
                     'musteri': rez['musteri'],
                     'giris': rez['giris'], 'cikis': rez['cikis'],
+                    'rez_bakiye': rez.get('rez_bakiye') or 0,
                     'foy_no': rez['foy_no'],
                     'is_giris': ds == rez['giris'],
                     'otel': rez['otel'],
@@ -346,7 +353,7 @@ def api_checkin():
         musteri = r.get('musteri', '')
         toplam = float(r.get('toplam_fiyat') or 0)
         kapora = float(r.get('kapora') or 0)
-        tarih = date.today().isoformat()
+        tarih = bugun().isoformat()
         gelir_hesap = '600' if otel == 'LEO' else '601'
         aciklama = f'Föy#{foy_no} {musteri} check-in'
 
@@ -383,7 +390,7 @@ def api_checkin_iptal():
         musteri = r.get('musteri', '')
         toplam = float(r.get('toplam_fiyat') or 0)
         kapora = float(r.get('kapora') or 0)
-        tarih = date.today().isoformat()
+        tarih = bugun().isoformat()
         gelir_hesap = '600' if otel == 'LEO' else '601'
         aciklama = f'Föy#{foy_no} {musteri} check-in iptal (storno)'
 
@@ -420,7 +427,7 @@ def api_kapora_yandi():
         otel = r.get('otel', 'LEO')
         gelir_hesap = '600' if otel == 'LEO' else '601'
         musteri = r.get('musteri', '')
-        tarih = date.today().isoformat()
+        tarih = bugun().isoformat()
         # Yevmiye: Alınan Avanslar borç / Diğer Olağan Gelir alacak (340/649)
         conn = mdb.get_conn()
         mdb._yevmiye_ekle(conn, tarih, 'Kapora Yanması', '120', '649',
@@ -462,7 +469,7 @@ def yevmiye_rez_kaydet(foy_no, toplam_fiyat, otel, giris, musteri,
                        kapora=0, kapora_tarihi=None, guncelleme=False):
     """Rezervasyon konaklama geliri ve kaporayı yevmiyeye yazar."""
     try:
-        tarih = giris or date.today().isoformat()
+        tarih = giris or bugun().isoformat()
         gelir_hesap = '600' if otel == 'LEO' else '601'
         aciklama_kon = f'Föy#{foy_no} {musteri} konaklama'
         aciklama_kap = f'Föy#{foy_no} {musteri} kapora'
@@ -509,7 +516,7 @@ def acente_cari_oto_kaydet(data):
         musteri = data.get('musteri', '')
         toplam  = float(data.get('toplam_fiyat') or 0)
         otel    = data.get('otel', 'LEO')
-        tarih   = data.get('giris') or date.today().isoformat()
+        tarih   = data.get('giris') or bugun().isoformat()
         conn = mdb.get_conn()
         # Aynı föy varsa güncelle, yoksa ekle
         existing = conn.execute(
@@ -660,7 +667,7 @@ def api_rez_tah():
         if hesap_kodu and tutar > 0:
             rez = db.get_rezervasyonlar()
             r = next((x for x in rez if x['foy_no'] == foy_no), None)
-            tarih = d.get('tarih') or date.today().isoformat()
+            tarih = d.get('tarih') or bugun().isoformat()
             otel = r.get('otel', 'LEO') if r else 'LEO'
             musteri = r.get('musteri', '') if r else ''
             gelir_hesap = '600' if otel == 'LEO' else '601'
@@ -712,7 +719,7 @@ def api_adis_tah():
             # 2. 120 borç / 610 alacak (adisyon geliri gerçekleşti)
             hesap_kodu = ODEME_HESAP_KODU.get(odeme)
             if hesap_kodu:
-                tarih = date.today().isoformat()
+                tarih = bugun().isoformat()
                 conn = mdb.get_conn()
                 for adis_no in adisyon_nolar:
                     t = float(adis_tutarlar.get(str(adis_no), 0))
@@ -737,7 +744,7 @@ def api_adis_tah_guncelle():
         foy_no   = int(d['foy_no'])
         tutar    = float(d['tutar'])
         odeme    = d['odeme']
-        tarih    = d.get('tarih') or date.today().isoformat()
+        tarih    = d.get('tarih') or bugun().isoformat()
 
         otel_conn = db.get_conn()
 
@@ -812,7 +819,7 @@ def api_adisyon_ekle():
             r = next((x for x in rez if x['foy_no'] == foy_no), None)
             otel = r.get('otel', 'GENEL') if r else 'GENEL'
             musteri = r.get('musteri', '') if r else ''
-            tarih = d.get('tarih') or date.today().isoformat()
+            tarih = d.get('tarih') or bugun().isoformat()
             conn = mdb.get_conn()
             mdb._yevmiye_ekle(conn, tarih, 'Adisyon Geliri', '120', '610',
                               tutar, f'Föy#{foy_no} Adis#{adisyon_no} {musteri} adisyon', otel)
@@ -935,7 +942,7 @@ def yedek_db():
     """Hem otel hem muhasebe veritabanlarını ZIP olarak indir."""
     import shutil, tempfile, zipfile, os
     from datetime import date
-    dosya_adi = f"yedek_{date.today().isoformat()}.zip"
+    dosya_adi = f"yedek_{bugun().isoformat()}.zip"
     tmp_zip = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
     tmp_zip.close()
     with zipfile.ZipFile(tmp_zip.name, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -1103,7 +1110,7 @@ def yedek_excel():
     h9 = ['KOD','HESAP ADI','TİP','GRUP','BORÇ','ALACAK','BAKİYE']
     make_header(ws9, h9, HEADER2_FILL)
     hesaplar = [dict(r) for r in conn.execute("SELECT * FROM hesaplar WHERE aktif=1 ORDER BY kod").fetchall()]
-    yil = date.today().year
+    yil = bugun().year
     row_idx = 2
     for h in hesaplar:
         borc = conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?",
@@ -1130,7 +1137,7 @@ def yedek_excel():
     tmp.close()
     wb.save(tmp.name)
 
-    dosya_adi = f"otel_yedek_{date.today().isoformat()}.xlsx"
+    dosya_adi = f"otel_yedek_{bugun().isoformat()}.xlsx"
     return send_file(tmp.name, as_attachment=True, download_name=dosya_adi,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
