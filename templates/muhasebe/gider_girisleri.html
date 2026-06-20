@@ -27,9 +27,8 @@
       <div class="form-group"><label>Kategori</label><select id="s-kat"><option>Market/Gıda</option><option>Temizlik</option><option>İçecek</option><option>Kırtasiye</option><option>Diğer</option></select></div>
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="s-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
     </div>
-    <div class="form-row">
+    <div class="form-row single">
       <div class="form-group"><label>Ödeme Hesabı</label><select id="s-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option><option value="500-FK">Fırat Nakit</option><option value="500-FK">Fırat KK</option><option value="500-LK">Levent Nakit</option><option value="500-LK">Levent KK</option><option value="500-BT">Burçin Nakit</option><option value="500-BT">Burçin KK</option></select></div>
-      <div class="form-group"><label>Otel</label><select id="s-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Not</label><input type="text" id="s-not"></div>
@@ -57,8 +56,8 @@
     <div class="cards-row" id="stok-kartlar" style="margin-bottom:16px"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Tarih</th><th>Açıklama</th><th>Kategori</th><th style="text-align:right">Tutar</th><th>Ödeme</th><th>Fatura</th><th>Otel</th><th>Not</th><th></th></tr></thead>
-        <tbody id="stok-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
+        <thead><tr><th>Tarih</th><th>Açıklama</th><th>Kategori</th><th style="text-align:right">Tutar</th><th>Ödeme</th><th>Fatura</th><th>Not</th><th></th></tr></thead>
+        <tbody id="stok-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
     <div id="stok-info" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
@@ -131,8 +130,7 @@
       <div class="form-group"><label>Toplam (₺)</label><input type="number" id="d-toplam" value="0" readonly style="background:var(--bg);color:var(--accent2);font-weight:700"></div>
       <div class="form-group"><label>Ödeme Hesabı</label><select id="d-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option><option value="500-FK">Fırat Nakit</option><option value="500-FK">Fırat KK</option><option value="500-LK">Levent Nakit</option><option value="500-LK">Levent KK</option><option value="500-BT">Burçin Nakit</option><option value="500-BT">Burçin KK</option></select></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Otel</label><select id="d-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
+    <div class="form-row single">
       <div class="form-group"><label>Not</label><input type="text" id="d-not"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
@@ -149,13 +147,12 @@
       <div class="section-title" style="margin:0;border:0">📋 Demirbaş Listesi</div>
       <label style="color:var(--text2);font-size:12px">Yıl:</label>
       <select class="filter" id="dem-yil" onchange="loadDem()"></select>
-      <select class="filter" id="dem-otel" onchange="loadDem()"><option value="">Tüm Oteller</option><option>GENEL</option><option>LEO</option><option>CV</option></select>
     </div>
     <div class="cards-row" id="dem-kartlar" style="margin-bottom:16px"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Tarih</th><th>Açıklama</th><th>Miktar</th><th style="text-align:right">Birim Fiyat</th><th style="text-align:right">Toplam</th><th>Ödeme</th><th>Fatura No</th><th>Otel</th><th>Not</th><th></th></tr></thead>
-        <tbody id="dem-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr></tbody>
+        <thead><tr><th>Tarih</th><th>Açıklama</th><th>Miktar</th><th style="text-align:right">Birim Fiyat</th><th style="text-align:right">Toplam</th><th>Ödeme</th><th>Fatura No</th><th>Not</th><th></th></tr></thead>
+        <tbody id="dem-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
       </table>
     </div>
     <div id="dem-info" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
@@ -285,12 +282,12 @@ async function loadStok() {
     <td>${r.tarih}</td><td>${r.aciklama}</td><td>${r.kategori||'—'}</td>
     <td class="red" style="text-align:right">${fmt(r.tutar)}</td>
     <td>${({'100':'Nakit','102-1':'İş Bankası','102-2':'Ziraat','102-3':'Deniz Bank','500-FK':'Fırat (Kendi)','500-LK':'Levent (Kendi)','500-BT':'Burçin (Kendi)'})[r.odeme_hesap] || r.odeme_hesap || '—'}</td>
-    <td>${r.fatura_var?'✅':'❌'}</td><td>${r.otel||''}</td><td>${r.not_||'—'}</td>
+    <td>${r.fatura_var?'✅':'❌'}</td><td>${r.not_||'—'}</td>
     <td style="white-space:nowrap">
       <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="editStok(${r.id})">Düzenle</button>
       <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silStok(${r.id},'${r.aciklama}')">Sil</button>
     </td>
-  </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
   document.getElementById('stok-info').textContent = `${data.length} kayıt | Toplam: ${fmt(toplam)}`;
 }
 
@@ -303,7 +300,6 @@ async function saveStok() {
     tutar: parseFloat(document.getElementById('s-tutar').value)||0,
     odeme_hesap: document.getElementById('s-hesap').value,
     fatura_var: document.getElementById('s-fatura').checked,
-    otel: document.getElementById('s-otel').value,
     not_: document.getElementById('s-not').value,
   };
   if (!validateForm([{id:'s-tarih',label:'Tarih'},{id:'s-aciklama',label:'Açıklama'},{id:'s-tutar',label:'Tutar'}])) return;
@@ -323,7 +319,6 @@ function editStok(id) {
   document.getElementById('s-kat').value = r.kategori||'Market/Gıda';
   document.getElementById('s-tutar').value = r.tutar||0;
   document.getElementById('s-hesap').value = r.odeme_hesap||'';
-  document.getElementById('s-otel').value = r.otel||'GENEL';
   document.getElementById('s-not').value = r.not_||'';
   document.getElementById('s-fatura').checked = !!r.fatura_var;
   document.getElementById('s-edit-bar').style.display = 'block';
@@ -463,29 +458,24 @@ function resetDem() {
 
 async function loadDem() {
   const yil = document.getElementById('dem-yil').value;
-  const otel = document.getElementById('dem-otel').value;
   const data = await api(`/api/muhasebe/demirbas?yil=${yil}`);
-  const filtered = otel ? data.filter(r=>r.otel===otel) : data;
-  demData = filtered;
-  const toplam = filtered.reduce((s,r)=>s+(r.toplam||0),0);
+  demData = data;
+  const toplam = data.reduce((s,r)=>s+(r.toplam||0),0);
   document.getElementById('dem-kartlar').innerHTML = `
-    <div class="stat-card"><div class="label">Toplam</div><div class="value red">${fmt(toplam)}</div><div class="sub">${filtered.length} kayıt</div></div>
-    <div class="stat-card"><div class="label">Leo</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='LEO').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>
-    <div class="stat-card"><div class="label">Cunda Villa</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='CV').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>
-    <div class="stat-card"><div class="label">Genel</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='GENEL').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>`;
-  document.getElementById('dem-tbody').innerHTML = filtered.map(r=>`<tr>
+    <div class="stat-card"><div class="label">Toplam</div><div class="value red">${fmt(toplam)}</div><div class="sub">${data.length} kayıt</div></div>`;
+  document.getElementById('dem-tbody').innerHTML = data.map(r=>`<tr>
     <td>${r.tarih||'—'}</td><td>${r.aciklama}</td>
     <td style="text-align:right">${r.miktar||1}</td>
     <td style="text-align:right">${fmt(r.birim_fiyat)}</td>
     <td class="red" style="text-align:right">${fmt(r.toplam)}</td>
     <td>${({'100':'Nakit','102-1':'İş Bankası','102-2':'Ziraat','102-3':'Deniz Bank','500-FK':'Fırat (Kendi)','500-LK':'Levent (Kendi)','500-BT':'Burçin (Kendi)'})[r.odeme_hesap] || r.odeme_hesap || '—'}</td>
-    <td>${r.fatura_no||'—'}</td><td>${r.otel||'—'}</td><td>${r.not_||'—'}</td>
+    <td>${r.fatura_no||'—'}</td><td>${r.not_||'—'}</td>
     <td style="white-space:nowrap">
       <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="editDem(${r.id})">Düzenle</button>
       <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silDem(${r.id})">Sil</button>
     </td>
-  </tr>`).join('')||'<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
-  document.getElementById('dem-info').textContent = `${filtered.length} kayıt | Toplam: ${fmt(toplam)}`;
+  </tr>`).join('')||'<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
+  document.getElementById('dem-info').textContent = `${data.length} kayıt | Toplam: ${fmt(toplam)}`;
 }
 
 async function saveDem() {
@@ -497,7 +487,6 @@ async function saveDem() {
     birim_fiyat: parseFloat(document.getElementById('d-birim').value)||0,
     odeme_hesap: document.getElementById('d-hesap').value,
     fatura_no: document.getElementById('d-fatura').value,
-    otel: document.getElementById('d-otel').value,
     not_: document.getElementById('d-not').value,
   };
   const url = demEditId ? '/api/muhasebe/demirbas/guncelle' : '/api/muhasebe/demirbas/ekle';
@@ -517,7 +506,6 @@ function editDem(id) {
   document.getElementById('d-birim').value = r.birim_fiyat||0;
   document.getElementById('d-toplam').value = r.toplam||0;
   document.getElementById('d-hesap').value = r.odeme_hesap||'';
-  document.getElementById('d-otel').value = r.otel||'GENEL';
   document.getElementById('d-not').value = r.not_||'';
   document.getElementById('d-edit-bar').style.display = 'block';
   window.scrollTo({top:0, behavior:'smooth'});

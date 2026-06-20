@@ -7,10 +7,6 @@
 <div class="toolbar">
   <label style="color:var(--text2);font-size:12px">Yıl:</label>
   <select class="filter" id="yil-sel" onchange="load()"></select>
-  <select class="filter" id="otel-sel" onchange="load()">
-    <option value="">Tüm Oteller</option>
-    <option>GENEL</option><option>LEO</option><option>CV</option>
-  </select>
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal()">＋ Demirbaş Ekle</button>
 </div>
@@ -21,9 +17,9 @@
   <table>
     <thead><tr>
       <th>Tarih</th><th>Açıklama</th><th>Miktar</th><th>Birim Fiyat</th>
-      <th>Toplam</th><th>Ödeme Hesabı</th><th>Fatura No</th><th>Otel</th><th>Not</th><th></th>
+      <th>Toplam</th><th>Ödeme Hesabı</th><th>Fatura No</th><th>Not</th><th></th>
     </tr></thead>
-    <tbody id="tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr></tbody>
+    <tbody id="tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 <div id="info" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
@@ -50,10 +46,7 @@
       </div>
       <div class="form-group"><label>Ödeme Hesabı</label><select id="f-hesap"></select></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Otel</label>
-        <select id="f-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select>
-      </div>
+    <div class="form-row single">
       <div class="form-group"><label>Not</label><input type="text" id="f-not"></div>
     </div>
     <div class="modal-footer">
@@ -85,18 +78,13 @@ function calcToplam() {
 
 async function load() {
   const yil  = yilSel.value;
-  const otel = document.getElementById('otel-sel').value;
   const data = await api(`/api/muhasebe/demirbas?yil=${yil}`);
-  const filtered = otel ? data.filter(r => r.otel === otel) : data;
 
-  const toplam = filtered.reduce((s, r) => s + (r.toplam || 0), 0);
+  const toplam = data.reduce((s, r) => s + (r.toplam || 0), 0);
   document.getElementById('kartlar').innerHTML = `
-    <div class="stat-card"><div class="label">Toplam Demirbaş</div><div class="value red">${fmt(toplam)}</div><div class="sub">${filtered.length} kayıt</div></div>
-    <div class="stat-card"><div class="label">Leo</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='LEO').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>
-    <div class="stat-card"><div class="label">Cunda Villa</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='CV').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>
-    <div class="stat-card"><div class="label">Genel</div><div class="value yellow">${fmt(filtered.filter(r=>r.otel==='GENEL').reduce((s,r)=>s+(r.toplam||0),0))}</div></div>`;
+    <div class="stat-card"><div class="label">Toplam Demirbaş</div><div class="value red">${fmt(toplam)}</div><div class="sub">${data.length} kayıt</div></div>`;
 
-  document.getElementById('tbody').innerHTML = filtered.map(r => `<tr>
+  document.getElementById('tbody').innerHTML = data.map(r => `<tr>
     <td>${r.tarih||'—'}</td>
     <td>${r.aciklama}</td>
     <td style="text-align:right">${r.miktar||1}</td>
@@ -104,13 +92,12 @@ async function load() {
     <td class="red" style="text-align:right">${fmt(r.toplam)}</td>
     <td>${r.odeme_hesap==='100'?'Nakit':r.odeme_hesap==='102-1'?'İş Bankası':r.odeme_hesap==='102-2'?'Ziraat':r.odeme_hesap==='102-3'?'Deniz Bank':r.odeme_hesap||'—'}</td>
     <td>${r.fatura_no||'—'}</td>
-    <td>${r.otel||'—'}</td>
     <td>${r.not_||'—'}</td>
     <td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="sil(${r.id})">Sil</button></td>
-  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
 
-  allData = filtered;
-  document.getElementById('info').textContent = `${filtered.length} kayıt | Toplam: ${fmt(toplam)}`;
+  allData = data;
+  document.getElementById('info').textContent = `${data.length} kayıt | Toplam: ${fmt(toplam)}`;
 }
 
 async function openModal() {
@@ -138,7 +125,6 @@ async function save() {
     birim_fiyat: parseFloat(document.getElementById('f-birim').value) || 0,
     odeme_hesap: document.getElementById('f-hesap').value,
     fatura_no:   document.getElementById('f-fatura').value,
-    otel:        document.getElementById('f-otel').value,
     not_:        document.getElementById('f-not').value,
   };
   if (!validateForm([
@@ -167,7 +153,6 @@ async function duzenle(id) {
   document.getElementById('f-birim').value = r.birim_fiyat || 0;
   document.getElementById('f-toplam').value = r.toplam || 0;
   document.getElementById('f-hesap').value = r.odeme_hesap || '';
-  document.getElementById('f-otel').value = r.otel || 'GENEL';
   document.getElementById('f-not').value = r.not_ || '';
   document.getElementById('modal').classList.add('open');
 }

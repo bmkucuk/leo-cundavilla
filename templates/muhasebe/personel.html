@@ -39,9 +39,9 @@
         <th style="text-align:right">Gelmediği</th>
         <th style="text-align:right">Avans</th>
         <th style="text-align:right">Toplam</th>
-        <th>Ödeme</th><th>Otel</th><th></th>
+        <th>Ödeme</th><th></th>
       </tr></thead>
-      <tbody id="maas-tbody"><tr class="loading-row"><td colspan="12"><span class="spinner"></span></td></tr></tbody>
+      <tbody id="maas-tbody"><tr class="loading-row"><td colspan="11"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
   <div id="maas-toplam" style="margin-top:8px;font-size:13px;color:var(--accent2);font-weight:700"></div>
@@ -74,7 +74,7 @@
       <div class="form-group"><label>Tarih</label><input type="date" id="av-tarih"></div>
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="av-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
     </div>
-    <div class="form-row">
+    <div class="form-row single">
       <div class="form-group"><label>Ödeme Şekli</label>
         <select id="av-odeme">
           <option value="100">Nakit (Kasa)</option>
@@ -82,9 +82,6 @@
           <option value="102-2">Ziraat Bankası</option>
           <option value="102-3">Deniz Bank</option>
         </select>
-      </div>
-      <div class="form-group"><label>Otel</label>
-        <select id="av-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select>
       </div>
     </div>
     <div class="form-row single">
@@ -146,9 +143,6 @@
           <option value="102-3">Deniz Bank</option>
         </select>
       </div>
-    </div>
-    <div class="form-row single">
-      <div class="form-group"><label>Otel</label><select id="m-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-default" onclick="closeMaasModal()">İptal</button>
@@ -318,13 +312,12 @@ async function loadMaaslar() {
       <td style="text-align:right;color:var(--accent3)">${(r.avans_dusum||0)>0?'-'+fmt(r.avans_dusum):'—'}</td>
       <td style="text-align:right" class="green"><strong>${fmt(toplamOdeme)}</strong></td>
       <td style="font-size:11px">${r.odeme_banka==="100"?"Nakit":r.odeme_banka==="102-1"?"Is Bankasi":r.odeme_banka==="102-2"?"Ziraat":r.odeme_banka==="102-3"?"Deniz Bank":r.odeme_banka||"--"}</td>
-      <td>${r.otel||''}</td>
       <td style="white-space:nowrap">
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button>
         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silMaas(${r.id})">Sil</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="13" style="text-align:center;color:var(--text2);padding:20px">Maaş kaydı yok</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:20px">Maaş kaydı yok</td></tr>';
   document.getElementById('maas-toplam').textContent = `${yil} Yılı Toplam: ${fmt(toplam)} ₺`;
 }
 
@@ -451,7 +444,6 @@ async function saveAvans() {
     tutar: tutar,
     odeme_sekli: document.getElementById('av-odeme').value,
     aciklama: document.getElementById('av-aciklama').value,
-    otel: document.getElementById('av-otel').value,
   };
   const r = await api('/api/muhasebe/avans/ekle', data);
   if (r.ok) { toast('Avans kaydedildi ✓'); closeAvansModal(); loadPersonel(); }
@@ -497,7 +489,6 @@ async function saveMaas() {
     izin_parasi: parseFloat(document.getElementById('m-izin').value)||0,
     gelmedi_gun: parseInt(document.getElementById('m-gelmedi').value)||0,
     odeme_banka: document.getElementById('m-banka').value,
-    otel: document.getElementById('m-otel').value,
   };
   if (!validateForm([
     {id:'m-tarih', label:'Ödeme Tarihi'},
