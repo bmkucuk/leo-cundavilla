@@ -30,7 +30,7 @@
     <input id="search" placeholder="Misafir, föy no, oda ara…" oninput="load()">
   </div>
   <select class="filter" id="otel-filter" onchange="load()" style="border-radius:10px">
-    <option>Tümü</option><option>LEO</option><option>CV</option>
+    <option value="">Tüm Oteller</option><option>LEO</option><option>CV</option>
   </select>
   <div class="rez-chip" id="chip-aktif" onclick="toggleChip('aktif')"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent2)"></span>Aktif</div>
   <div class="rez-chip" id="chip-tamam" onclick="toggleChip('tamam')"><span style="width:7px;height:7px;border-radius:50%;background:var(--pos)"></span>Tamamlandı</div>
@@ -179,7 +179,7 @@ function checkinBtn(r) {
            '<button class="btn" style="padding:4px 8px;font-size:10px;background:#5a1a1a;color:#fff" onclick="checkinIptal(' + r.foy_no + ')">↩ İptal</button>';
   }
   if (r.giris <= bugun) {
-    return '<button class="btn" style="padding:4px 10px;font-size:11px;background:#1a6b3a;color:#fff;margin-right:4px" onclick="checkin(' + r.foy_no + ')">▶ Giriş Yap</button>';
+    return '<button class="btn" style="padding:4px 10px;font-size:11px;background:#cc8a3d;color:#1a1206;font-weight:700;margin-right:4px" onclick="checkin(' + r.foy_no + ')">▶ Giriş</button>';
   }
   return '<span style="padding:4px 10px;border-radius:9px;font-size:10px;color:var(--text2)">Giriş: ' + fmtDate(r.giris) + '</span>';
 }
