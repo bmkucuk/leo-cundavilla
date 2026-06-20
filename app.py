@@ -19,6 +19,12 @@ TR_TZ = ZoneInfo('Europe/Istanbul')
 def bugun():
     return datetime.now(TR_TZ).date()
 
+_TR_AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık']
+_TR_GUNLER = ['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar']
+def tr_tarih(d):
+    """Locale'e bağımlı olmadan Türkçe tarih metni üretir: '20 Haziran 2026, Cumartesi'"""
+    return f"{d.day} {_TR_AYLAR[d.month-1]} {d.year}, {_TR_GUNLER[d.weekday()]}"
+
 # ── Kullanıcılar ──────────────────────────────────────────────────────────────
 USERS = {
     'bmkucuk@gmail.com': {'hash': '23b5c5e0915483302bbd48e555a85f5999f52dbed8c7c7a5809811bba234e0a1', 'role': 'admin'},
@@ -170,7 +176,7 @@ def api_dashboard():
                         for r in db.get_rezervasyonlar()
                         if r.get('durum') != 'Kapora Yandı')
     return jsonify({
-        'today': bugun().strftime('%d %B %Y, %A'),
+        'today': tr_tarih(bugun()),
         'stats': {
             'bugun_giris':   len(girisler),
             'bugun_cikis':   len(cikislar),

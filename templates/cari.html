@@ -91,7 +91,6 @@
     <div class="table-wrap" style="max-width:100%;overflow-x:auto">
       <table>
         <thead><tr>
-          <th style="width:32px"></th>
           <th>Tür</th>
           <th>Tarih</th>
           <th style="text-align:right">Tutar</th>
@@ -105,59 +104,6 @@
         </tbody>
       </table>
     </div>
-  </div>
-
-  <!-- Sağ: Ödeme Formu -->
-  <div class="panel" style="min-width:0">
-    <div id="odeme-section">
-      <div class="section-title">💵 Ödeme Al</div>
-
-      <!-- Rez Ödeme -->
-      <div id="rez-ozet-box" style="background:var(--header);border:2px solid var(--accent);border-radius:10px;padding:12px;margin-bottom:12px;display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:16px;font-weight:800;color:var(--accent)">🏨 Rezervasyon</span>
-          <span id="rez-sec-toplam" style="font-size:14px;font-weight:700;color:#e55">—</span>
-        </div>
-        <div style="margin-bottom:8px">
-          <label style="font-size:13px;font-weight:600;color:var(--text2)">Tutar (₺)</label>
-          <input type="number" id="rez-tutar" value="0" min="0"
-            style="font-size:20px;font-weight:700;padding:6px 8px;width:100%"
-            onfocus="if(this.value=='0')this.value=''"
-            onblur="if(this.value=='')this.value='0'">
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:13px;font-weight:600;color:var(--text2)">Ödeme Şekli</label>
-          <select id="rez-odeme" style="font-size:15px;font-weight:600;padding:6px 8px;width:100%">
-            <option>Nakit</option><option>Kredi Kartı</option>
-            <option>İş Bankası</option><option>Denizbank</option>
-          </select>
-        </div>
-        <button class="btn btn-primary" style="width:100%;padding:8px;font-size:15px;font-weight:700" onclick="saveRezTah()">💾 Rezervasyon Ödemesi Al</button>
-      </div>
-
-      <!-- Adis Ödeme -->
-      <div id="adis-ozet-box" style="background:var(--header);border:2px solid var(--accent4);border-radius:10px;padding:12px;margin-bottom:12px;display:none">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-size:16px;font-weight:800;color:var(--accent4)">🍽️ Adisyon</span>
-          <span id="adis-sec-toplam" style="font-size:14px;font-weight:700;color:#e55">—</span>
-        </div>
-        <div id="adis-inputs" style="margin-bottom:8px"></div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:13px;font-weight:600;color:var(--text2)">Ödeme Şekli</label>
-          <select id="adis-odeme" style="font-size:15px;font-weight:600;padding:6px 8px;width:100%">
-            <option>Nakit</option><option>Kredi Kartı</option>
-            <option>İş Bankası</option><option>Denizbank</option>
-          </select>
-        </div>
-        <button class="btn btn-warn" style="width:100%;padding:8px;font-size:15px;font-weight:700" onclick="saveAdisTah()">💾 Adisyon Ödemesi Al</button>
-      </div>
-
-      <div id="odeme-bos" style="color:var(--text2);font-size:13px;text-align:center;padding:20px">
-        Soldaki listeden ödeme alınacak kalemleri seçin
-      </div>
-    </div>
-  </div>
-
   </div>
 </div>
 </div>
@@ -253,7 +199,6 @@ function renderCari(data) {
       <td style="text-align:center"><span style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${durumBg};color:${durumC}">${durum}</span></td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;color:#1a1206;font-weight:700" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
-        ${kalan>0 ? `<button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;margin-left:5px;color:#1a1206;font-weight:700" onclick="event.stopPropagation();selectRow(${r.foy_no})">Ödeme Al</button>` : ''}
       </td>
     </tr>`;
   }).join('') || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text2)">Kayıt yok</td></tr>';
@@ -328,7 +273,6 @@ async function loadDokum(foy_no) {
   }));
 
   renderDokum(r);
-  updateOdemePanel();
 }
 
 function renderDokum(r) {
@@ -344,7 +288,6 @@ function renderDokum(r) {
       // Hiç ödeme yok - tek satır borç
       const rezBak = r.rez_bakiye || 0;
       rows.push(`<tr style="${selectedRez?'background:#162a42':''}">
-        <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
         <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
         <td style="font-size:12px;color:var(--text2)">—</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(rezBak)}</td>
@@ -361,7 +304,6 @@ function renderDokum(r) {
         kalanBakiye -= t.tutar;
         const tamamlandi = kalanBakiye <= 0;
         rows.push(`<tr>
-          <td></td>
           <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px">${fmtDate(t.tarih)}</td>
             <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(oncekiBakiye)}</td>
@@ -377,8 +319,7 @@ function renderDokum(r) {
       // Hala bakiye varsa yeni borç satırı (checkbox ile)
       if (kalanBakiye > 0) {
         rows.push(`<tr style="${selectedRez?'background:#162a42':''}">
-          <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
-          <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
+            <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px;color:var(--text2)">—</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
           <td style="text-align:right;color:var(--text2)">—</td>
@@ -403,7 +344,6 @@ function renderDokum(r) {
     const odemeler = adisOdemeler[a.adisyon_no] || [];
     odemeler.forEach(o => {
       rows.push(`<tr>
-        <td></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${fmtDate(o.tarih)}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(a.tutar)}</td>
@@ -420,7 +360,6 @@ function renderDokum(r) {
     // Ana adisyon satırı - borç varsa checkbox ile
     if (!odendi) {
       rows.push(`<tr style="${chk?'background:#1a2a1a':''}">
-        <td style="text-align:center"><input type="checkbox" ${chk?'checked':''} onchange="toggleAdis(${itemKey}, this.checked)"></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${a.tarih||'—'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
@@ -447,68 +386,6 @@ function secimKaldir() {
     tr.style.background = '';
   });
   updateCards();
-  updateOdemePanel();
-}
-
-function toggleRez(checked) {
-  selectedRez = checked;
-  const r = allData.find(x => x.foy_no === selFoy);
-  if (r) renderDokum(r);
-  updateOdemePanel();
-}
-
-function toggleAdis(adisNo, checked) {
-  if (checked) selectedAdisNolar.add(adisNo);
-  else selectedAdisNolar.delete(adisNo);
-  const r = allData.find(x => x.foy_no === selFoy);
-  if (r) renderDokum(r);
-  updateOdemePanel();
-}
-
-function updateOdemePanel() {
-  const r = selFoy ? allData.find(x => x.foy_no === selFoy) : null;
-  let rezToplam = selectedRez && r ? (r.rez_bakiye || 0) : 0;
-  let adisToplam = 0;
-
-  selectedAdisNolar.forEach(no => {
-    const a = allAdisyon.find(x => x.adisyon_no === no);
-    if (a) adisToplam += a.tutar || 0;
-  });
-
-  const rezBox = document.getElementById('rez-ozet-box');
-  const adisBox = document.getElementById('adis-ozet-box');
-  const bosMsg = document.getElementById('odeme-bos');
-
-  if (rezToplam > 0) {
-    rezBox.style.display = 'block';
-    document.getElementById('rez-sec-toplam').textContent = `Bakiye: ${fmt(rezToplam)} ₺`;
-    document.getElementById('rez-tutar').value = rezToplam;
-  } else { rezBox.style.display = 'none'; }
-
-  if (adisToplam > 0) {
-    adisBox.style.display = 'block';
-    document.getElementById('adis-sec-toplam').textContent = `Seçilen: ${fmt(adisToplam)} ₺`;
-    // Her seçili adisyon için ayrı tutar alanı oluştur (varsa üzerine yazma)
-    const adisInputsDiv = document.getElementById('adis-inputs');
-    adisInputsDiv.innerHTML = [...selectedAdisNolar].map(no => {
-      const a = allAdisyon.find(x => x.adisyon_no === no);
-      const kalanBakiye = a ? (a.tutar - (a.odenen_tutar||0)) : 0;
-      const mevcutDeger = document.getElementById(`adis-tutar-${no}`)?.value || kalanBakiye;
-      return `<div style="margin-bottom:8px">
-        <label style="font-size:12px;color:var(--text2)">ADİS #${no} — ${a?a.aciklama:''}
-          <span style="color:#e55;font-size:11px">Bakiye: ${fmt(kalanBakiye)} ₺</span>
-        </label>
-        <input type="number" id="adis-tutar-${no}" value="${mevcutDeger}" min="0" max="${kalanBakiye}"
-          style="font-size:18px;font-weight:700;padding:6px 8px;width:100%"
-          onfocus="if(this.value=='0')this.value=''"
-          onblur="if(this.value=='')this.value='0'">
-      </div>`;
-    }).join('');
-  } else { adisBox.style.display = 'none'; }
-
-  bosMsg.style.display = (rezToplam === 0 && adisToplam === 0) ? 'block' : 'none';
-  document.getElementById('odeme-section').style.display =
-    (r && r.durum === 'Kapora Yandı') ? 'none' : 'block';
 }
 
 function updateCards() {
@@ -540,47 +417,6 @@ function updateCards() {
     if (el3b) el3b.className = 'value red';
     if (el4b) el4b.className = 'value yellow';
   }
-}
-
-async function saveRezTah() {
-  if (!selFoy) { toast('Önce bir föy seçin!', 'error'); return; }
-  const tutar = parseFloat(document.getElementById('rez-tutar').value);
-  if (tutar <= 0) { toast('Tutar > 0 olmalı!', 'error'); return; }
-  const odeme = document.getElementById('rez-odeme').value;
-  const r = await api('/api/tahsilat/rez', {foy_no: selFoy, tutar, odeme});
-  if (r.ok) {
-    toast('Rezervasyon ödemesi alındı ✓');
-    selectedRez = false;
-    await load();
-    await loadDokum(selFoy);
-  } else toast(r.error||'Hata', 'error');
-}
-
-async function saveAdisTah() {
-  if (!selFoy) { toast('Önce bir föy seçin!', 'error'); return; }
-  const odeme = document.getElementById('adis-odeme').value;
-  const adisyon_nolar = [...selectedAdisNolar];
-  if (!adisyon_nolar.length) { toast('Adisyon seçin!', 'error'); return; }
-
-  // Her adisyon için girilen tutarı topla
-  const adis_tutarlar = {};
-  let toplam = 0;
-  for (const no of adisyon_nolar) {
-    const inp = document.getElementById(`adis-tutar-${no}`);
-    const t = inp ? parseFloat(inp.value) : 0;
-    if (t <= 0) { toast(`Adis #${no} tutarı > 0 olmalı!`, 'error'); return; }
-    adis_tutarlar[no] = t;
-    toplam += t;
-  }
-  if (toplam <= 0) { toast('Tutar > 0 olmalı!', 'error'); return; }
-
-  const r = await api('/api/tahsilat/adis', {foy_no: selFoy, odeme, adisyon_nolar, adis_tutarlar});
-  if (r.ok) {
-    toast('Adisyon ödemesi alındı ✓');
-    selectedAdisNolar = new Set();
-    await load();
-    await loadDokum(selFoy);
-  } else toast(r.error||'Hata', 'error');
 }
 
 load();
