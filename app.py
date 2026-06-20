@@ -274,6 +274,15 @@ def api_cari():
     def _tahsilat(r):
         return _f(r.get('rez_tahsilat')) + _f(r.get('kapora'))
 
+    # Föy başına adisyon kayıt sayısı (İşlem Detayı rozeti için)
+    tum_adisyonlar = db.get_adisyonlar()
+    adis_sayilari = {}
+    for a in tum_adisyonlar:
+        fn = a.get('foy_no')
+        adis_sayilari[fn] = adis_sayilari.get(fn, 0) + 1
+    for r in rezervasyonlar:
+        r['adisyon_sayisi'] = adis_sayilari.get(r.get('foy_no'), 0)
+
     ozet = {
         'toplam_rez':      sum(_f(r.get('toplam_fiyat')) for r in aktif_rez),
         'toplam_tahsilat': sum(_tahsilat(r) for r in aktif_rez),
