@@ -106,6 +106,11 @@ def init_db():
         donem_yil   INTEGER,
         donem_ay    INTEGER,
         net_odeme   REAL NOT NULL,
+        yol_parasi  REAL DEFAULT 0,
+        fazla_mesai REAL DEFAULT 0,
+        izin_parasi REAL DEFAULT 0,
+        gelmedi_gun INTEGER DEFAULT 0,
+        avans_dusum REAL DEFAULT 0,
         odeme_banka TEXT,
         aciklama    TEXT,
         otel        TEXT DEFAULT 'GENEL'
@@ -261,6 +266,25 @@ def init_db():
         c.execute("UPDATE yevmiye SET alacak_hesap='500-BT' WHERE alacak_hesap='500-BC'")
         c.execute("DELETE FROM hesaplar WHERE kod='500-BC'")
         c.execute("DELETE FROM bankalar WHERE kod='BC-NKT' OR kod='BC-KK'")
+
+    # Migration: personel tablosuna sonradan eklenen kolonlar (eski canlı DB'lerde yoktu)
+    pers_cols = [r[1] for r in c.execute("PRAGMA table_info(personel)").fetchall()]
+    if 'telefon' not in pers_cols:
+        c.execute("ALTER TABLE personel ADD COLUMN telefon TEXT")
+    if 'tc_kimlik' not in pers_cols:
+        c.execute("ALTER TABLE personel ADD COLUMN tc_kimlik TEXT")
+
+    # Migration: personel_maas tablosuna sonradan eklenen kolonlar (eski canlı DB'lerde yoktu)
+    maas_cols = [r[1] for r in c.execute("PRAGMA table_info(personel_maas)").fetchall()]
+    for col, ddl in [
+        ('yol_parasi',  "ALTER TABLE personel_maas ADD COLUMN yol_parasi REAL DEFAULT 0"),
+        ('fazla_mesai', "ALTER TABLE personel_maas ADD COLUMN fazla_mesai REAL DEFAULT 0"),
+        ('izin_parasi', "ALTER TABLE personel_maas ADD COLUMN izin_parasi REAL DEFAULT 0"),
+        ('gelmedi_gun', "ALTER TABLE personel_maas ADD COLUMN gelmedi_gun INTEGER DEFAULT 0"),
+        ('avans_dusum', "ALTER TABLE personel_maas ADD COLUMN avans_dusum REAL DEFAULT 0"),
+    ]:
+        if col not in maas_cols:
+            c.execute(ddl)
 
     acenteler = [
         ("BKG",     "Booking.com",  15.0),
