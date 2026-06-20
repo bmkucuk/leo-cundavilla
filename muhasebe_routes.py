@@ -1141,6 +1141,34 @@ def api_avans_sil():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
+@muh.route('/api/muhasebe/avans/guncelle', methods=['POST'])
+def api_avans_guncelle():
+    try:
+        d = request.get_json()
+        conn = mdb.get_conn()
+        avans_id = int(d['id'])
+        tarih = d['tarih']
+        tutar = float(d['tutar'])
+        odeme_sekli = d.get('odeme_sekli', '100')
+        aciklama = d.get('aciklama', '')
+        otel = d.get('otel', 'GENEL')
+        row = conn.execute("SELECT personel_id FROM personel_avans WHERE id=?", (avans_id,)).fetchone()
+        if not row:
+            return jsonify({'ok': False, 'error': 'Avans kaydı bulunamadı'}), 404
+        p = conn.execute("SELECT ad_soyad FROM personel WHERE id=?", (row['personel_id'],)).fetchone()
+        p_ad = p['ad_soyad'] if p else ''
+        conn.execute("""UPDATE personel_avans SET tarih=?,tutar=?,odeme_sekli=?,aciklama=?,otel=? WHERE id=?""",
+            (tarih, tutar, odeme_sekli, aciklama, otel, avans_id))
+        # Eski yevmiye kaydını sil, güncel bilgilerle yeniden yaz
+        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='personel_avans' AND kaynak_id=?", (avans_id,))
+        mdb._yevmiye_ekle(conn, tarih, 'Personel Avans', '195', odeme_sekli,
+                          tutar, aciklama or f'{p_ad} avans', otel,
+                          kaynak_tablo='personel_avans', kaynak_id=avans_id)
+        conn.commit(); conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+
 
 # ── API — Personel Güncelle / Sil ────────────────────────────────────────────
 

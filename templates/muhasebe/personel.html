@@ -94,6 +94,22 @@
   </div>
 </div>
 
+<!-- Avans Geçmişi Modal -->
+<div class="modal-overlay" id="avans-liste-modal">
+  <div class="modal" style="max-width:640px">
+    <h2 id="avans-liste-baslik">Avans Geçmişi</h2>
+    <div class="table-wrap" style="margin-top:8px">
+      <table>
+        <thead><tr><th>Tarih</th><th>Tutar</th><th>Ödeme Şekli</th><th>Açıklama</th><th></th></tr></thead>
+        <tbody id="avans-liste-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text2);padding:16px"><span class="spinner"></span></td></tr></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeAvansListeModal()">Kapat</button>
+    </div>
+  </div>
+</div>
+
 <!-- Maaş Modal -->
 <div class="modal-overlay" id="maas-modal">
   <div class="modal" style="max-width:600px">
@@ -287,6 +303,7 @@ async function loadPersonel() {
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenlePersonel(${p.id})">Düzenle</button>
         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silPersonel(${p.id})">Sil</button>
         <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--accent2);color:#000;margin-left:4px" onclick="avansVer(${p.id},'${p.ad_soyad}')">💰 Avans</button>
+        <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--card2);color:var(--text2);margin-left:4px" onclick="avansGecmisi(${p.id},'${p.ad_soyad}')">📋 Geçmiş</button>
       </td>
     </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Personel yok</td></tr>';
 }
@@ -423,13 +440,19 @@ function closeMaasModal() { document.getElementById('maas-modal').classList.remo
 
 // ── Avans ──────────────────────────────────────────────────────────────────
 let avansPersonelId = null;
+let avansPersonelAd = '';
+let editAvansId = null;
 let _avans_toplam = 0;
+let avansListeData = [];
 
 function avansVer(id, ad) {
   avansPersonelId = id;
+  avansPersonelAd = ad;
+  editAvansId = null;
   document.getElementById('avans-modal-baslik').textContent = `💰 ${ad} - Avans Ver`;
   document.getElementById('av-tarih').value = new Date().toISOString().split('T')[0];
   document.getElementById('av-tutar').value = 0;
+  document.getElementById('av-odeme').value = '100';
   document.getElementById('av-aciklama').value = '';
   document.getElementById('avans-modal').classList.add('open');
 }
@@ -445,10 +468,69 @@ async function saveAvans() {
     odeme_sekli: document.getElementById('av-odeme').value,
     aciklama: document.getElementById('av-aciklama').value,
   };
-  const r = await api('/api/muhasebe/avans/ekle', data);
-  if (r.ok) { toast('Avans kaydedildi ✓'); closeAvansModal(); loadPersonel(); }
+  const url = editAvansId ? '/api/muhasebe/avans/guncelle' : '/api/muhasebe/avans/ekle';
+  if (editAvansId) data.id = editAvansId;
+  const r = await api(url, data);
+  if (r.ok) {
+    toast(editAvansId ? 'Avans güncellendi ✓' : 'Avans kaydedildi ✓');
+    closeAvansModal();
+    loadPersonel();
+    if (document.getElementById('avans-liste-modal').classList.contains('open')) {
+      avansGecmisi(avansPersonelId, avansPersonelAd);
+    }
+  }
   else toast(r.error, 'error');
 }
+
+// ── Avans Geçmişi ─────────────────────────────────────────────────────────
+const ODEME_ETIKET = {'100':'Nakit (Kasa)','102-1':'İş Bankası','102-2':'Ziraat Bankası','102-3':'Deniz Bank'};
+
+async function avansGecmisi(id, ad) {
+  avansPersonelId = id;
+  avansPersonelAd = ad;
+  document.getElementById('avans-liste-baslik').textContent = `📋 ${ad} - Avans Geçmişi`;
+  document.getElementById('avans-liste-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:16px"><span class="spinner"></span></td></tr>';
+  document.getElementById('avans-liste-modal').classList.add('open');
+  avansListeData = await api(`/api/muhasebe/avans?personel_id=${id}`);
+  renderAvansListe();
+}
+
+function renderAvansListe() {
+  document.getElementById('avans-liste-tbody').innerHTML = avansListeData.length ? avansListeData.map(a => `<tr>
+    <td>${fmtDate(a.tarih)}</td>
+    <td style="text-align:right;font-weight:600">${fmt(a.tutar)}</td>
+    <td style="font-size:12px;color:var(--text2)">${ODEME_ETIKET[a.odeme_sekli]||a.odeme_sekli||'—'}</td>
+    <td>${a.aciklama||'—'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenleAvans(${a.id})">Düzenle</button>
+      <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silAvans(${a.id})">Sil</button>
+    </td>
+  </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:16px">Avans kaydı yok</td></tr>';
+}
+
+function duzenleAvans(id) {
+  const a = avansListeData.find(x => x.id === id);
+  if (!a) return;
+  editAvansId = id;
+  document.getElementById('avans-modal-baslik').textContent = `✏️ ${avansPersonelAd} - Avans Düzenle`;
+  document.getElementById('av-tarih').value = a.tarih || '';
+  document.getElementById('av-tutar').value = a.tutar || 0;
+  document.getElementById('av-odeme').value = a.odeme_sekli || '100';
+  document.getElementById('av-aciklama').value = a.aciklama || '';
+  document.getElementById('avans-modal').classList.add('open');
+}
+
+async function silAvans(id) {
+  if (!confirm('Bu avans kaydını silmek istediğinize emin misiniz? (Yevmiye kaydı da silinecek)')) return;
+  const r = await api('/api/muhasebe/avans/sil', {id});
+  if (r.ok) { toast('Silindi ✓'); avansGecmisi(avansPersonelId, avansPersonelAd); loadPersonel(); }
+  else toast(r.error, 'error');
+}
+
+function closeAvansListeModal() { document.getElementById('avans-liste-modal').classList.remove('open'); }
+document.getElementById('avans-liste-modal').addEventListener('click', e => {
+  if (e.target.id === 'avans-liste-modal') closeAvansListeModal();
+});
 
 document.getElementById('avans-modal').addEventListener('click', e => {
   if (e.target.id === 'avans-modal') closeAvansModal();
