@@ -26,7 +26,12 @@
 <!-- KASA SEKMESİ -->
 <div id="panel-kasa">
   <div class="cards-row" id="kasa-ozet" style="margin-bottom:20px"></div>
-  <div class="section-title">📋 Kasa Hareketleri</div>
+  <div class="toolbar" style="margin-bottom:10px">
+    <div class="section-title" style="margin:0;border:0">📋 Kasa Hareketleri</div>
+    <div style="flex:1"></div>
+    <input class="search-input" id="kasa-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="renderKasa()" style="width:280px">
+    <button class="btn" id="kasa-sort-btn" onclick="toggleSort('kasa')" style="font-size:12px;padding:6px 12px;background:var(--card2);color:var(--text2)">Tarih ↓ (Yeni→Eski)</button>
+  </div>
   <div class="table-wrap">
     <table>
       <thead><tr><th style="width:100px">Tarih</th><th>Açıklama</th><th>İşlem Tipi</th><th style="width:100px;text-align:right">Giriş</th><th style="width:100px;text-align:right">Çıkış</th><th style="width:110px;text-align:right">Bakiye</th></tr></thead>
@@ -39,7 +44,12 @@
 <div id="panel-banka" style="display:none">
   <div class="cards-row" id="banka-ozet" style="margin-bottom:20px"></div>
   <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap" id="banka-tabs"></div>
-  <div class="section-title">📋 Hesap Hareketleri</div>
+  <div class="toolbar" style="margin-bottom:10px">
+    <div class="section-title" style="margin:0;border:0">📋 Hesap Hareketleri</div>
+    <div style="flex:1"></div>
+    <input class="search-input" id="banka-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="renderBanka()" style="width:280px">
+    <button class="btn" id="banka-sort-btn" onclick="toggleSort('banka')" style="font-size:12px;padding:6px 12px;background:var(--card2);color:var(--text2)">Tarih ↓ (Yeni→Eski)</button>
+  </div>
   <div class="table-wrap">
     <table>
       <thead><tr><th style="width:100px">Tarih</th><th>Açıklama</th><th>İşlem Tipi</th><th style="width:100px;text-align:right">Giriş</th><th style="width:100px;text-align:right">Çıkış</th><th style="width:110px;text-align:right">Bakiye</th></tr></thead>
@@ -98,6 +108,9 @@ for (let y = thisYear-2; y <= thisYear+1; y++) {
 let aktifTab = 'kasa';
 let aktifBanka = '';
 let tumBakiyeler = [];
+let kasaData = [];
+let bankaData = [];
+let sortDir = { kasa: 'desc', banka: 'desc' };
 
 function switchTab(tab) {
   aktifTab = tab;
@@ -109,6 +122,32 @@ function switchTab(tab) {
   document.getElementById('tab-banka').style.cssText  = tab === 'banka' ? aktifStyle : pasifStyle + ';margin-left:4px';
 }
 
+function toggleSort(which) {
+  sortDir[which] = sortDir[which] === 'desc' ? 'asc' : 'desc';
+  const btn = document.getElementById(which + '-sort-btn');
+  btn.textContent = sortDir[which] === 'desc' ? 'Tarih ↓ (Yeni→Eski)' : 'Tarih ↑ (Eski→Yeni)';
+  if (which === 'kasa') renderKasa(); else renderBanka();
+}
+
+function filterSortHareketler(data, q, dir) {
+  let list = data;
+  if (q && q.trim()) {
+    const term = q.trim().toLowerCase();
+    list = list.filter(r => {
+      const tutarStr = String(r.giris || r.cikis || '').toLowerCase();
+      const tarihStr = (fmtDate(r.tarih) || '').toLowerCase();
+      return (r.aciklama||'').toLowerCase().includes(term) ||
+             (r.islem_tipi||'').toLowerCase().includes(term) ||
+             tutarStr.includes(term) ||
+             tarihStr.includes(term) ||
+             (r.tarih||'').includes(term);
+    });
+  }
+  list = [...list];
+  if (dir === 'desc') list.reverse();
+  return list;
+}
+
 function rowHtml(r) {
   return `<tr>
     <td>${fmtDate(r.tarih)}</td>
@@ -118,6 +157,20 @@ function rowHtml(r) {
     <td class="red" style="text-align:right">${r.cikis > 0 ? fmt(r.cikis) : '—'}</td>
     <td class="${r.bakiye_kum >= 0 ? 'green' : 'red'}" style="text-align:right;font-weight:600">${fmt(r.bakiye_kum)}</td>
   </tr>`;
+}
+
+function renderKasa() {
+  const q = document.getElementById('kasa-q').value;
+  const list = filterSortHareketler(kasaData, q, sortDir.kasa);
+  document.getElementById('kasa-tbody').innerHTML = list.map(rowHtml).join('')
+    || `<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Kasa hareketi yok'}</td></tr>`;
+}
+
+function renderBanka() {
+  const q = document.getElementById('banka-q').value;
+  const list = filterSortHareketler(bankaData, q, sortDir.banka);
+  document.getElementById('banka-tbody').innerHTML = list.map(rowHtml).join('')
+    || `<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Bu hesapta hareket yok'}</td></tr>`;
 }
 
 async function load() {
@@ -135,8 +188,8 @@ async function load() {
 
   // Kasa hareketleri
   const kd = await api(`/api/muhasebe/kasa?yil=${yil}&hesap=KASA`);
-  document.getElementById('kasa-tbody').innerHTML = kd.hareketler.map(rowHtml).join('')
-    || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Kasa hareketi yok</td></tr>';
+  kasaData = kd.hareketler;
+  renderKasa();
 
   // BANKA özet kartları
   const bankalar = d.bakiyeler.filter(b => b.kod !== 'KASA');
@@ -171,8 +224,8 @@ async function selectBanka(kod) {
   const yil = yilSel.value;
   document.getElementById('banka-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span></td></tr>';
   const d = await api(`/api/muhasebe/kasa?yil=${yil}&hesap=${encodeURIComponent(kod)}`);
-  document.getElementById('banka-tbody').innerHTML = d.hareketler.map(rowHtml).join('')
-    || '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Bu hesapta hareket yok</td></tr>';
+  bankaData = d.hareketler;
+  renderBanka();
 }
 
 async function openModal() {
