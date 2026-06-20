@@ -354,14 +354,16 @@ def ekle_yevmiye(tarih, belge_no, islem_tipi, borc, alacak, tutar,
           aciklama, otel, fatura_no, yil, ay, kaynak_tablo, kaynak_id))
     conn.commit(); conn.close()
 
-def get_yevmiye(yil=None, ay=None, hesap=None, limit=500, order='DESC'):
+def get_yevmiye(yil=None, ay=None, hesap=None, limit=2000, order='DESC'):
     conn = get_conn()
     q = "SELECT * FROM yevmiye WHERE 1=1"
     params = []
     if yil:   q += " AND yil=?";              params.append(yil)
     if ay:    q += " AND ay=?";               params.append(ay)
     if hesap: q += " AND (borc_hesap=? OR alacak_hesap=?)"; params += [hesap, hesap]
-    q += f" ORDER BY tarih {order}, id {order} LIMIT {limit}"
+    q += f" ORDER BY tarih {order}, id {order}"
+    if limit:
+        q += f" LIMIT {limit}"
     rows = conn.execute(q, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]

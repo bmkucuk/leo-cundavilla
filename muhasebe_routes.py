@@ -303,7 +303,7 @@ def api_kasa():
     hareketler = []
     if hesap:
         h_kodu = BANKA_HESAP.get(hesap, hesap)
-        rows = mdb.get_yevmiye(yil, hesap=h_kodu, order='ASC')
+        rows = mdb.get_yevmiye(yil, hesap=h_kodu, order='ASC', limit=None)
         # islem_tipi ekle
         for r in rows:
             r['islem_tipi'] = r.get('islem_tipi', '')
