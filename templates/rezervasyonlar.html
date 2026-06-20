@@ -37,6 +37,7 @@
   <input type="checkbox" id="cb-aktif" style="display:none">
   <input type="checkbox" id="cb-tamamlandi" style="display:none">
   <div style="flex:1"></div>
+  <button id="secim-kaldir-btn" onclick="secimKaldirRez()" style="display:none;background:var(--card2);border:1px solid var(--accent2);color:var(--accent2);padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;margin-right:8px">✕ Seçimi Kaldır</button>
   <button class="btn btn-primary" onclick="openModal()">＋ Yeni Rezervasyon</button>
 </div>
 
@@ -461,21 +462,16 @@ if (_urlQ) { document.getElementById('search').value = _urlQ; }
 load().then(() => {
   if (_urlQ) {
     const hl = document.getElementById('hl-row');
-    if (hl) {
-      hl.scrollIntoView({behavior:'smooth', block:'center'});
-      setTimeout(() => {
-        hl.style.transition = 'background 1.5s, outline 1.5s';
-        hl.style.background = '';
-        hl.style.outline = 'none';
-      }, 3000);
-    }
-    // Arama kutusunu temizle ve URL'i sıfırla (sayfa yenilenmeden)
-    setTimeout(() => {
-      document.getElementById('search').value = '';
-      history.replaceState(null, '', '/rezervasyonlar');
-      load();
-    }, 4000);
+    if (hl) hl.scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('secim-kaldir-btn').style.display = 'inline-block';
   }
 });
+
+function secimKaldirRez(){
+  document.getElementById('search').value = '';
+  history.replaceState(null, '', '/rezervasyonlar');
+  document.getElementById('secim-kaldir-btn').style.display = 'none';
+  load();
+}
 </script>
 {% endblock %}
