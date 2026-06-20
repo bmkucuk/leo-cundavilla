@@ -21,8 +21,8 @@
 
 <div class="table-wrap">
   <table>
-    <thead><tr><th>Tarih</th><th>Ortak</th><th>Belge</th><th>Açıklama</th><th>Kategori</th><th>Tutar</th><th>Ödeme</th><th>İade</th><th>Net</th><th></th></tr></thead>
-    <tbody id="tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
+    <thead><tr><th>Tarih</th><th>Ortak</th><th>Belge</th><th>Açıklama</th><th>Kategori</th><th>Tutar</th><th>Ödeme</th><th></th></tr></thead>
+    <tbody id="tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 
@@ -56,9 +56,8 @@
       </div>
     </div>
     <div class="form-row single"><div class="form-group"><label>Açıklama</label><input type="text" id="f-aciklama"></div></div>
-    <div class="form-row">
+    <div class="form-row single">
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="f-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
-      <div class="form-group"><label>İade (₺)</label><input type="number" id="f-iade" value="0"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-default" onclick="closeModal()">İptal</button>
@@ -86,10 +85,10 @@ async function load() {
   const ortak = document.getElementById('ortak-sel').value;
   const data = await api(`/api/muhasebe/ortak?yil=${yil}&ortak=${ortak}`);
 
-  const lk = data.filter(r => r.ortak === 'LK').reduce((s, r) => s + (r.tutar||0)-(r.iade||0), 0);
-  const bt = data.filter(r => r.ortak === 'BT').reduce((s, r) => s + (r.tutar||0)-(r.iade||0), 0);
-  const fk = data.filter(r => r.ortak === 'FK').reduce((s, r) => s + (r.tutar||0)-(r.iade||0), 0);
-  const toplam = data.reduce((s, r) => s + (r.tutar||0)-(r.iade||0), 0);
+  const lk = data.filter(r => r.ortak === 'LK').reduce((s, r) => s + (r.tutar||0), 0);
+  const bt = data.filter(r => r.ortak === 'BT').reduce((s, r) => s + (r.tutar||0), 0);
+  const fk = data.filter(r => r.ortak === 'FK').reduce((s, r) => s + (r.tutar||0), 0);
+  const toplam = data.reduce((s, r) => s + (r.tutar||0), 0);
 
   document.getElementById('kartlar').innerHTML = `
     <div class="stat-card"><div class="label">LK Net Gider</div><div class="value red">${fmt(lk)}</div></div>
@@ -99,7 +98,6 @@ async function load() {
   `;
 
   document.getElementById('tbody').innerHTML = data.map(r => {
-    const net = (r.tutar||0) - (r.iade||0);
     return `<tr>
       <td>${r.tarih}</td>
       <td><strong>${r.ortak}</strong></td>
@@ -108,8 +106,6 @@ async function load() {
       <td>${r.gider_kategori||'—'}</td>
       <td class="red" style="text-align:right">${fmt(r.tutar)}</td>
       <td>${r.odeme_sekli||'—'}</td>
-      <td class="green" style="text-align:right">${r.iade > 0 ? fmt(r.iade) : '—'}</td>
-      <td class="yellow" style="text-align:right">${fmt(net)}</td>
       <td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="sil(${r.id})">Sil</button></td>
     </tr>`;
   });
@@ -134,7 +130,6 @@ function openModal() {
   document.getElementById('f-belge').value = '';
   document.getElementById('f-aciklama').value = '';
   document.getElementById('f-tutar').value = 0;
-  document.getElementById('f-iade').value = 0;
   document.getElementById('f-kat').value = 'Tamir/Bakım';
   document.getElementById('f-odeme').value = 'Nakit (Kasa)';
   onIslemChange();
@@ -151,7 +146,6 @@ async function save() {
     aciklama: document.getElementById('f-aciklama').value,
     gider_kategori: isGeri ? '' : document.getElementById('f-kat').value,
     tutar: parseFloat(document.getElementById('f-tutar').value)||0,
-    iade: parseFloat(document.getElementById('f-iade').value)||0,
     odeme_sekli: isGeri ? document.getElementById('f-odeme').value : '',
     islem_tipi: document.getElementById('f-islem-tipi').value,
   };
@@ -182,7 +176,6 @@ async function duzenle(id) {
   document.getElementById('f-kat').value = r.gider_kategori || 'Tamir/Bakım';
   document.getElementById('f-odeme').value = r.odeme_sekli || 'Nakit (Kasa)';
   document.getElementById('f-tutar').value = r.tutar || 0;
-  document.getElementById('f-iade').value = r.iade || 0;
   document.getElementById('modal').classList.add('open');
 }
 
