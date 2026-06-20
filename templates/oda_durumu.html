@@ -10,7 +10,7 @@
 .oda-nav button{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
 .oda-nav button:hover{border-color:var(--accent);color:var(--accent)}
 .oda-nav button.today-btn{background:linear-gradient(150deg,#ffc24d,#f0a52e);color:#1a1206;font-weight:700;border:none}
-.oda-nav .period{flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--text);letter-spacing:-.2px}
+.oda-nav .period{flex:1;text-align:center;font-weight:800;font-size:17px;color:var(--accent);letter-spacing:-.2px}
 .hotel-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);padding:5px 12px;border-radius:20px}
 .hotel-pill .dot{width:8px;height:8px;border-radius:50%}
 .legend{display:flex;gap:14px;margin-bottom:14px;font-size:12.5px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px}
@@ -186,8 +186,8 @@ function render(d){
   const first=new Date(dates[0]+'T00:00:00');
   const last=new Date(dates[dates.length-1]+'T00:00:00');
   document.getElementById('period-lbl').textContent=
-    first.toLocaleDateString('tr-TR',{day:'numeric',month:'short'})+' – '+
-    last.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'});
+    first.toLocaleDateString('tr-TR',{day:'numeric',month:'long'})+' – '+
+    last.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
 
   const dayNames=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
 
