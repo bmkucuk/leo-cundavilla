@@ -21,8 +21,8 @@
 
 <div class="table-wrap">
   <table>
-    <thead><tr><th>Tarih</th><th>Ortak</th><th>Belge</th><th>Açıklama</th><th>Kategori</th><th>Tutar</th><th>Ödeme</th><th>İade</th><th>Net</th><th>Otel</th><th></th></tr></thead>
-    <tbody id="tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr></tbody>
+    <thead><tr><th>Tarih</th><th>Ortak</th><th>Belge</th><th>Açıklama</th><th>Kategori</th><th>Tutar</th><th>Ödeme</th><th>İade</th><th>Net</th><th></th></tr></thead>
+    <tbody id="tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 
@@ -60,7 +60,6 @@
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="f-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
       <div class="form-group"><label>İade (₺)</label><input type="number" id="f-iade" value="0"></div>
     </div>
-    <div class="form-row single"><div class="form-group"><label>Otel</label><select id="f-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div></div>
     <div class="modal-footer">
       <button class="btn btn-default" onclick="closeModal()">İptal</button>
       <button class="btn btn-primary" onclick="save()">💾 Kaydet</button>
@@ -111,7 +110,6 @@ async function load() {
       <td>${r.odeme_sekli||'—'}</td>
       <td class="green" style="text-align:right">${r.iade > 0 ? fmt(r.iade) : '—'}</td>
       <td class="yellow" style="text-align:right">${fmt(net)}</td>
-      <td>${r.otel||''}</td>
       <td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="sil(${r.id})">Sil</button></td>
     </tr>`;
   });
@@ -139,7 +137,6 @@ function openModal() {
   document.getElementById('f-iade').value = 0;
   document.getElementById('f-kat').value = 'Tamir/Bakım';
   document.getElementById('f-odeme').value = 'Nakit (Kasa)';
-  document.getElementById('f-otel').value = 'GENEL';
   onIslemChange();
   document.getElementById('modal').classList.add('open');
 }
@@ -156,7 +153,6 @@ async function save() {
     tutar: parseFloat(document.getElementById('f-tutar').value)||0,
     iade: parseFloat(document.getElementById('f-iade').value)||0,
     odeme_sekli: isGeri ? document.getElementById('f-odeme').value : '',
-    otel: document.getElementById('f-otel').value,
     islem_tipi: document.getElementById('f-islem-tipi').value,
   };
   if (!validateForm([
@@ -187,7 +183,6 @@ async function duzenle(id) {
   document.getElementById('f-odeme').value = r.odeme_sekli || 'Nakit (Kasa)';
   document.getElementById('f-tutar').value = r.tutar || 0;
   document.getElementById('f-iade').value = r.iade || 0;
-  document.getElementById('f-otel').value = r.otel || 'GENEL';
   document.getElementById('modal').classList.add('open');
 }
 
