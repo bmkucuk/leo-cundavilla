@@ -392,12 +392,9 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
     const labelEl = Array.from(gridEl.querySelectorAll('.oda-label')).find(el => el.textContent.replace(/\s+/g,' ').trim().includes(`${otel==='LEO'?'LEO':'CV'} – ${odaNo}`));
     if(labelEl) labelEl.classList.add('selected');
 
-    // Satırı dikeyde TEK seferde ortala (iki ayrı scrollTo çağrısı birbirini iptal ediyordu)
-    const gridWrap = document.getElementById('grid-wrap');
-    const wrapRect = gridWrap.getBoundingClientRect();
-    const targetTop  = Math.max(gridWrap.scrollTop + (fRect.top - wrapRect.top) - (wrapRect.height/2) + (fRect.height/2), 0);
-    const targetLeft = Math.max(gridWrap.scrollLeft + (fRect.left - wrapRect.left) - (wrapRect.width/2) + (fRect.width/2), 0);
-    gridWrap.scrollTo({top: targetTop, left: targetLeft, behavior:'smooth'});
+    // Satırı dikeyde ve yatayda ortala — tarayıcının native scrollIntoView'ı, iç içe
+    // scroll konteynerlerini ve gerçek yükseklikleri elle hesaplamaktan çok daha güvenilir
+    firstCell.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
   });
 
   toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
