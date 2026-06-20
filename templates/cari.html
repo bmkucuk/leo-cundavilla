@@ -42,19 +42,20 @@
     <div style="flex:1"></div>
     <button id="btn-secim-kaldir" class="btn btn-default" style="font-size:11px;padding:4px 10px;display:none" onclick="secimKaldir()">✕ Seçimi Kaldır</button>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;background:var(--header);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px">
-    <div style="flex:1;display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:9px 14px">
-      <span style="color:var(--text2);font-size:14px">⊙</span>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;max-width:340px">
+      <span style="color:var(--text2);font-size:13px">⊙</span>
       <input type="text" id="cari-search" placeholder="Misafir, föy no, oda ara..."
-        style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px"
+        style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px;min-width:0"
         oninput="filterCari()">
     </div>
-    <label id="btn-acik-hesap" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text2);white-space:nowrap;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:9px 16px;user-select:none">
+    <label id="btn-acik-hesap" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:7px 13px;user-select:none">
       <input type="checkbox" id="cb-cari-aktif" onchange="filterCari()" style="display:none">
-      <span id="acik-hesap-dot" style="width:8px;height:8px;border-radius:50%;background:var(--border);flex:none"></span>
+      <span id="acik-hesap-dot" style="width:7px;height:7px;border-radius:50%;background:var(--border);flex:none"></span>
       Sadece açık hesaplar
     </label>
-    <div id="cari-count" style="font-size:12.5px;color:var(--text2);white-space:nowrap;padding:0 4px">— föy</div>
+    <div style="flex:1"></div>
+    <div id="cari-count" style="font-size:12px;color:var(--text2);white-space:nowrap;padding:0 4px">— föy</div>
   </div>
   <div class="table-wrap" style="max-height:480px;overflow-y:auto">
     <table>
@@ -212,6 +213,7 @@ async function load() {
   allData = d.rezervasyonlar;
   ozetData = d.ozet;
   filterCari();
+  if (selFoy) {
     await loadDokum(selFoy);
     updateCards();
   } else updateCards();
