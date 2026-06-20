@@ -13,7 +13,7 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Ad Soyad</th><th>Görev</th><th style="text-align:right">Net Maaş</th><th>İşe Giriş</th><th>Telefon</th><th>TC Kimlik</th><th>IBAN</th><th style="text-align:right">Bu Ay Avans</th><th>Durum</th><th></th></tr></thead>
+      <thead><tr><th>Ad Soyad</th><th>Görev</th><th style="text-align:right">Net Maaş</th><th>İşe Giriş</th><th>Telefon</th><th>TC Kimlik</th><th>IBAN</th><th style="text-align:right">Kalan Avans</th><th>Durum</th><th></th></tr></thead>
       <tbody id="pers-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
@@ -150,7 +150,7 @@
       <div id="m-hesap-detay" style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.8"></div>
       <div id="m-avans-panel" style="display:none;margin-top:8px">
         <div class="form-row">
-          <div class="form-group"><label>Avans Düşümü (₺)</label><input type="number" id="m-avans-goster" value="0" readonly style="background:var(--card2);color:var(--accent3);font-weight:700"></div>
+          <div class="form-group"><label>Avans Düşümü (₺)</label><input type="number" id="m-avans-goster" value="0" min="0" oninput="calcToplamOdeme()" style="color:var(--accent3);font-weight:700"></div>
           <div class="form-group"><label>Ödenecek Net (₺)</label><input type="number" id="m-odenecek" value="0" readonly style="background:var(--card2);color:var(--accent);font-weight:700;font-size:15px"></div>
         </div>
       </div>
@@ -189,6 +189,7 @@ function onPersChange() {
   const pers = persListesi.find(p => p.id === persId);
   if (pers) document.getElementById('m-aylik').value = pers.net_maas || 0;
   calcMaas();
+  loadAvanslar();
 }
 
 function calcMaas() {
@@ -227,7 +228,7 @@ function calcMaas() {
 
   document.getElementById('m-hesap-detay').textContent = detay;
   document.getElementById('m-net').value = netMaas;
-  loadAvanslar();
+  calcToplamOdeme();
 }
 
 function calcToplamOdeme() {
@@ -235,7 +236,7 @@ function calcToplamOdeme() {
   const yol = parseFloat(document.getElementById('m-yol').value) || 0;
   const mesai = parseFloat(document.getElementById('m-mesai').value) || 0;
   const izin = parseFloat(document.getElementById('m-izin').value) || 0;
-  const avans = parseFloat(document.getElementById('m-avans-tutar')?.value || 0);
+  const avans = parseFloat(document.getElementById('m-avans-goster')?.value || 0);
   const araToplam = net + yol + mesai + izin;
   const odenecek = araToplam - avans;
   document.getElementById('m-toplam').value = odenecek;
@@ -245,28 +246,18 @@ function calcToplamOdeme() {
 
 async function loadAvanslar() {
   const persId = parseInt(document.getElementById('m-pers').value);
-  const yil = parseInt(document.getElementById('m-yil').value);
-  const ay = parseInt(document.getElementById('m-ay').value);
-  if (!persId || !yil || !ay) { calcToplamOdeme(); return; }
-  const data = await api(`/api/muhasebe/avans?personel_id=${persId}&yil=${yil}&ay=${ay}`);
+  if (!persId) { calcToplamOdeme(); return; }
+  // Personelin GUNCEL kalan (kapanmamis) avans bakiyesini cek - hangi ay verildigine bakilmaksizin
+  const guncelListe = await api('/api/muhasebe/personel');
+  const pers = guncelListe.find(p => p.id === persId);
+  const bakiye = Math.max(0, pers ? (pers.kalan_avans || 0) : 0);
   const panel = document.getElementById('m-avans-panel');
 
-  if (!document.getElementById('m-avans-tutar')) {
-    const inp = document.createElement('input');
-    inp.type = 'hidden'; inp.id = 'm-avans-tutar'; inp.value = 0;
-    document.getElementById('maas-modal').appendChild(inp);
-  }
-
-  if (data.length > 0) {
-    const toplam = data.reduce((s, a) => s + a.tutar, 0);
+  if (bakiye > 0) {
     panel.style.display = '';
-    document.getElementById('m-avans-goster').value = toplam;
-    document.getElementById('m-avans-tutar').value = toplam;
-    _avans_toplam = toplam;
+    document.getElementById('m-avans-goster').value = bakiye;
   } else {
     panel.style.display = 'none';
-    document.getElementById('m-avans-tutar').value = 0;
-    _avans_toplam = 0;
   }
   calcToplamOdeme();
 }
@@ -287,13 +278,6 @@ let personelList = [];
 
 async function loadPersonel() {
   personelList = await api('/api/muhasebe/personel');
-  // Bu ayki avansları çek
-  const bugun = new Date();
-  const avanslar = await api(`/api/muhasebe/avans?yil=${bugun.getFullYear()}&ay=${bugun.getMonth()+1}`);
-  personelList = personelList.map(p => ({
-    ...p,
-    bu_ay_avans: avanslar.filter(a => parseInt(a.personel_id) === parseInt(p.id)).reduce((s, a) => s + a.tutar, 0)
-  }));
   document.getElementById('pers-tbody').innerHTML = personelList.map(p => `
     <tr>
       <td><strong>${p.ad_soyad}</strong></td>
@@ -303,7 +287,7 @@ async function loadPersonel() {
       <td>${p.telefon||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.tc_kimlik||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.banka_iban||'—'}</td>
-      <td style="text-align:right;color:var(--accent3);font-weight:600">${p.bu_ay_avans>0?p.bu_ay_avans.toLocaleString('tr-TR')+' ₺':'—'}</td>
+      <td style="text-align:right;color:var(--accent3);font-weight:600">${(p.kalan_avans||0)>0?fmt(p.kalan_avans)+' ₺':'—'}</td>
       <td>${p.aktif ? '<span class="green">✅ Aktif</span>' : '<span class="red">❌ Pasif</span>'}</td>
       <td style="white-space:nowrap">
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenlePersonel(${p.id})">Düzenle</button>
@@ -428,9 +412,7 @@ async function openMaasModal() {
   document.getElementById('m-net').value = 0;
   document.getElementById('m-toplam').value = 0;
   document.getElementById('m-hesap-detay').textContent = '';
-  // avans-tutar sıfırla
-  const avTutar = document.getElementById('m-avans-tutar');
-  if (avTutar) avTutar.value = 0;
+  document.getElementById('m-avans-goster').value = 0;
   document.getElementById('m-avans-panel').style.display = 'none';
   // Tarih ve dönem
   const bugun = new Date();
@@ -438,6 +420,7 @@ async function openMaasModal() {
   document.getElementById('m-yil').value = bugun.getFullYear();
   document.getElementById('m-ay').value = bugun.getMonth() + 1;
   calcMaas();
+  loadAvanslar();
   document.getElementById('maas-modal').classList.add('open');
 }
 function closeMaasModal() { document.getElementById('maas-modal').classList.remove('open'); }
@@ -446,7 +429,6 @@ function closeMaasModal() { document.getElementById('maas-modal').classList.remo
 let avansPersonelId = null;
 let avansPersonelAd = '';
 let editAvansId = null;
-let _avans_toplam = 0;
 let avansListeData = [];
 
 // Modal yığını: bir modali gecici olarak gizleyip ustune baska bir modal
@@ -594,7 +576,14 @@ async function duzenle(id) {
   document.getElementById('m-izin').value = r.izin_parasi || 0;
   document.getElementById('m-gelmedi').value = r.gelmedi_gun || 0;
   document.getElementById('m-net').value = r.net_odeme || 0;
-  document.getElementById('m-toplam').value = (r.net_odeme||0)+(r.yol_parasi||0)+(r.fazla_mesai||0)+(r.izin_parasi||0);
+  if ((r.avans_dusum || 0) > 0) {
+    document.getElementById('m-avans-panel').style.display = '';
+    document.getElementById('m-avans-goster').value = r.avans_dusum;
+  } else {
+    document.getElementById('m-avans-panel').style.display = 'none';
+    document.getElementById('m-avans-goster').value = 0;
+  }
+  document.getElementById('m-toplam').value = (r.net_odeme||0)+(r.yol_parasi||0)+(r.fazla_mesai||0)+(r.izin_parasi||0)-(r.avans_dusum||0);
   document.getElementById('m-hesap-detay').textContent = '';
   document.getElementById('maas-modal').classList.add('open');
 }
@@ -606,7 +595,7 @@ async function saveMaas() {
     donem_yil: parseInt(document.getElementById('m-yil').value),
     donem_ay: parseInt(document.getElementById('m-ay').value),
     net_odeme:  parseFloat(document.getElementById('m-net').value)||0,
-    avans_dusum: _avans_toplam || parseFloat(document.getElementById('m-avans-tutar')?.value||0),
+    avans_dusum: parseFloat(document.getElementById('m-avans-goster')?.value || 0),
     yol_parasi: parseFloat(document.getElementById('m-yol').value)||0,
     fazla_mesai: parseFloat(document.getElementById('m-mesai').value)||0,
     izin_parasi: parseFloat(document.getElementById('m-izin').value)||0,

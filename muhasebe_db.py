@@ -336,9 +336,16 @@ def get_personel(sadece_aktif=True):
     q = "SELECT * FROM personel"
     if sadece_aktif: q += " WHERE aktif=1"
     q += " ORDER BY ad_soyad"
-    rows = conn.execute(q).fetchall()
+    rows = [dict(r) for r in conn.execute(q).fetchall()]
+    # Kalan (kapanmamış) avans bakiyesi: verilen avans toplamı - maaştan o ana kadar düşülen toplam
+    verilen = {r['personel_id']: r['t'] for r in conn.execute(
+        "SELECT personel_id, COALESCE(SUM(tutar),0) as t FROM personel_avans GROUP BY personel_id")}
+    dusulen = {r['personel_id']: r['t'] for r in conn.execute(
+        "SELECT personel_id, COALESCE(SUM(avans_dusum),0) as t FROM personel_maas GROUP BY personel_id")}
+    for r in rows:
+        r['kalan_avans'] = round((verilen.get(r['id'], 0) or 0) - (dusulen.get(r['id'], 0) or 0), 2)
     conn.close()
-    return [dict(r) for r in rows]
+    return rows
 
 def ekle_yevmiye(tarih, belge_no, islem_tipi, borc, alacak, tutar,
                   aciklama="", otel="GENEL", fatura_no="", kaynak_tablo=None, kaynak_id=None):
