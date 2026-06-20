@@ -358,26 +358,19 @@ let hareketler = [];
 
 function fmtSign(n) { return (n>0?'+':'') + fmt(n); }
 
-function renderHareketler() {
-  const wrap = document.getElementById('kf-hareketler');
-  let run = 0;
-  let totBorc = 0, totAlacak = 0;
-  wrap.innerHTML = hareketler.map(h => {
+function recomputeBakiye() {
+  let run = 0, totBorc = 0, totAlacak = 0;
+  hareketler.forEach(h => {
     const borc = parseFloat(h.borc) || 0;
     const alacak = parseFloat(h.alacak) || 0;
     run += borc - alacak;
     totBorc += borc; totAlacak += alacak;
-    const renk = run > 0 ? 'var(--accent3)' : (run < 0 ? 'var(--pos)' : 'var(--text2)');
-    return `
-      <div class="kf-hareket-row" data-id="${h.id}">
-        <input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)">
-        <input placeholder="Açıklama girin…" value="${h.aciklama||''}" oninput="updHareket(${h.id},'aciklama',this.value)">
-        <input class="borc-in" placeholder="0" value="${h.borc||''}" oninput="updHareket(${h.id},'borc',this.value)">
-        <input class="alacak-in" placeholder="0" value="${h.alacak||''}" oninput="updHareket(${h.id},'alacak',this.value)">
-        <div class="bakiye-out" style="color:${renk}">${fmtSign(run)}</div>
-        <div class="kf-hareket-del" onclick="delHareket(${h.id})">×</div>
-      </div>`;
-  }).join('');
+    const el = document.querySelector(`.kf-hareket-row[data-id="${h.id}"] .bakiye-out`);
+    if (el) {
+      el.textContent = fmtSign(run);
+      el.style.color = run > 0 ? 'var(--accent3)' : (run < 0 ? 'var(--pos)' : 'var(--text2)');
+    }
+  });
   document.getElementById('kf-h-borc').textContent = fmt(totBorc);
   document.getElementById('kf-h-alacak').textContent = fmt(totAlacak);
   const net = totBorc - totAlacak;
@@ -385,13 +378,31 @@ function renderHareketler() {
   netEl.textContent = fmtSign(net);
   netEl.style.color = net > 0 ? 'var(--accent3)' : (net < 0 ? 'var(--pos)' : 'var(--text2)');
 }
+
+function renderHareketler() {
+  const wrap = document.getElementById('kf-hareketler');
+  wrap.innerHTML = hareketler.map(h => `
+      <div class="kf-hareket-row" data-id="${h.id}">
+        <input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)">
+        <input placeholder="Açıklama girin…" value="${h.aciklama||''}" oninput="updHareket(${h.id},'aciklama',this.value)">
+        <input class="borc-in" placeholder="0" value="${h.borc||''}" oninput="updHareket(${h.id},'borc',this.value)">
+        <input class="alacak-in" placeholder="0" value="${h.alacak||''}" oninput="updHareket(${h.id},'alacak',this.value)">
+        <div class="bakiye-out">0 ₺</div>
+        <div class="kf-hareket-del" onclick="delHareket(${h.id})">×</div>
+      </div>`).join('');
+  recomputeBakiye();
+}
 function addHareket(prefill) {
   hareketler.push(Object.assign({id: hareketId++, tarih:'', aciklama:'', borc:'', alacak:''}, prefill||{}));
   renderHareketler();
 }
 function updHareket(id, field, val) {
   const h = hareketler.find(x=>x.id===id);
-  if (h) { h[field] = val; renderHareketler(); }
+  if (!h) return;
+  h[field] = val;
+  // Satır/sütun yapısını yeniden kurmadan sadece bakiyeleri güncelle —
+  // boylece yazarken input focus'u kaybolmaz (her tusta 'tek harf' sorunu).
+  recomputeBakiye();
 }
 function delHareket(id) { hareketler = hareketler.filter(x=>x.id!==id); renderHareketler(); }
 function resetHareketler() {
