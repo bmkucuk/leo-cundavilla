@@ -61,10 +61,10 @@
 .cell{height:34px;border-radius:7px;border:1px solid var(--border)}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
-.cell.ms-highlight{background:rgba(67,198,255,.16);border-top:2px solid var(--accent2);border-bottom:2px solid var(--accent2);border-radius:0;animation:pulse-hl 1.1s ease-in-out 4}
-.cell.ms-highlight.ms-hl-first{border-left:2px solid var(--accent2);border-top-left-radius:7px;border-bottom-left-radius:7px}
-.cell.ms-highlight.ms-hl-last{border-right:2px solid var(--accent2);border-top-right-radius:7px;border-bottom-right-radius:7px}
-@keyframes pulse-hl{0%,100%{border-color:var(--accent2);background:rgba(67,198,255,.16)}50%{border-color:var(--accent);background:rgba(67,198,255,.3)}}
+.ms-highlight-box{border:2.5px dashed var(--accent2);border-radius:9px;
+  background:rgba(67,198,255,.10);pointer-events:none;align-self:stretch;justify-self:stretch;
+  animation:pulse-hl 1.2s ease-in-out 5}
+@keyframes pulse-hl{0%,100%{border-color:var(--accent2);background:rgba(67,198,255,.10)}50%{border-color:var(--accent);background:rgba(67,198,255,.24)}}
 
 /* Rezervasyon çubuğu: birden çok güne yayılan tek parça yuvarlatılmış bar */
 .bar{height:34px;border-radius:9px;display:flex;align-items:center;padding:0 10px;
@@ -299,27 +299,28 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
     startDate = new Date(girisStr+'T00:00:00');
     await load();
   }
-  document.querySelectorAll('.ms-highlight').forEach(el=>el.classList.remove('ms-highlight','ms-hl-first','ms-hl-last'));
-
-  const roomKey = `${otel}-${odaNo}`;
-  const cells = Array.from(document.querySelectorAll(`[data-room="${CSS.escape(roomKey)}"]`))
-    .filter(el => el.dataset.date >= girisStr && el.dataset.date < cikisStr)
-    .sort((a,b)=> a.dataset.date < b.dataset.date ? -1 : 1);
-
-  if(!cells.length){
-    toast('Bu oda görünür takvim penceresinde değil', 'error');
+  const startIdx = lastDates.indexOf(girisStr);
+  let endIdx = lastDates.indexOf(cikisStr);
+  if(endIdx === -1) endIdx = lastDates.length; // çıkış pencerenin dışındaysa, pencere sonuna kadar
+  if(startIdx === -1){
+    toast('Bu tarih aralığı görünür takvim penceresinde değil', 'error');
     return;
   }
-  cells[0].scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
-  cells.forEach((el,idx)=>{
-    el.classList.add('ms-highlight');
-    if(idx===0) el.classList.add('ms-hl-first');
-    if(idx===cells.length-1) el.classList.add('ms-hl-last');
-  });
-  toast(`${roomKey.replace('-',' ')} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} işaretlendi`);
-  setTimeout(()=>{
-    document.querySelectorAll('.ms-highlight').forEach(el=>el.classList.remove('ms-highlight','ms-hl-first','ms-hl-last'));
-  }, 5000);
+  const span = endIdx - startIdx;
+
+  const gridEl = document.getElementById('oda-grid');
+  const old = gridEl.querySelector('.ms-highlight-box');
+  if(old) old.remove();
+
+  const box = document.createElement('div');
+  box.className = 'ms-highlight-box';
+  box.style.gridColumn = `${startIdx+2} / span ${span}`;
+  box.style.gridRow = '1 / -1';
+  gridEl.appendChild(box);
+
+  box.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+  toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
+  setTimeout(()=>box.remove(), 6000);
 }
 
 // Varsayılan tarihleri bugün/yarın yap
