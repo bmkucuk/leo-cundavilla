@@ -199,7 +199,7 @@
     <div class="kf-grid c3" style="margin-top:16px">
       <div class="kf-field">
         <label>Kapora (₺)</label>
-        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
+        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
       </div>
       <div class="kf-field">
         <label>Kapora Tarihi</label>
@@ -410,6 +410,25 @@ function resetHareketler() {
   for (let i=0;i<15;i++) addHareket();
 }
 
+function updateRezBedeliRow() {
+  if (!hareketler.length) return;
+  const giris = document.getElementById('kf-giris').value;
+  const cikis = document.getElementById('kf-cikis').value;
+  const gunFiyat = parseFloat(document.getElementById('kf-gunfiyat').value) || 0;
+  const kapora = parseFloat(document.getElementById('kf-kapora').value) || 0;
+  let gun = 0;
+  if (giris && cikis) gun = Math.max(0, Math.round((new Date(cikis)-new Date(giris))/86400000));
+  const toplam = gun * gunFiyat;
+  const kalan = Math.max(0, toplam - kapora);
+
+  const row = hareketler[0];
+  row.tarih = giris || '';
+  row.aciklama = 'Rez Bedeli';
+  row.borc = kalan > 0 ? String(kalan) : '';
+  row.alacak = '';
+  renderHareketler();
+}
+
 function recalc() {
   const giris = document.getElementById('kf-giris').value;
   const cikis = document.getElementById('kf-cikis').value;
@@ -418,6 +437,7 @@ function recalc() {
   if (giris && cikis) gun = Math.max(0, Math.round((new Date(cikis)-new Date(giris))/86400000));
   document.getElementById('kf-gun').textContent = gun;
   document.getElementById('kf-toplam').textContent = fmt(gun*gunFiyat);
+  updateRezBedeliRow();
 }
 
 function autoSetCikis() {
