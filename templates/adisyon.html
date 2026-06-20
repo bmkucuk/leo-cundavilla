@@ -169,7 +169,7 @@ async function load() {
 
 function renderStats(){
   const toplam = allAdisyonlar.reduce((s,a)=>s+(a.tutar||0),0);
-  const acik   = allAdisyonlar.filter(a=>a.odendi!==1).reduce((s,a)=>s+(a.tutar||0),0);
+  const acik   = allAdisyonlar.reduce((s,a)=>s+Math.max(0,(a.tutar||0)-(a.odenen_tutar||0)),0);
   const bugun  = allAdisyonlar.filter(a=>a.tarih===today).reduce((s,a)=>s+(a.tutar||0),0);
   document.getElementById('st-kayit').textContent  = allAdisyonlar.length;
   document.getElementById('st-toplam').textContent = fmt(toplam);
@@ -212,13 +212,17 @@ function renderTable() {
     const otel = (a.oda_no||0) > 10 ? 'LEO' : 'CV';
     const avBg = otel==='LEO' ? 'rgba(84,182,255,.15)' : 'rgba(61,220,132,.15)';
     const avC  = otel==='LEO' ? 'var(--leo)' : 'var(--cv)';
-    const durumHtml = a.odendi===1
-      ? '<span class="adis-durum-pill" style="background:rgba(47,221,155,.15);color:var(--pos)">Ödendi</span>'
-      : '<span class="adis-durum-pill" style="background:rgba(255,111,125,.15);color:var(--accent3)">Açık</span>';
-    const islemHtml = a.odendi===1
-      ? ''
-      : `<button class="adis-ibtn" style="background:var(--card2);color:var(--text2);border:1px solid var(--border)" onclick='openEdit(${JSON.stringify(a)})'>Düzenle</button>
-         <button class="adis-ibtn" style="background:rgba(255,111,125,.12);color:var(--accent3);border:1px solid rgba(255,111,125,.3)" onclick="delAdisyon(${a.adisyon_no},${a.tutar})">🗑</button>`;
+    const odendi = a.odendi === 1;
+    const odenenTutar = a.odenen_tutar || 0;
+    const kismi = !odendi && odenenTutar > 0;
+    const durumHtml = odendi
+      ? '<span class="adis-durum-pill" style="background:rgba(47,221,155,.22);color:var(--pos)">Ödendi</span>'
+      : kismi
+      ? '<span class="adis-durum-pill" style="background:rgba(255,210,63,.22);color:var(--accent4)">Kısmi</span>'
+      : '<span class="adis-durum-pill" style="background:rgba(255,111,125,.22);color:var(--accent3)">Açık</span>';
+    const islemHtml =
+        `<button class="adis-ibtn" style="background:var(--card2);color:var(--text2);border:1px solid var(--border)" onclick='openEdit(${JSON.stringify(a)})'>Düzenle</button>
+         <button class="adis-ibtn" style="background:rgba(255,111,125,.22);color:var(--accent3);border:1px solid rgba(255,111,125,.4)" onclick="delAdisyon(${a.adisyon_no},${a.tutar})">🗑</button>`;
     return `<tr>
       <td style="font-family:'Geist Mono',monospace;color:var(--accent);font-weight:600">#${a.adisyon_no}</td>
       <td>
