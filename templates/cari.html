@@ -247,7 +247,7 @@ function renderCari(data) {
       <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:700;color:${kalan>0?'var(--accent3)':'var(--pos)'}">${kalan>0?fmt(kalan):'Temiz'}</td>
       <td style="text-align:center"><span style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${durumBg};color:${durumC}">${durum}</span></td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-default" style="padding:5px 13px;font-size:11.5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
+        <button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
         ${kalan>0 ? `<button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;margin-left:5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">Ödeme Al</button>` : ''}
       </td>
     </tr>`;
