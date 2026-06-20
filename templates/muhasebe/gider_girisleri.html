@@ -28,7 +28,7 @@
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="s-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Ödeme Hesabı</label><select id="s-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option></select></div>
+      <div class="form-group"><label>Ödeme Hesabı</label><select id="s-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option><option value="500-FK">Fırat Nakit</option><option value="500-FK">Fırat KK</option><option value="500-LK">Levent Nakit</option><option value="500-LK">Levent KK</option><option value="500-BC">Burçin Nakit</option><option value="500-BC">Burçin KK</option></select></div>
       <div class="form-group"><label>Otel</label><select id="s-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
     </div>
     <div class="form-row">
@@ -81,7 +81,7 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Durum</label><select id="v-durum"><option>Bekliyor</option><option>Ödendi</option></select></div>
-      <div class="form-group"><label>Ödeme Bankası</label><select id="v-banka"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option></select></div>
+      <div class="form-group"><label>Ödeme Bankası</label><select id="v-banka"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option><option value="500-FK">Fırat Nakit</option><option value="500-FK">Fırat KK</option><option value="500-LK">Levent Nakit</option><option value="500-LK">Levent KK</option><option value="500-BC">Burçin Nakit</option><option value="500-BC">Burçin KK</option></select></div>
     </div>
     <div class="form-row single"><div class="form-group"><label>Açıklama</label><input type="text" id="v-aciklama"></div></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
@@ -129,7 +129,7 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Toplam (₺)</label><input type="number" id="d-toplam" value="0" readonly style="background:var(--bg);color:var(--accent2);font-weight:700"></div>
-      <div class="form-group"><label>Ödeme Hesabı</label><select id="d-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option></select></div>
+      <div class="form-group"><label>Ödeme Hesabı</label><select id="d-hesap"><option value="100">Nakit (Kasa)</option><option value="102-1">İş Bankası</option><option value="102-2">Ziraat Bankası</option><option value="102-3">Deniz Bank</option><option value="500-FK">Fırat Nakit</option><option value="500-FK">Fırat KK</option><option value="500-LK">Levent Nakit</option><option value="500-LK">Levent KK</option><option value="500-BC">Burçin Nakit</option><option value="500-BC">Burçin KK</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Otel</label><select id="d-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
@@ -284,7 +284,7 @@ async function loadStok() {
   document.getElementById('stok-tbody').innerHTML = data.map(r => `<tr>
     <td>${r.tarih}</td><td>${r.aciklama}</td><td>${r.kategori||'—'}</td>
     <td class="red" style="text-align:right">${fmt(r.tutar)}</td>
-    <td>${r.odeme_hesap==='100'?'Nakit':r.odeme_hesap==='102-1'?'İş Bankası':r.odeme_hesap==='102-2'?'Ziraat':r.odeme_hesap==='102-3'?'Deniz Bank':r.odeme_hesap||'—'}</td>
+    <td>${({'100':'Nakit','102-1':'İş Bankası','102-2':'Ziraat','102-3':'Deniz Bank','500-FK':'Fırat (Kendi)','500-LK':'Levent (Kendi)','500-BC':'Burçin (Kendi)'})[r.odeme_hesap] || r.odeme_hesap || '—'}</td>
     <td>${r.fatura_var?'✅':'❌'}</td><td>${r.otel||''}</td><td>${r.not_||'—'}</td>
     <td style="white-space:nowrap">
       <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="editStok(${r.id})">Düzenle</button>
@@ -478,7 +478,7 @@ async function loadDem() {
     <td style="text-align:right">${r.miktar||1}</td>
     <td style="text-align:right">${fmt(r.birim_fiyat)}</td>
     <td class="red" style="text-align:right">${fmt(r.toplam)}</td>
-    <td>${r.odeme_hesap==='100'?'Nakit':r.odeme_hesap==='102-1'?'İş Bankası':r.odeme_hesap==='102-2'?'Ziraat':r.odeme_hesap==='102-3'?'Deniz Bank':r.odeme_hesap||'—'}</td>
+    <td>${({'100':'Nakit','102-1':'İş Bankası','102-2':'Ziraat','102-3':'Deniz Bank','500-FK':'Fırat (Kendi)','500-LK':'Levent (Kendi)','500-BC':'Burçin (Kendi)'})[r.odeme_hesap] || r.odeme_hesap || '—'}</td>
     <td>${r.fatura_no||'—'}</td><td>${r.otel||'—'}</td><td>${r.not_||'—'}</td>
     <td style="white-space:nowrap">
       <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="editDem(${r.id})">Düzenle</button>

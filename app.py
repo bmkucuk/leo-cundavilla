@@ -538,11 +538,17 @@ def acente_cari_oto_kaydet(data):
             "SELECT id FROM acente_cari WHERE foy_no=?", (foy_no,)
         ).fetchone()
         if existing:
+            # Komisyon oranını (güncel) acenteler tablosundan al, tutarı yeni fiyata göre yeniden hesapla
+            a = conn.execute(
+                "SELECT komisyon_orani FROM acenteler WHERE kod=?", (acente_kod,)
+            ).fetchone()
+            oran = float(a['komisyon_orani']) if a else 0.0
+            kom = round(toplam * oran / 100, 2)
             conn.execute("""
                 UPDATE acente_cari
-                SET acente_kod=?, misafir=?, rez_tutari=?, otel=?, tarih=?
+                SET acente_kod=?, misafir=?, rez_tutari=?, otel=?, tarih=?, komisyon_oran=?, komisyon_tl=?
                 WHERE foy_no=?
-            """, (acente_kod, musteri, toplam, otel, tarih, foy_no))
+            """, (acente_kod, musteri, toplam, otel, tarih, oran, kom, foy_no))
         else:
             # Komisyon oranını acenteler tablosundan çek
             a = conn.execute(

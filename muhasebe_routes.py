@@ -127,6 +127,7 @@ def api_gosterge():
     dem   = mizan.get('demirbaş', 0)
     ortak_lk = mizan.get('ortak_lk', 0) or 0
     ortak_bt = mizan.get('ortak_bt', 0) or 0
+    ortak_fk = mizan.get('ortak_fk', 0) or 0
 
     # Acente komisyon toplamı
     _ac = mdb.get_conn()
@@ -136,7 +137,7 @@ def api_gosterge():
     _ac.close()
 
     toplam_gelir = leo_kon + cv_kon + restoran
-    toplam_gider = maas + stok + vergi + acente_kom + ortak_lk + ortak_bt + dem
+    toplam_gider = maas + stok + vergi + acente_kom + ortak_lk + ortak_bt + ortak_fk + dem
     net = toplam_gelir - toplam_gider
 
     # Aylık özet
@@ -170,7 +171,7 @@ def api_gosterge():
             'nakit': nakit, 'kk': kk, 'havale': havale,
             'tahsilat': nakit + kk + havale, 'acik': acik, 'kapora': kapora,
             'maas': maas, 'stok': stok, 'dem': dem, 'vergi': vergi, 'acente_kom': acente_kom,
-            'ortak_lk': ortak_lk, 'ortak_bt': ortak_bt,
+            'ortak_lk': ortak_lk, 'ortak_bt': ortak_bt, 'ortak_fk': ortak_fk,
             'toplam_gelir': toplam_gelir, 'toplam_gider': toplam_gider, 'net': net,
         },
         'aylik': aylik,
@@ -419,9 +420,15 @@ def api_demirbas():
 BANKA_AD_KODU = {
     'Kasa TL': '100', 'İş Bankası': '102-1',
     'Ziraat Bankası': '102-2', 'Denizbank': '102-3', 'Deniz Bank': '102-3',
+    'Fırat Nakit': '500-FK', 'Fırat KK': '500-FK',
+    'Levent Nakit': '500-LK', 'Levent KK': '500-LK',
+    'Burçin Nakit': '500-BC', 'Burçin KK': '500-BC',
 }
 BANKA_HESAP_KODU = {'100': '100', '102-1': '102-1', '102-2': '102-2', '102-3': '102-3',
-                    'KASA': '100', 'IS': '102-1', 'ZRH': '102-2', 'DNZ': '102-3'}
+                    'KASA': '100', 'IS': '102-1', 'ZRH': '102-2', 'DNZ': '102-3',
+                    'FK-NKT': '500-FK', 'FK-KK': '500-FK',
+                    'LK-NKT': '500-LK', 'LK-KK': '500-LK',
+                    'BC-NKT': '500-BC', 'BC-KK': '500-BC'}
 
 
 @muh.route('/api/muhasebe/demirbas/ekle', methods=['POST'])
@@ -510,7 +517,10 @@ def api_vergi_onayla():
         if row:
             import muhasebe_db as mdb2
             banka = row['odeme_banka'] or 'IS'
-            banka_hesap = '100' if banka=='KASA' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
+            if banka in ('100','102-1','102-2','102-3') or banka.startswith('500-'):
+                banka_hesap = banka
+            else:
+                banka_hesap = '100' if banka=='KASA' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
             mdb2._yevmiye_ekle(conn, tarih, 'Vergi Ödemesi', '770', banka_hesap,
                                row['tutar'], f"{row['vergi_turu']} {row['donem_yil']}/{row['donem_ay']}", 'GENEL',
                                kaynak_tablo='vergi', kaynak_id=int(d['id']))
@@ -618,7 +628,7 @@ def api_ortak_ekle():
               d.get('odeme_sekli', ''), iade, d.get('otel', 'GENEL')))
         ortak_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         if net > 0:
-            ortak_hesap = '500-LK' if d['ortak'] == 'LK' else '500-BT'
+            ortak_hesap = f"500-{d['ortak']}"
             odeme = d.get('odeme_sekli', '')
             banka_hesap = '100' if 'Nakit' in odeme else '102-2' if 'Ziraat' in odeme else '102-3' if 'Deniz' in odeme else '102-1'
 
@@ -706,7 +716,7 @@ def api_mizan():
     vergi = mizan_yev.get('vergi', 0) or 0
     stok  = mizan_yev.get('stok', 0) or 0
     dem   = mizan_yev.get('demirbaş', 0) or 0
-    ortak = (mizan_yev.get('ortak_lk',0) or 0) + (mizan_yev.get('ortak_bt',0) or 0)
+    ortak = (mizan_yev.get('ortak_lk',0) or 0) + (mizan_yev.get('ortak_bt',0) or 0) + (mizan_yev.get('ortak_fk',0) or 0)
 
     otel.close(); muh_conn.close()
 

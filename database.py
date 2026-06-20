@@ -30,6 +30,7 @@ def init_db():
         yetiskin        INTEGER DEFAULT 1,
         cocuk           INTEGER DEFAULT 0,
         ek_yatak        TEXT DEFAULT 'Yok',
+        kahvalti        TEXT DEFAULT 'Kahvaltılı',
         gun_fiyat       REAL DEFAULT 0,
         giris           TEXT,
         cikis           TEXT,
@@ -92,6 +93,9 @@ def init_db():
     if 'durum' not in cols:
         conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN durum TEXT DEFAULT 'Aktif'")
         conn.execute("UPDATE rezervasyonlar SET durum='Aktif' WHERE durum IS NULL")
+    if 'kahvalti' not in cols:
+        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN kahvalti TEXT DEFAULT 'Kahvaltılı'")
+        conn.execute("UPDATE rezervasyonlar SET kahvalti='Kahvaltılı' WHERE kahvalti IS NULL")
     # Migration: adisyonlar tablosuna odeme kolonları ekle
     adis_cols = [r[1] for r in conn.execute("PRAGMA table_info(adisyonlar)").fetchall()]
     if 'odendi' not in adis_cols:
@@ -151,15 +155,15 @@ def save_rezervasyon(data):
 
     conn.execute("""
         INSERT INTO rezervasyonlar
-            (oda_no,otel,foy_no,kanal,musteri,yetiskin,cocuk,ek_yatak,
+            (oda_no,otel,foy_no,kanal,musteri,yetiskin,cocuk,ek_yatak,kahvalti,
              gun_fiyat,giris,cikis,toplam_gun,toplam_fiyat,
              kapora,kapora_tarihi,rez_tahsilat,rez_odeme_sekli,rez_bakiye,aciklama)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         int(data['oda_no']), data['otel'], int(data['foy_no']),
         data.get('kanal',''), data['musteri'],
         int(data.get('yetiskin',1)), int(data.get('cocuk',0)),
-        data.get('ek_yatak','Yok'), gun_fiyat,
+        data.get('ek_yatak','Yok'), data.get('kahvalti','Kahvaltılı'), gun_fiyat,
         giris, cikis, toplam_gun, toplam_fiyat,
         kapora, data.get('kapora_tarihi'),
         rez_tahsilat, data.get('rez_odeme_sekli',''), rez_bakiye,
@@ -189,7 +193,7 @@ def update_rezervasyon(foy_no, data):
     conn.execute("""
         UPDATE rezervasyonlar SET
             oda_no=?, otel=?, kanal=?, musteri=?, yetiskin=?, cocuk=?,
-            ek_yatak=?, gun_fiyat=?, giris=?, cikis=?, toplam_gun=?,
+            ek_yatak=?, kahvalti=?, gun_fiyat=?, giris=?, cikis=?, toplam_gun=?,
             toplam_fiyat=?, kapora=?, kapora_tarihi=?, aciklama=?,
             rez_bakiye=?,
             updated_at=datetime('now','localtime')
@@ -197,7 +201,7 @@ def update_rezervasyon(foy_no, data):
     """, (
         int(data['oda_no']), data['otel'], data.get('kanal',''),
         data['musteri'], int(data.get('yetiskin',1)), int(data.get('cocuk',0)),
-        data.get('ek_yatak','Yok'), gun_fiyat, giris, cikis,
+        data.get('ek_yatak','Yok'), data.get('kahvalti','Kahvaltılı'), gun_fiyat, giris, cikis,
         toplam_gun, toplam_fiyat, kapora, data.get('kapora_tarihi'),
         data.get('aciklama',''), rez_bakiye, int(foy_no)
     ))

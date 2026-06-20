@@ -219,6 +219,8 @@ def init_db():
         ("649",    "Diğer Olağan Gelir ve Karlar",  "Gelir",     "Diğer"),
         ("500-LK", "LK Cari (Levent Koçoğlu)",  "Ozkaynak",  "Ortak"),
         ("500-BT", "BT Cari (Barış Taşdelen)",  "Ozkaynak",  "Ortak"),
+        ("500-FK", "FK Cari (Fırat Koçoğlu)",   "Ozkaynak",  "Ortak"),
+        ("500-BC", "Burçin Cari",               "Ozkaynak",  "Kişisel"),
         ("600",    "Konaklama Geliri - Leo",     "Gelir",     "Gelir"),
         ("601",    "Konaklama Geliri - CV",      "Gelir",     "Gelir"),
         ("610",    "Adisyon Geliri",        "Gelir",     "Gelir"),
@@ -241,6 +243,12 @@ def init_db():
         ("IS",    "İş Bankası",     ""),
         ("ZRH",   "Ziraat Bankası", ""),
         ("DNZ",   "Denizbank",     ""),
+        ("FK-NKT","Fırat Nakit",    ""),
+        ("FK-KK", "Fırat KK",       ""),
+        ("LK-NKT","Levent Nakit",   ""),
+        ("LK-KK", "Levent KK",      ""),
+        ("BC-NKT","Burçin Nakit",   ""),
+        ("BC-KK", "Burçin KK",      ""),
     ]
     for b in bankalar:
         c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES(?,?,?)", b)
@@ -615,13 +623,18 @@ def get_mizan_ozet(yil):
         WHERE ortak='BT' AND strftime('%Y',tarih)=?
     """, (str(yil),)).fetchone()[0] or 0
 
+    ortak_fk = conn.execute("""
+        SELECT COALESCE(SUM(tutar-iade),0) FROM ortak_cari
+        WHERE ortak='FK' AND strftime('%Y',tarih)=?
+    """, (str(yil),)).fetchone()[0] or 0
+
     conn.close()
     return {
         'borc':     {r['hesap']: r['toplam'] for r in borc},
         'alacak':   {r['hesap']: r['toplam'] for r in alacak},
         'maas': maas, 'stok': stok, 'demirbaş': dem,
         'vergi': vergi, 'komisyon': komisyon,
-        'ortak_lk': ortak_lk, 'ortak_bt': ortak_bt,
+        'ortak_lk': ortak_lk, 'ortak_bt': ortak_bt, 'ortak_fk': ortak_fk,
         'gelir': [dict(r) for r in gelir],
     }
 
