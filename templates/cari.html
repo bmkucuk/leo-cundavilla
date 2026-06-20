@@ -76,7 +76,7 @@
     <div onclick="secimKaldir()" style="width:30px;height:30px;border-radius:8px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;font-size:15px">✕</div>
   </div>
 
-  <div style="display:grid;gap:16px;grid-template-columns:3fr 2fr">
+  <div style="display:flex;flex-direction:column;gap:16px">
 
   <!-- Sol: Müşteri Cari Dökümü -->
   <div class="panel" style="min-width:0">
@@ -88,7 +88,6 @@
           <th style="width:32px"></th>
           <th>Tür</th>
           <th>Tarih</th>
-          <th style="width:70px">Açk.</th>
           <th style="text-align:right">Tutar</th>
           <th style="text-align:right">Tahsilat</th>
           <th style="text-align:center">Ödeme</th>
@@ -96,7 +95,7 @@
           <th style="text-align:center">Durum</th>
         </tr></thead>
         <tbody id="dokum-tbody">
-          <tr><td colspan="6" style="text-align:center;color:var(--text2);padding:16px">Föy seçilmedi</td></tr>
+          <tr><td colspan="8" style="text-align:center;color:var(--text2);padding:16px">Föy seçilmedi</td></tr>
         </tbody>
       </table>
     </div>
@@ -247,8 +246,8 @@ function renderCari(data) {
       <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:700;color:${kalan>0?'var(--accent3)':'var(--pos)'}">${kalan>0?fmt(kalan):'Temiz'}</td>
       <td style="text-align:center"><span style="padding:3px 11px;border-radius:20px;font-size:11px;font-weight:600;background:${durumBg};color:${durumC}">${durum}</span></td>
       <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
-        ${kalan>0 ? `<button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;margin-left:5px" onclick="event.stopPropagation();selectRow(${r.foy_no})">Ödeme Al</button>` : ''}
+        <button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;color:#1a1206;font-weight:700" onclick="event.stopPropagation();selectRow(${r.foy_no})">İşlem Detayı</button>
+        ${kalan>0 ? `<button class="btn btn-primary" style="padding:5px 13px;font-size:11.5px;margin-left:5px;color:#1a1206;font-weight:700" onclick="event.stopPropagation();selectRow(${r.foy_no})">Ödeme Al</button>` : ''}
       </td>
     </tr>`;
   }).join('') || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text2)">Kayıt yok</td></tr>';
@@ -333,7 +332,6 @@ function renderDokum(r) {
         <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
         <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
         <td style="font-size:12px;color:var(--text2)">—</td>
-        <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Rez. Borcu">Föy #${r.foy_no} · Rez. Borcu</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(rezBak)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
@@ -351,8 +349,7 @@ function renderDokum(r) {
           <td></td>
           <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px">${fmtDate(t.tarih)}</td>
-          <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Rez. Borcu">Föy #${r.foy_no} · Rez. Borcu</td>
-          <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(oncekiBakiye)}</td>
+            <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(oncekiBakiye)}</td>
           <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(t.tutar)}</td>
           <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${t.odeme}</td>
           <td style="text-align:right;font-weight:700;font-size:14px" class="${tamamlandi?'green':'orange'}">${fmt(Math.max(0,kalanBakiye))}</td>
@@ -368,7 +365,6 @@ function renderDokum(r) {
           <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
           <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px;color:var(--text2)">—</td>
-          <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Kalan Borç">Föy #${r.foy_no} · Kalan Borç</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
           <td style="text-align:right;color:var(--text2)">—</td>
           <td style="text-align:center;color:var(--text2)">—</td>
@@ -395,7 +391,6 @@ function renderDokum(r) {
         <td></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${fmtDate(o.tarih)}</td>
-        <td style="font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.aciklama||'Adisyon'}">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(a.tutar)}</td>
         <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(o.tutar)}</td>
         <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${o.odeme_sekli}</td>
@@ -413,7 +408,6 @@ function renderDokum(r) {
         <td style="text-align:center"><input type="checkbox" ${chk?'checked':''} onchange="toggleAdis(${itemKey}, this.checked)"></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${a.tarih||'—'}</td>
-        <td style="font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.aciklama||'Adisyon'}">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
@@ -423,7 +417,7 @@ function renderDokum(r) {
     }
   });
 
-  tbody.innerHTML = rows.join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:16px">Kayıt yok</td></tr>';
+  tbody.innerHTML = rows.join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:16px">Kayıt yok</td></tr>';
 }
 
 function secimKaldir() {
