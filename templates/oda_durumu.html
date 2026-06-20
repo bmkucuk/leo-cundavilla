@@ -116,18 +116,15 @@
   </div>
 </div>
 
-<!-- SABİT KISIM: nav + legend + tarih satırı -->
-<div class="oda-nav">
+<!-- SABİT KISIM: tarih + nav + tarih satırı -->
+<div class="period" id="period-lbl" style="text-align:center;margin-bottom:10px">—</div>
+<div class="oda-nav" style="justify-content:center">
   <div class="nav-buttons-group">
     <button onclick="shift(-7)">◀ Önceki Hafta</button>
     <button class="today-btn" onclick="goToday()">Bugün</button>
     <button onclick="shift(7)">Sonraki Hafta ▶</button>
     <button onclick="reload()" id="yenile-btn">🔄 Yenile</button>
   </div>
-  <div class="period" id="period-lbl">—</div>
-</div>
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-shrink:0">
-  <div class="legend" id="legend-area" style="margin-bottom:0;flex:1"></div>
   <button id="clear-hl-btn" onclick="clearHighlight()" style="display:none;background:var(--card2);border:1px solid var(--accent2);color:var(--accent2);padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✕ İşareti Kaldır</button>
 </div>
 <div class="dates-row-wrap">
@@ -190,13 +187,6 @@ function render(d){
     last.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'});
 
   const dayNames=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
-
-  document.getElementById('legend-area').innerHTML = `
-    <span><div class="leg-dot" style="background:var(--leo)"></div> Otel Leo</span>
-    <span><div class="leg-dot" style="background:var(--cv)"></div> Cunda Villa</span>
-    <span><div class="leg-dot" style="background:var(--sidebar);border:1px solid var(--border)"></div> Boş</span>
-    <span><div style="width:14px;height:0;border-top:2px dashed var(--accent)"></div> Bugün</span>
-    <span><div style="width:14px;height:10px;border:2px dashed var(--accent2);border-radius:3px"></div> Sorgu sonucu</span>`;
 
   // Tarih satırını üstte render et (sabit kısımda)
   const todayIdx = dates.indexOf(today);
