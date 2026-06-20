@@ -5,7 +5,7 @@
 
 {% block content %}
 <style>
-.oda-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.oda-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;flex-shrink:0}
 .nav-buttons-group{display:flex;gap:6px;align-items:center}
 .oda-nav button{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
 .oda-nav button:hover{border-color:var(--accent);color:var(--accent)}
@@ -18,7 +18,7 @@
 .leg-dot{width:14px;height:14px;border-radius:5px}
 
 /* Müsaitlik Sorgu paneli */
-.ms-panel{display:flex;gap:24px;margin-bottom:18px;align-items:stretch}
+.ms-panel{display:flex;gap:24px;margin-bottom:18px;align-items:stretch;flex-shrink:0}
 .ms-left{flex:1.25;min-width:280px}
 .ms-right{flex:1.4;min-width:320px;border-left:1px solid var(--border);padding-left:24px;display:flex;flex-direction:column}
 .ms-field label{display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:5px}
@@ -31,7 +31,7 @@
 .ms-room-pill.cv{color:var(--cv)}
 
 /* Tarih satırı sticky-bar içinde, yatay scroll ile senkron */
-.dates-row-wrap{overflow:hidden;}
+.dates-row-wrap{overflow:hidden;flex-shrink:0}
 .dates-row{display:flex;gap:2px;margin-left:102px;}
 .day-header{
   background:var(--card2);color:var(--text2);font-size:12.5px;font-weight:700;
@@ -44,7 +44,7 @@
 .day-header.today .dh-day{opacity:1;color:var(--accent)}
 
 /* Grid sadece oda satırları, scroll burada */
-.grid-wrap{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 200px)}
+.grid-wrap{overflow-x:auto;overflow-y:auto;flex:1;min-height:0}
 .oda-grid{display:grid;gap:3px;min-width:max-content}
 
 .oda-label{background:var(--card);padding:5px 8px;font-size:12.5px;font-weight:700;
@@ -126,7 +126,7 @@
   </div>
   <div class="period" id="period-lbl">—</div>
 </div>
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-shrink:0">
   <div class="legend" id="legend-area" style="margin-bottom:0;flex:1"></div>
   <button id="clear-hl-btn" onclick="clearHighlight()" style="display:none;background:var(--card2);border:1px solid var(--accent2);color:var(--accent2);padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✕ İşareti Kaldır</button>
 </div>
