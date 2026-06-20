@@ -61,10 +61,8 @@
 .cell{height:34px;border-radius:7px;border:1px solid var(--border)}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
-.ms-highlight-box{border:2.5px dashed var(--accent2);border-radius:9px;
-  background:rgba(67,198,255,.10);pointer-events:none;align-self:stretch;justify-self:stretch;
-  animation:pulse-hl 1.2s ease-in-out 5}
-@keyframes pulse-hl{0%,100%{border-color:var(--accent2);background:rgba(67,198,255,.10)}50%{border-color:var(--accent);background:rgba(67,198,255,.24)}}
+.ms-highlight-box{border-left:2px dashed var(--accent2);border-right:2px dashed var(--accent2);
+  background:rgba(67,198,255,.09);pointer-events:none;align-self:stretch;justify-self:stretch}
 
 /* Rezervasyon çubuğu: birden çok güne yayılan tek parça yuvarlatılmış bar */
 .bar{height:34px;border-radius:9px;display:flex;align-items:center;padding:0 10px;
@@ -293,20 +291,28 @@ async function sorgula(){
 
 // Müsait oda etiketine tıklanınca: ilgili satıra git, sorgulanan tarih aralığındaki
 // gerçek takvim hücrelerini doğrudan işaretle (piksel hesabı yok, asla yanlış konumlanmaz)
+const GRID_DAYS = 30;
+
 async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
-  // Sorgulanan tarih aralığı şu an görünen pencerede değilse, pencereyi oraya kaydır
-  if(!lastDates.length || girisStr < lastDates[0] || girisStr > lastDates[lastDates.length-1]){
-    startDate = new Date(girisStr+'T00:00:00');
-    await load();
-  }
+  const g = new Date(girisStr+'T00:00:00');
+  const c = new Date(cikisStr+'T00:00:00');
+  const span = Math.round((c-g)/86400000);
+
+  // Pencereyi her zaman sorgu aralığı ortada kalacak şekilde merkezle
+  const bosKalan = Math.max(GRID_DAYS - span, 0);
+  const oncekiGun = Math.floor(bosKalan/2);
+  startDate = new Date(g);
+  startDate.setDate(startDate.getDate() - oncekiGun);
+  await load();
+
   const startIdx = lastDates.indexOf(girisStr);
   let endIdx = lastDates.indexOf(cikisStr);
-  if(endIdx === -1) endIdx = lastDates.length; // çıkış pencerenin dışındaysa, pencere sonuna kadar
+  if(endIdx === -1) endIdx = lastDates.length;
   if(startIdx === -1){
     toast('Bu tarih aralığı görünür takvim penceresinde değil', 'error');
     return;
   }
-  const span = endIdx - startIdx;
+  const colSpan = endIdx - startIdx;
 
   const gridEl = document.getElementById('oda-grid');
   const old = gridEl.querySelector('.ms-highlight-box');
@@ -314,13 +320,12 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
 
   const box = document.createElement('div');
   box.className = 'ms-highlight-box';
-  box.style.gridColumn = `${startIdx+2} / span ${span}`;
+  box.style.gridColumn = `${startIdx+2} / span ${colSpan}`;
   box.style.gridRow = '1 / -1';
   gridEl.appendChild(box);
 
-  box.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
   toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
-  setTimeout(()=>box.remove(), 6000);
+  setTimeout(()=>box.remove(), 7000);
 }
 
 // Varsayılan tarihleri bugün/yarın yap
