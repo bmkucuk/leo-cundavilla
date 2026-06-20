@@ -354,7 +354,7 @@ def ekle_yevmiye(tarih, belge_no, islem_tipi, borc, alacak, tutar,
           aciklama, otel, fatura_no, yil, ay, kaynak_tablo, kaynak_id))
     conn.commit(); conn.close()
 
-def get_yevmiye(yil=None, ay=None, hesap=None, limit=2000, order='DESC'):
+def get_yevmiye(yil=None, ay=None, hesap=None, limit=None, order='DESC'):
     conn = get_conn()
     q = "SELECT * FROM yevmiye WHERE 1=1"
     params = []

@@ -29,7 +29,7 @@
   <div class="toolbar" style="margin-bottom:10px">
     <div class="section-title" style="margin:0;border:0">📋 Kasa Hareketleri</div>
     <div style="flex:1"></div>
-    <input class="search-input" id="kasa-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="renderKasa()" style="width:280px">
+    <input class="search-input" id="kasa-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="curPage.kasa=1;renderKasa()" style="width:280px">
     <button class="btn" id="kasa-sort-btn" onclick="toggleSort('kasa')" style="font-size:12px;padding:6px 12px;background:var(--card2);color:var(--text2)">Tarih ↓ (Yeni→Eski)</button>
   </div>
   <div class="table-wrap">
@@ -38,6 +38,7 @@
       <tbody id="kasa-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
+  <div id="kasa-pager" style="display:flex;align-items:center;gap:10px;margin-top:10px"></div>
 </div>
 
 <!-- BANKA SEKMESİ -->
@@ -47,7 +48,7 @@
   <div class="toolbar" style="margin-bottom:10px">
     <div class="section-title" style="margin:0;border:0">📋 Hesap Hareketleri</div>
     <div style="flex:1"></div>
-    <input class="search-input" id="banka-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="renderBanka()" style="width:280px">
+    <input class="search-input" id="banka-q" placeholder="🔍 Açıklama, işlem tipi, tutar, tarih ara..." oninput="curPage.banka=1;renderBanka()" style="width:280px">
     <button class="btn" id="banka-sort-btn" onclick="toggleSort('banka')" style="font-size:12px;padding:6px 12px;background:var(--card2);color:var(--text2)">Tarih ↓ (Yeni→Eski)</button>
   </div>
   <div class="table-wrap">
@@ -56,6 +57,7 @@
       <tbody id="banka-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Yukarıdan hesap seçin</td></tr></tbody>
     </table>
   </div>
+  <div id="banka-pager" style="display:flex;align-items:center;gap:10px;margin-top:10px"></div>
 </div>
 
 <!-- Modal -->
@@ -111,6 +113,8 @@ let tumBakiyeler = [];
 let kasaData = [];
 let bankaData = [];
 let sortDir = { kasa: 'desc', banka: 'desc' };
+let curPage = { kasa: 1, banka: 1 };
+const PAGE_SIZE = 100;
 
 function switchTab(tab) {
   aktifTab = tab;
@@ -126,6 +130,7 @@ function toggleSort(which) {
   sortDir[which] = sortDir[which] === 'desc' ? 'asc' : 'desc';
   const btn = document.getElementById(which + '-sort-btn');
   btn.textContent = sortDir[which] === 'desc' ? 'Tarih ↓ (Yeni→Eski)' : 'Tarih ↑ (Eski→Yeni)';
+  curPage[which] = 1;
   if (which === 'kasa') renderKasa(); else renderBanka();
 }
 
@@ -148,6 +153,22 @@ function filterSortHareketler(data, q, dir) {
   return list;
 }
 
+function renderPager(which, totalItems) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if (curPage[which] > totalPages) curPage[which] = totalPages;
+  const pager = document.getElementById(which + '-pager');
+  if (totalPages <= 1) { pager.innerHTML = ''; return; }
+  pager.innerHTML = `
+    <button class="btn" style="font-size:12px;padding:5px 12px" ${curPage[which]<=1?'disabled':''} onclick="gotoPage('${which}',${curPage[which]-1})">‹ Önceki</button>
+    <span style="font-size:12px;color:var(--text2)">Sayfa ${curPage[which]} / ${totalPages}</span>
+    <button class="btn" style="font-size:12px;padding:5px 12px" ${curPage[which]>=totalPages?'disabled':''} onclick="gotoPage('${which}',${curPage[which]+1})">Sonraki ›</button>`;
+}
+
+function gotoPage(which, p) {
+  curPage[which] = p;
+  if (which === 'kasa') renderKasa(); else renderBanka();
+}
+
 function rowHtml(r) {
   return `<tr>
     <td>${fmtDate(r.tarih)}</td>
@@ -162,15 +183,21 @@ function rowHtml(r) {
 function renderKasa() {
   const q = document.getElementById('kasa-q').value;
   const list = filterSortHareketler(kasaData, q, sortDir.kasa);
-  document.getElementById('kasa-tbody').innerHTML = list.map(rowHtml).join('')
+  const start = (curPage.kasa - 1) * PAGE_SIZE;
+  const pageList = list.slice(start, start + PAGE_SIZE);
+  document.getElementById('kasa-tbody').innerHTML = pageList.map(rowHtml).join('')
     || `<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Kasa hareketi yok'}</td></tr>`;
+  renderPager('kasa', list.length);
 }
 
 function renderBanka() {
   const q = document.getElementById('banka-q').value;
   const list = filterSortHareketler(bankaData, q, sortDir.banka);
-  document.getElementById('banka-tbody').innerHTML = list.map(rowHtml).join('')
+  const start = (curPage.banka - 1) * PAGE_SIZE;
+  const pageList = list.slice(start, start + PAGE_SIZE);
+  document.getElementById('banka-tbody').innerHTML = pageList.map(rowHtml).join('')
     || `<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Bu hesapta hareket yok'}</td></tr>`;
+  renderPager('banka', list.length);
 }
 
 async function load() {
@@ -189,6 +216,7 @@ async function load() {
   // Kasa hareketleri
   const kd = await api(`/api/muhasebe/kasa?yil=${yil}&hesap=KASA`);
   kasaData = kd.hareketler;
+  curPage.kasa = 1;
   renderKasa();
 
   // BANKA özet kartları
@@ -225,6 +253,7 @@ async function selectBanka(kod) {
   document.getElementById('banka-tbody').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px"><span class="spinner"></span></td></tr>';
   const d = await api(`/api/muhasebe/kasa?yil=${yil}&hesap=${encodeURIComponent(kod)}`);
   bankaData = d.hareketler;
+  curPage.banka = 1;
   renderBanka();
 }
 
