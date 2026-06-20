@@ -61,8 +61,8 @@
 .cell{height:34px;border-radius:7px;border:1px solid var(--border)}
 .cell.bos{background:var(--sidebar)}
 .cell.bos.today{background:var(--card2)}
-.ms-highlight-box{border-left:2px dashed var(--accent2);border-right:2px dashed var(--accent2);
-  background:rgba(67,198,255,.09);pointer-events:none;align-self:stretch;justify-self:stretch}
+.ms-highlight-box{position:absolute;border-left:2px dashed var(--accent2);border-right:2px dashed var(--accent2);
+  background:rgba(67,198,255,.09);pointer-events:none;z-index:9}
 
 /* Rezervasyon çubuğu: birden çok güne yayılan tek parça yuvarlatılmış bar */
 .bar{height:34px;border-radius:9px;display:flex;align-items:center;padding:0 10px;
@@ -78,7 +78,7 @@
   color:var(--text);z-index:50;pointer-events:none;box-shadow:0 8px 24px #000a;min-width:170px}
 
 /* Bugün için tüm satırları kat eden kesik dikey çizgi */
-.today-line{width:0;border-left:2px dashed var(--accent);pointer-events:none;justify-self:center;z-index:8}
+.today-line{position:absolute;width:0;border-left:2px dashed var(--accent);pointer-events:none;z-index:8}
 </style>
 
 <!-- Müsaitlik Sorgu -->
@@ -247,15 +247,23 @@ function render(d){
   }
   gridEl.innerHTML=html;
 
-  // "Bugün" için tüm satırları kat eden kesik çizgi
+  // "Bugün" için tüm satırları kat eden kesik çizgi — grid dışı, piksel konumlu overlay
+  // (grid-içi özel-konumlu eleman kullanmıyoruz çünkü o, diğer hücrelerin auto-yerleşimini bozar)
   const oldLine = gridEl.querySelector('.today-line');
   if(oldLine) oldLine.remove();
   if(todayIdx>=0){
-    const line=document.createElement('div');
-    line.className='today-line';
-    line.style.gridColumn = (todayIdx+2);
-    line.style.gridRow = '1 / -1';
-    gridEl.appendChild(line);
+    requestAnimationFrame(()=>{
+      const refCell = gridEl.querySelector(`[data-date="${today}"]`);
+      if(!refCell) return;
+      const gRect = gridEl.getBoundingClientRect();
+      const cRect = refCell.getBoundingClientRect();
+      const line=document.createElement('div');
+      line.className='today-line';
+      line.style.left = (cRect.left - gRect.left + cRect.width/2) + 'px';
+      line.style.top = '0';
+      line.style.height = gridEl.scrollHeight + 'px';
+      gridEl.appendChild(line);
+    });
   }
 }
 
@@ -305,27 +313,34 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
   startDate.setDate(startDate.getDate() - oncekiGun);
   await load();
 
-  const startIdx = lastDates.indexOf(girisStr);
-  let endIdx = lastDates.indexOf(cikisStr);
-  if(endIdx === -1) endIdx = lastDates.length;
-  if(startIdx === -1){
-    toast('Bu tarih aralığı görünür takvim penceresinde değil', 'error');
-    return;
-  }
-  const colSpan = endIdx - startIdx;
-
   const gridEl = document.getElementById('oda-grid');
   const old = gridEl.querySelector('.ms-highlight-box');
   if(old) old.remove();
 
-  const box = document.createElement('div');
-  box.className = 'ms-highlight-box';
-  box.style.gridColumn = `${startIdx+2} / span ${colSpan}`;
-  box.style.gridRow = '1 / -1';
-  gridEl.appendChild(box);
+  // Aralıktaki tarihlere ait herhangi bir hücreyi referans alıp piksel olarak konumlandır
+  // (grid-içi özel-konumlu eleman kullanmıyoruz, çünkü diğer hücrelerin yerleşimini bozar)
+  requestAnimationFrame(()=>{
+    const firstCell = gridEl.querySelector(`[data-date="${girisStr}"]`);
+    let lastDateStr = lastDates.filter(d=>d>=girisStr && d<cikisStr).pop();
+    const lastCell  = lastDateStr ? gridEl.querySelector(`[data-date="${lastDateStr}"]`) : firstCell;
+    if(!firstCell || !lastCell){
+      toast('Bu tarih aralığı görünür takvim penceresinde değil', 'error');
+      return;
+    }
+    const gRect = gridEl.getBoundingClientRect();
+    const fRect = firstCell.getBoundingClientRect();
+    const lRect = lastCell.getBoundingClientRect();
+    const box = document.createElement('div');
+    box.className = 'ms-highlight-box';
+    box.style.left   = (fRect.left - gRect.left) + 'px';
+    box.style.top    = '0';
+    box.style.width  = (lRect.right - fRect.left) + 'px';
+    box.style.height = gridEl.scrollHeight + 'px';
+    gridEl.appendChild(box);
+    setTimeout(()=>box.remove(), 7000);
+  });
 
   toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
-  setTimeout(()=>box.remove(), 7000);
 }
 
 // Varsayılan tarihleri bugün/yarın yap
