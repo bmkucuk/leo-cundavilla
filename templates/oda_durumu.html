@@ -151,7 +151,19 @@ function toISO(d){
   return `${y}-${m}-${day}`;
 }
 function shift(days){ startDate.setDate(startDate.getDate()+days); load(); }
-function goToday(){ startDate=new Date(); startDate.setHours(0,0,0,0); load(); }
+async function goToday(){
+  clearHighlight();
+  const t = new Date(); t.setHours(0,0,0,0);
+  // Bugünü pencerenin ortasına alacak şekilde başlangıcı geriye kaydır
+  startDate = new Date(t);
+  startDate.setDate(startDate.getDate() - Math.floor(GRID_DAYS/2));
+  await load();
+  requestAnimationFrame(()=>{
+    const todayStr = toISO(t);
+    const cell = document.querySelector(`#oda-grid [data-date="${todayStr}"]`);
+    if(cell) cell.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+  });
+}
 
 async function reload(){
   const btn=document.getElementById('yenile-btn');
