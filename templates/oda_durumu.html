@@ -392,9 +392,15 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
     const labelEl = Array.from(gridEl.querySelectorAll('.oda-label')).find(el => el.textContent.replace(/\s+/g,' ').trim().includes(`${otel==='LEO'?'LEO':'CV'} – ${odaNo}`));
     if(labelEl) labelEl.classList.add('selected');
 
+    // Yatayda ortalama için aralığın TAM ORTASINDAKİ günü baz alıyoruz (sadece giriş günü değil),
+    // böylece çok geceli aralıklarda işaretli bant tamamen görünür alanda kalır.
+    const rangeDates = lastDates.filter(d=>d>=girisStr && d<cikisStr);
+    const midDateStr = rangeDates[Math.floor(rangeDates.length/2)] || girisStr;
+    const midCell = gridEl.querySelector(`[data-room="${CSS.escape(roomKey)}"][data-date="${midDateStr}"]`) || firstCell;
+
     // Satırı dikeyde ve yatayda ortala — tarayıcının native scrollIntoView'ı, iç içe
     // scroll konteynerlerini ve gerçek yükseklikleri elle hesaplamaktan çok daha güvenilir
-    firstCell.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+    midCell.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
   });
 
   toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
