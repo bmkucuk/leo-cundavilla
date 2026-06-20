@@ -96,6 +96,15 @@ def init_db():
     if 'kahvalti' not in cols:
         conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN kahvalti TEXT DEFAULT 'Kahvaltılı'")
         conn.execute("UPDATE rezervasyonlar SET kahvalti='Kahvaltılı' WHERE kahvalti IS NULL")
+    # Migration: Konaklama Kayıt Formu için ek alanlar
+    if 'tc_kimlik' not in cols:
+        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN tc_kimlik TEXT DEFAULT ''")
+    if 'arac_plaka' not in cols:
+        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN arac_plaka TEXT DEFAULT ''")
+    if 'telefon' not in cols:
+        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN telefon TEXT DEFAULT ''")
+    if 'beraberindekiler' not in cols:
+        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN beraberindekiler TEXT DEFAULT ''")
     # Migration: adisyonlar tablosuna odeme kolonları ekle
     adis_cols = [r[1] for r in conn.execute("PRAGMA table_info(adisyonlar)").fetchall()]
     if 'odendi' not in adis_cols:
@@ -157,8 +166,9 @@ def save_rezervasyon(data):
         INSERT INTO rezervasyonlar
             (oda_no,otel,foy_no,kanal,musteri,yetiskin,cocuk,ek_yatak,kahvalti,
              gun_fiyat,giris,cikis,toplam_gun,toplam_fiyat,
-             kapora,kapora_tarihi,rez_tahsilat,rez_odeme_sekli,rez_bakiye,aciklama)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             kapora,kapora_tarihi,rez_tahsilat,rez_odeme_sekli,rez_bakiye,aciklama,
+             tc_kimlik,arac_plaka,telefon,beraberindekiler)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         int(data['oda_no']), data['otel'], int(data['foy_no']),
         data.get('kanal',''), data['musteri'],
@@ -167,7 +177,9 @@ def save_rezervasyon(data):
         giris, cikis, toplam_gun, toplam_fiyat,
         kapora, data.get('kapora_tarihi'),
         rez_tahsilat, data.get('rez_odeme_sekli',''), rez_bakiye,
-        data.get('aciklama','')
+        data.get('aciklama',''),
+        data.get('tc_kimlik',''), data.get('arac_plaka',''),
+        data.get('telefon',''), data.get('beraberindekiler','')
     ))
     conn.commit(); conn.close()
 
@@ -195,6 +207,7 @@ def update_rezervasyon(foy_no, data):
             oda_no=?, otel=?, kanal=?, musteri=?, yetiskin=?, cocuk=?,
             ek_yatak=?, kahvalti=?, gun_fiyat=?, giris=?, cikis=?, toplam_gun=?,
             toplam_fiyat=?, kapora=?, kapora_tarihi=?, aciklama=?,
+            tc_kimlik=?, arac_plaka=?, telefon=?, beraberindekiler=?,
             rez_bakiye=?,
             updated_at=datetime('now','localtime')
         WHERE foy_no=?
@@ -203,7 +216,10 @@ def update_rezervasyon(foy_no, data):
         data['musteri'], int(data.get('yetiskin',1)), int(data.get('cocuk',0)),
         data.get('ek_yatak','Yok'), data.get('kahvalti','Kahvaltılı'), gun_fiyat, giris, cikis,
         toplam_gun, toplam_fiyat, kapora, data.get('kapora_tarihi'),
-        data.get('aciklama',''), rez_bakiye, int(foy_no)
+        data.get('aciklama',''),
+        data.get('tc_kimlik',''), data.get('arac_plaka',''),
+        data.get('telefon',''), data.get('beraberindekiler',''),
+        rez_bakiye, int(foy_no)
     ))
     conn.commit(); conn.close()
 

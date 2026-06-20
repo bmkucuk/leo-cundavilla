@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% set active = "rez-formu" %}
+{% block title %}Rez. Formu{% endblock %}
+{% block page_title %}📝 Konaklama Kayıt Formu{% endblock %}
+
+{% block content %}
+<style>
+.kf-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:18px}
+.kf-section-head{display:flex;align-items:center;gap:9px;margin-bottom:18px}
+.kf-section-head .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.kf-section-head .lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2)}
+.kf-grid{display:grid;gap:16px}
+.kf-grid.c2{grid-template-columns:1fr 1fr}
+.kf-grid.c3{grid-template-columns:1fr 1fr 1fr}
+.kf-field{display:flex;flex-direction:column;gap:7px}
+.kf-field label{font-size:12px;font-weight:600;color:var(--text2)}
+.kf-field input, .kf-field select, .kf-field textarea{
+  background:var(--card2);border:1px solid var(--border);color:var(--text);
+  padding:11px 13px;border-radius:10px;font-size:13.5px;outline:none;font-family:Geist,sans-serif;
+}
+.kf-field input[type=date]{font-family:'Geist Mono',monospace;color-scheme:dark}
+.kf-field textarea{resize:vertical;min-height:60px;font-family:Geist,sans-serif}
+.kf-readout{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;
+  display:flex;align-items:baseline;gap:6px}
+.kf-readout .v{font-family:'Geist Mono',monospace;font-size:16px;font-weight:600;color:var(--accent2)}
+.kf-readout .u{font-size:12px;color:var(--text2)}
+.kf-kisi-row{display:grid;grid-template-columns:1fr 1fr 36px;gap:10px;align-items:center;margin-bottom:8px}
+.kf-kisi-row input{background:var(--card2);border:1px solid var(--border);color:var(--text);
+  padding:9px 12px;border-radius:9px;font-size:13px;outline:none;font-family:Geist,sans-serif}
+.kf-kisi-del{display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;
+  font-size:16px;border-radius:8px;height:36px}
+.kf-kisi-del:hover{color:var(--accent3);background:var(--card2)}
+.kf-add-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;
+  font-size:12.5px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);
+  cursor:pointer;margin-top:4px}
+.kf-add-btn:hover{color:var(--text)}
+.kf-taahhut{font-size:11.5px;line-height:1.65;color:var(--text2);background:var(--card2);
+  border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.kf-actions{display:flex;justify-content:flex-end;gap:10px;margin-bottom:24px}
+.kf-btn{padding:10px 20px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.kf-btn-def{background:var(--card);color:var(--text2);border:1px solid var(--border)}
+.kf-btn-gold{background:linear-gradient(150deg,#ffc24d,#f0a52e);color:#1a1206}
+.kf-btn-blue{background:var(--card2);color:var(--accent2);border:1px solid var(--border)}
+
+/* ── Yazdırma — fiziki form görünümü ── */
+#kf-print{display:none}
+@media print {
+  #kf-screen{display:none !important}
+  #kf-print{display:block !important}
+  body{background:white !important;color:#000 !important}
+  #content{padding:0 !important}
+}
+#kf-print{color:#000;font-family:Geist,sans-serif;max-width:780px;margin:0 auto}
+.kfp-head{display:flex;align-items:center;gap:14px;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:14px}
+.kfp-logo{width:46px;height:46px;border-radius:8px;background:#1a1206;color:#ffc24d;display:flex;
+  align-items:center;justify-content:center;font-weight:700;font-size:16px;font-family:'Geist Mono',monospace}
+.kfp-title{font-size:15px;font-weight:700;letter-spacing:.3px}
+.kfp-sub{font-size:11px;color:#444}
+.kfp-row{display:grid;grid-template-columns:1fr 1fr;border:1px solid #000;margin-bottom:8px}
+.kfp-cell{border-right:1px solid #000;padding:6px 10px;font-size:11px}
+.kfp-cell:last-child{border-right:none}
+.kfp-cell b{display:block;font-size:9px;text-transform:uppercase;color:#555;margin-bottom:2px;font-weight:600}
+.kfp-taahhut{font-size:9.5px;line-height:1.5;border:1px solid #000;padding:10px;margin-bottom:10px}
+.kfp-sign{display:flex;justify-content:space-between;margin:14px 0}
+.kfp-sign div{width:45%;text-align:center;border-top:1px solid #000;padding-top:4px;font-size:10px}
+.kfp-table{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:10px}
+.kfp-table th,.kfp-table td{border:1px solid #000;padding:5px 8px;text-align:left}
+.kfp-table th{background:#eee;font-size:9px;text-transform:uppercase}
+</style>
+
+<div id="kf-screen">
+
+  <!-- Oda & Föy -->
+  <div class="kf-section">
+    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Oda &amp; Föy Bilgisi</span></div>
+    <div class="kf-grid c3">
+      <div class="kf-field">
+        <label>Otel</label>
+        <select id="kf-otel" onchange="onOtelChange()">
+          <option value="LEO">Otel Leo</option>
+          <option value="CV">Cunda Villa</option>
+        </select>
+      </div>
+      <div class="kf-field">
+        <label>Oda No</label>
+        <select id="kf-oda"></select>
+      </div>
+      <div class="kf-field">
+        <label>Föy No</label>
+        <input id="kf-foy" readonly style="opacity:.8;cursor:not-allowed;color:var(--accent);font-weight:600;font-family:'Geist Mono',monospace">
+      </div>
+    </div>
+    <div class="kf-grid c3" style="margin-top:16px">
+      <div class="kf-field">
+        <label>Giriş Tarihi</label>
+        <input type="date" id="kf-giris" onchange="autoSetCikis();recalc()">
+      </div>
+      <div class="kf-field">
+        <label>Çıkış Tarihi</label>
+        <input type="date" id="kf-cikis" onchange="recalc()">
+      </div>
+      <div class="kf-field">
+        <label>Konaklama Gün Sayısı</label>
+        <div class="kf-readout"><span class="v" id="kf-gun">0</span><span class="u">gün</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Misafir -->
+  <div class="kf-section">
+    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Misafir Bilgileri</span></div>
+    <div class="kf-grid c2">
+      <div class="kf-field">
+        <label>Adı Soyadı</label>
+        <input id="kf-ad" placeholder="İbrahim Yalçın">
+      </div>
+      <div class="kf-field">
+        <label>T.C. Kimlik No</label>
+        <input id="kf-tc" placeholder="11111111111" maxlength="11">
+      </div>
+      <div class="kf-field">
+        <label>Araç Marka-Model-Plaka / Şehir</label>
+        <input id="kf-arac" placeholder="Fiat Egea · 10 ABC 123 · Balıkesir">
+      </div>
+      <div class="kf-field">
+        <label>Cep Telefonu</label>
+        <input id="kf-tel" placeholder="0532 000 00 00">
+      </div>
+    </div>
+    <div class="kf-grid c3" style="margin-top:16px">
+      <div class="kf-field">
+        <label>Kişi Sayısı (Yetişkin)</label>
+        <input type="number" id="kf-yetiskin" value="2" min="1">
+      </div>
+      <div class="kf-field">
+        <label>Çocuk</label>
+        <input type="number" id="kf-cocuk" value="0" min="0">
+      </div>
+      <div class="kf-field">
+        <label>Kanal / Acente</label>
+        <select id="kf-kanal">
+          <option value="">— Seçin —</option>
+          <option value="Telefon">Telefon</option>
+          <option value="Kapıdan">Kapıdan</option>
+          <option value="Booking">Booking.com</option>
+          <option value="EXP">Expedia</option>
+          <option value="JLY">JollyTur</option>
+          <option value="TTS">TatilSepeti</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Beraberindekiler -->
+  <div class="kf-section">
+    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Beraberinde Konaklayacak Kişiler</span></div>
+    <div id="kf-kisiler"></div>
+    <div class="kf-add-btn" onclick="addKisi()">+ Kişi Ekle</div>
+  </div>
+
+  <!-- Fiyat -->
+  <div class="kf-section">
+    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Fiyat &amp; Kapora</span></div>
+    <div class="kf-grid c3">
+      <div class="kf-field">
+        <label>Gün Fiyatı (₺)</label>
+        <input type="number" id="kf-gunfiyat" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
+      </div>
+      <div class="kf-field">
+        <label>Toplam Tutar</label>
+        <div class="kf-readout"><span class="v" id="kf-toplam" style="color:var(--accent)">0 ₺</span></div>
+      </div>
+      <div class="kf-field">
+        <label>Kahvaltı</label>
+        <select id="kf-kahvalti"><option>Kahvaltılı</option><option>Kahvaltısız</option></select>
+      </div>
+    </div>
+    <div class="kf-grid c3" style="margin-top:16px">
+      <div class="kf-field">
+        <label>Kapora (₺)</label>
+        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
+      </div>
+      <div class="kf-field">
+        <label>Kapora Tarihi</label>
+        <input type="date" id="kf-kapora-tarihi">
+      </div>
+      <div class="kf-field">
+        <label>Ek Yatak</label>
+        <select id="kf-ek"><option>Yok</option><option>Var</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taahhüt metni (bilgi amaçlı, fiziki çıktıda yer alır) -->
+  <div class="kf-section">
+    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Taahhüt Metni (Yazdırılan Forma Eklenir)</span></div>
+    <div class="kf-taahhut">
+      Otelden ayrılış saati 12:00. Yukarıda belirtilen çıkış tarihinde değişiklik yapmam durumunda erken çıkış için para iadesi talep etmeyeceğimi taahhüt ederim. Erken çıkış durumunda yukarıda belirtilen gün sayısı kadar ücreti ödeyeceğimi kabul ederim. Otel dışından temin edilmiş yiyecek ve içeceklerin faturama otel fiyatlarıyla yansıtılacağını kabul ederim. Otelin 22:30–09:00 arası olan sessiz saatlerine riayet edeceğim. Beraberimdeki küçük çocuklara konaklama süresince eşlik edeceğim. Otel havuzunun çocuklar için olmadığı konusunda bilgilendirildim, bu konuda sorumluluk tamamen bendedir. Otel odalarında sigara içmenin yasak olduğu konusunda bilgilendirildim; sigara içilmesi durumunda 2.500,00 TL ekstra temizlik ücretinin faturama yansıtılacağını onaylarım. Otel eşyalarında ve odadaki demirbaş ve mefruşatta tarafımca oluşturulabilecek zararın faturama yansıtılmasını kabul ediyorum. Oda bakımının her gün ve tekstil değişiminin üç günde bir yapılacağı konusunda bilgilendirildim.
+    </div>
+  </div>
+
+  <div class="kf-actions">
+    <div class="kf-btn kf-btn-def" onclick="resetForm()">Temizle</div>
+    <div class="kf-btn kf-btn-blue" onclick="yazdir()">🖨️ Yazdır</div>
+    <div class="kf-btn kf-btn-gold" onclick="kaydet()">💾 Kaydet</div>
+  </div>
+</div>
+
+<!-- ░ Yazdırma görünümü (yalnız print) ░ -->
+<div id="kf-print">
+  <div class="kfp-head">
+    <div class="kfp-logo">OL</div>
+    <div>
+      <div class="kfp-title">OTEL KONAKLAMA VE KAYIT FORMU / REGISTRATION FORM</div>
+      <div class="kfp-sub">Otel Leo &amp; Cunda Villa — Föy No: <span id="kfp-foy"></span></div>
+    </div>
+  </div>
+
+  <div class="kfp-row">
+    <div class="kfp-cell"><b>Giriş Tarihi / Check-in</b><span id="kfp-giris"></span></div>
+    <div class="kfp-cell"><b>Çıkış Tarihi / Check-out</b><span id="kfp-cikis"></span></div>
+  </div>
+  <div class="kfp-row">
+    <div class="kfp-cell"><b>Konaklama Gün Sayısı</b><span id="kfp-gun"></span></div>
+    <div class="kfp-cell"><b>Oda / Otel</b><span id="kfp-oda"></span></div>
+  </div>
+
+  <div class="kfp-taahhut" id="kfp-taahhut"></div>
+
+  <div class="kfp-row">
+    <div class="kfp-cell"><b>Adı Soyadı</b><span id="kfp-ad"></span></div>
+    <div class="kfp-cell"><b>T.C. Kimlik No</b><span id="kfp-tc"></span></div>
+  </div>
+  <div class="kfp-row">
+    <div class="kfp-cell"><b>Araç Marka-Model-Plaka / Şehir</b><span id="kfp-arac"></span></div>
+    <div class="kfp-cell"><b>Cep Telefonu</b><span id="kfp-tel"></span></div>
+  </div>
+  <div class="kfp-row">
+    <div class="kfp-cell" style="grid-column:1/3"><b>Beraberinde Konaklayacak Kişiler</b><span id="kfp-kisiler"></span></div>
+  </div>
+  <div class="kfp-row">
+    <div class="kfp-cell"><b>Oda Fiyatı / Gün Sayısı</b><span id="kfp-fiyat"></span></div>
+    <div class="kfp-cell"><b>Kanal / Acente</b><span id="kfp-kanal"></span></div>
+  </div>
+
+  <div class="kfp-sign">
+    <div>Misafir İmza</div>
+    <div>Resepsiyon</div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ODALAR = {
+  LEO: Array.from({length:19}, (_,i)=>11+i),
+  CV:  Array.from({length:10}, (_,i)=>1+i)
+};
+
+function fillOdaSelect() {
+  const otel = document.getElementById('kf-otel').value;
+  const sel  = document.getElementById('kf-oda');
+  sel.innerHTML = ODALAR[otel].map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+function onOtelChange() { fillOdaSelect(); }
+
+let kisiId = 1;
+let kisiler = [];
+
+function renderKisiler() {
+  const wrap = document.getElementById('kf-kisiler');
+  if (kisiler.length === 0) {
+    wrap.innerHTML = '<div style="font-size:12.5px;color:var(--text2);padding:6px 0">Beraberinde misafir yok.</div>';
+    return;
+  }
+  wrap.innerHTML = kisiler.map(k => `
+    <div class="kf-kisi-row" data-id="${k.id}">
+      <input placeholder="Adı Soyadı" value="${k.ad||''}" oninput="updKisi(${k.id},'ad',this.value)">
+      <input placeholder="T.C. Kimlik No" maxlength="11" value="${k.tc||''}" oninput="updKisi(${k.id},'tc',this.value)">
+      <div class="kf-kisi-del" onclick="delKisi(${k.id})">×</div>
+    </div>
+  `).join('');
+}
+function addKisi() { kisiler.push({id: kisiId++, ad:'', tc:''}); renderKisiler(); }
+function updKisi(id, field, val) { const k = kisiler.find(x=>x.id===id); if (k) k[field]=val; }
+function delKisi(id) { kisiler = kisiler.filter(x=>x.id!==id); renderKisiler(); }
+
+function recalc() {
+  const giris = document.getElementById('kf-giris').value;
+  const cikis = document.getElementById('kf-cikis').value;
+  const gunFiyat = parseFloat(document.getElementById('kf-gunfiyat').value) || 0;
+  let gun = 0;
+  if (giris && cikis) gun = Math.max(0, Math.round((new Date(cikis)-new Date(giris))/86400000));
+  document.getElementById('kf-gun').textContent = gun;
+  document.getElementById('kf-toplam').textContent = fmt(gun*gunFiyat);
+}
+
+function autoSetCikis() {
+  const giris = document.getElementById('kf-giris').value;
+  if (!giris) return;
+  const p = giris.split('-');
+  const d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])+1);
+  document.getElementById('kf-cikis').value =
+    d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function resetForm() {
+  fillOdaSelect();
+  const d = await api('/api/next-foy');
+  document.getElementById('kf-foy').value = d.foy_no;
+  document.getElementById('kf-oda').value = '';
+  document.getElementById('kf-giris').value = today;
+  autoSetCikis();
+  document.getElementById('kf-ad').value = '';
+  document.getElementById('kf-tc').value = '';
+  document.getElementById('kf-arac').value = '';
+  document.getElementById('kf-tel').value = '';
+  document.getElementById('kf-yetiskin').value = 2;
+  document.getElementById('kf-cocuk').value = 0;
+  document.getElementById('kf-kanal').value = '';
+  document.getElementById('kf-kahvalti').value = 'Kahvaltılı';
+  document.getElementById('kf-gunfiyat').value = 0;
+  document.getElementById('kf-kapora').value = 0;
+  document.getElementById('kf-kapora-tarihi').value = today;
+  document.getElementById('kf-ek').value = 'Yok';
+  kisiler = []; kisiId = 1;
+  renderKisiler();
+  recalc();
+}
+
+async function kaydet() {
+  if (!validateForm([
+    {id:'kf-ad',       label:'Adı Soyadı'},
+    {id:'kf-oda',      label:'Oda No'},
+    {id:'kf-kanal',    label:'Kanal / Acente'},
+    {id:'kf-giris',    label:'Giriş Tarihi'},
+    {id:'kf-cikis',    label:'Çıkış Tarihi'},
+    {id:'kf-gunfiyat', label:'Gün Fiyatı'},
+  ])) return;
+
+  const giris = document.getElementById('kf-giris').value;
+  const cikis = document.getElementById('kf-cikis').value;
+  if (cikis <= giris) { toast('Çıkış tarihi girişten sonra olmalı!', 'error'); return; }
+
+  const gunFiyat = parseFloat(document.getElementById('kf-gunfiyat').value) || 0;
+  const gun = Math.max(0, Math.round((new Date(cikis)-new Date(giris))/86400000));
+
+  const beraberindekiler = kisiler
+    .filter(k => (k.ad||'').trim())
+    .map(k => `${k.ad}${k.tc ? ' (TC: '+k.tc+')' : ''}`)
+    .join('; ');
+
+  const data = {
+    foy_no:            document.getElementById('kf-foy').value,
+    oda_no:             document.getElementById('kf-oda').value,
+    otel:               document.getElementById('kf-otel').value,
+    kanal:              document.getElementById('kf-kanal').value,
+    musteri:            document.getElementById('kf-ad').value,
+    yetiskin:           document.getElementById('kf-yetiskin').value,
+    cocuk:              document.getElementById('kf-cocuk').value,
+    ek_yatak:           document.getElementById('kf-ek').value,
+    kahvalti:           document.getElementById('kf-kahvalti').value,
+    gun_fiyat:          gunFiyat,
+    toplam_fiyat:       gun*gunFiyat,
+    giris, cikis,
+    kapora:             document.getElementById('kf-kapora').value,
+    kapora_tarihi:      document.getElementById('kf-kapora-tarihi').value || null,
+    tc_kimlik:          document.getElementById('kf-tc').value,
+    arac_plaka:         document.getElementById('kf-arac').value,
+    telefon:            document.getElementById('kf-tel').value,
+    beraberindekiler,
+  };
+
+  // Çifte rezervasyon kontrolü
+  const allRez = await api(`/api/rezervasyonlar?q=&otel=Tümü`);
+  const odaNo = parseInt(data.oda_no);
+  const conflict = allRez.find(r =>
+    r.oda_no === odaNo && r.otel === data.otel &&
+    r.giris && r.cikis &&
+    data.giris < r.cikis && data.cikis > r.giris
+  );
+  if (conflict) {
+    toast(`Oda ${odaNo} bu tarihlerde ${conflict.musteri} adına dolu!`, 'error');
+    return;
+  }
+
+  const r = await api('/api/rezervasyon/yeni', data);
+  if (r.ok) {
+    toast(`Föy #${data.foy_no} kaydedildi ✓ — Rezervasyonlar'a eklendi`);
+    fillPrintView(data, gun);
+    resetForm();
+  } else {
+    toast(r.error || 'Hata oluştu', 'error');
+  }
+}
+
+function fillPrintView(data, gun) {
+  document.getElementById('kfp-foy').textContent = data.foy_no;
+  document.getElementById('kfp-giris').textContent = fmtDate(data.giris);
+  document.getElementById('kfp-cikis').textContent = fmtDate(data.cikis);
+  document.getElementById('kfp-gun').textContent = gun + ' gün';
+  document.getElementById('kfp-oda').textContent = `Oda ${data.oda_no} — ${data.otel === 'LEO' ? 'Otel Leo' : 'Cunda Villa'}`;
+  document.getElementById('kfp-ad').textContent = data.musteri || '—';
+  document.getElementById('kfp-tc').textContent = data.tc_kimlik || '—';
+  document.getElementById('kfp-arac').textContent = data.arac_plaka || '—';
+  document.getElementById('kfp-tel').textContent = data.telefon || '—';
+  document.getElementById('kfp-kisiler').textContent = data.beraberindekiler || '—';
+  document.getElementById('kfp-fiyat').textContent = fmt(data.gun_fiyat) + ' x ' + gun + ' gün = ' + fmt(data.toplam_fiyat);
+  document.getElementById('kfp-kanal').textContent = data.kanal || '—';
+  document.getElementById('kfp-taahhut').textContent = document.querySelector('.kf-taahhut').textContent.trim();
+}
+
+function yazdir() {
+  // Ekrandaki güncel verilerle yazdırma görünümünü doldur (henüz kaydedilmemiş olabilir)
+  const giris = document.getElementById('kf-giris').value;
+  const cikis = document.getElementById('kf-cikis').value;
+  const gunFiyat = parseFloat(document.getElementById('kf-gunfiyat').value) || 0;
+  const gun = giris && cikis ? Math.max(0, Math.round((new Date(cikis)-new Date(giris))/86400000)) : 0;
+  const beraberindekiler = kisiler
+    .filter(k => (k.ad||'').trim())
+    .map(k => `${k.ad}${k.tc ? ' (TC: '+k.tc+')' : ''}`)
+    .join('; ');
+  fillPrintView({
+    foy_no: document.getElementById('kf-foy').value,
+    giris, cikis,
+    oda_no: document.getElementById('kf-oda').value,
+    otel: document.getElementById('kf-otel').value,
+    musteri: document.getElementById('kf-ad').value,
+    tc_kimlik: document.getElementById('kf-tc').value,
+    arac_plaka: document.getElementById('kf-arac').value,
+    telefon: document.getElementById('kf-tel').value,
+    beraberindekiler,
+    gun_fiyat: gunFiyat,
+    toplam_fiyat: gun*gunFiyat,
+    kanal: document.getElementById('kf-kanal').value,
+  }, gun);
+  window.print();
+}
+
+(async function init() {
+  fillOdaSelect();
+  renderKisiler();
+  await resetForm();
+})();
+</script>
+{% endblock %}

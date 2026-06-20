@@ -96,6 +96,11 @@ def dashboard():
 def rezervasyonlar():
     return render_template('rezervasyonlar.html')
 
+@app.route('/rez-formu')
+@login_required
+def rez_formu():
+    return render_template('rez_formu.html')
+
 @app.route('/oda-durumu')
 @login_required
 def oda_durumu():
