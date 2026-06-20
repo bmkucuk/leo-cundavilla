@@ -649,6 +649,31 @@ def api_ortak():
     conn.close()
     return jsonify(rows)
 
+def _ortak_yevmiye_yaz(conn, ortak_id, d):
+    """Bir ortak_cari kaydı için yevmiye satırını (yeniden) yazar."""
+    tutar = float(d['tutar'])
+    iade = float(d.get('iade', 0))
+    net = tutar - iade
+    islem_tipi = d.get('islem_tipi', 'Ortak Gider (Kendi Cebinden)')
+    if net <= 0:
+        return
+    ortak_hesap = f"500-{d['ortak']}"
+    odeme = d.get('odeme_sekli', '')
+    banka_hesap = '100' if 'Nakit' in odeme else '102-2' if 'Ziraat' in odeme else '102-3' if 'Deniz' in odeme else '102-1'
+
+    if islem_tipi == 'Ortaga Geri Odeme':
+        mdb._yevmiye_ekle(conn, d['tarih'], 'Ortağa Geri Ödeme',
+                          ortak_hesap, banka_hesap,
+                          net, d['aciklama'], d.get('otel','GENEL'),
+                          kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
+    else:
+        gider_hesap = '741' if 'Market' in d.get('gider_kategori','') else '742' if 'Tamir' in d.get('gider_kategori','') else '740' if 'Elektrik' in d.get('gider_kategori','') else '780'
+        mdb._yevmiye_ekle(conn, d['tarih'], 'Ortak Gider (Kendi Cebinden)',
+                          gider_hesap, ortak_hesap,
+                          net, d['aciklama'], d.get('otel','GENEL'),
+                          kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
+
+
 @muh.route('/api/muhasebe/ortak/ekle', methods=['POST'])
 def api_ortak_ekle():
     try:
@@ -656,8 +681,6 @@ def api_ortak_ekle():
         conn = mdb.get_conn()
         tutar = float(d['tutar'])
         iade = float(d.get('iade', 0))
-        net = tutar - iade
-        islem_tipi = d.get('islem_tipi', 'Ortak Gider (Kendi Cebinden)')
         conn.execute("""
             INSERT INTO ortak_cari
             (tarih,ortak,belge_no,aciklama,gider_kategori,tutar,odeme_sekli,iade,otel)
@@ -666,22 +689,7 @@ def api_ortak_ekle():
               d.get('gider_kategori', ''), tutar,
               d.get('odeme_sekli', ''), iade, d.get('otel', 'GENEL')))
         ortak_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        if net > 0:
-            ortak_hesap = f"500-{d['ortak']}"
-            odeme = d.get('odeme_sekli', '')
-            banka_hesap = '100' if 'Nakit' in odeme else '102-2' if 'Ziraat' in odeme else '102-3' if 'Deniz' in odeme else '102-1'
-
-            if islem_tipi == 'Ortaga Geri Odeme':
-                mdb._yevmiye_ekle(conn, d['tarih'], 'Ortağa Geri Ödeme',
-                                  ortak_hesap, banka_hesap,
-                                  net, d['aciklama'], d.get('otel','GENEL'),
-                                  kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
-            else:
-                gider_hesap = '741' if 'Market' in d.get('gider_kategori','') else                               '742' if 'Tamir' in d.get('gider_kategori','') else                               '740' if 'Elektrik' in d.get('gider_kategori','') else '780'
-                mdb._yevmiye_ekle(conn, d['tarih'], 'Ortak Gider (Kendi Cebinden)',
-                                  gider_hesap, ortak_hesap,
-                                  net, d['aciklama'], d.get('otel','GENEL'),
-                                  kaynak_tablo='ortak_cari', kaynak_id=ortak_id)
+        _ortak_yevmiye_yaz(conn, ortak_id, d)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
@@ -1022,13 +1030,15 @@ def api_ortak_cari_guncelle():
     try:
         d = request.get_json()
         conn = mdb.get_conn()
-        conn.execute("""UPDATE ortak_cari SET tarih=?,aciklama=?,tutar=?,iade=?,
-                     odeme_sekli=?,gider_kategori=?,otel=? WHERE id=?""",
-            (d['tarih'], d['aciklama'], float(d['tutar']), float(d.get('iade',0)),
-             d.get('odeme_sekli',''), d.get('gider_kategori',''), d.get('otel','GENEL'), d['id']))
-        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?,aciklama=?
-                     WHERE kaynak_tablo='ortak_cari' AND kaynak_id=?""",
-            (d['tarih'], float(d['tutar']), d['aciklama'], d['id']))
+        ortak_id = int(d['id'])
+        conn.execute("""UPDATE ortak_cari SET tarih=?,ortak=?,belge_no=?,aciklama=?,
+                     gider_kategori=?,tutar=?,odeme_sekli=?,iade=?,otel=? WHERE id=?""",
+            (d['tarih'], d['ortak'], d.get('belge_no',''), d['aciklama'],
+             d.get('gider_kategori',''), float(d['tutar']), d.get('odeme_sekli',''),
+             float(d.get('iade',0)), d.get('otel','GENEL'), ortak_id))
+        # Eski yevmiye kaydını sil, güncel bilgilerle (ortak/işlem tipi değişmiş olabilir) yeniden yaz
+        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='ortak_cari' AND kaynak_id=?", (ortak_id,))
+        _ortak_yevmiye_yaz(conn, ortak_id, d)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:

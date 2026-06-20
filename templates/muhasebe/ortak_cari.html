@@ -29,7 +29,7 @@
 <!-- Modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <h2>Ortak Gider Ekle</h2>
+    <h2 id="modal-baslik">Ortak Gider Ekle</h2>
     <div class="form-row">
       <div class="form-group"><label>Tarih</label><input type="date" id="f-tarih" onclick="try{this.showPicker()}catch(e){}"></div>
       <div class="form-group"><label>Ortak</label><select id="f-ortak"><option value="LK">LK — Levent Koçoğlu</option><option value="BT">BT — Burçin Taşdelen</option><option value="FK">FK — Fırat Koçoğlu</option></select></div>
@@ -128,8 +128,18 @@ function onIslemChange() {
 }
 
 function openModal() {
+  editId = null;
+  document.getElementById('modal-baslik').textContent = 'Ortak Gider Ekle';
   document.getElementById('f-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-ortak').value = 'LK';
   document.getElementById('f-islem-tipi').value = 'Ortak Gider (Kendi Cebinden)';
+  document.getElementById('f-belge').value = '';
+  document.getElementById('f-aciklama').value = '';
+  document.getElementById('f-tutar').value = 0;
+  document.getElementById('f-iade').value = 0;
+  document.getElementById('f-kat').value = 'Tamir/Bakım';
+  document.getElementById('f-odeme').value = 'Nakit (Kasa)';
+  document.getElementById('f-otel').value = 'GENEL';
   onIslemChange();
   document.getElementById('modal').classList.add('open');
 }
@@ -155,8 +165,10 @@ async function save() {
     {id:'f-aciklama', label:'Açıklama'},
     {id:'f-tutar',    label:'Tutar'},
   ])) return;
-  const r = await api('/api/muhasebe/ortak/ekle', data);
-  if (r.ok) { toast(editId ? 'Güncellendi ✓' : 'Kayıt eklendi ✓'); closeModal(); load(); }
+  const url = editId ? '/api/muhasebe/ortak-cari/guncelle' : '/api/muhasebe/ortak/ekle';
+  if (editId) data.id = editId;
+  const r = await api(url, data);
+  if (r.ok) { toast(editId ? 'Güncellendi ✓' : 'Kayıt eklendi ✓'); editId = null; closeModal(); load(); }
   else toast(r.error, 'error');
 }
 
