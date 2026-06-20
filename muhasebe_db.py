@@ -420,14 +420,18 @@ def ekle_maas(tarih, personel_id, donem_yil, donem_ay,
     """, (t, personel_id, donem_yil, donem_ay, net_odeme,
            yol_parasi or 0, fazla_mesai or 0, izin_parasi or 0, gelmedi_gun or 0,
            avans_dusum or 0, odeme_banka, aciklama, otel))
-    # Yevmiye: Personel Gideri borç / Banka alacak (toplam tutar)
+    # Yevmiye: Personel Gideri borç / Banka alacak (net ödenen tutar)
+    # Avans düşümü varsa, avans hesabını (195) da kapatmak için ayrı satır yazılır;
+    # aksi halde avans hesabı hiç kapanmaz ve sonsuza kadar açık görünür.
+    maas_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    if avans_dusum and avans_dusum > 0:
+        _yevmiye_ekle(conn, t, 'Personel Maaşı (Avans Mahsubu)', '720', '195',
+                      avans_dusum, f'{p_ad} {donem_ay}/{donem_yil} avans mahsubu', otel,
+                      kaynak_tablo='personel_maas', kaynak_id=maas_id)
     if toplam > 0:
-        maas_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        conn.execute("""
-            INSERT INTO yevmiye(tarih,yil,ay,belge_no,islem_tipi,borc_hesap,alacak_hesap,tutar,aciklama,otel,kaynak_tablo,kaynak_id)
-            VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (t, yil, ay, '', 'Personel Maaşı', '720', odeme_banka or '102-1',
-                toplam, f'{p_ad} {donem_ay}/{donem_yil} maaş+yol', otel, 'personel_maas', maas_id))
+        _yevmiye_ekle(conn, t, 'Personel Maaşı', '720', odeme_banka or '102-1',
+                      toplam, f'{p_ad} {donem_ay}/{donem_yil} maaş+yol', otel,
+                      kaynak_tablo='personel_maas', kaynak_id=maas_id)
     conn.commit(); conn.close()
 
 def ekle_stok(tarih, aciklama, tutar, kategori="", belge_no="",

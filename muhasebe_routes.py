@@ -329,7 +329,8 @@ def api_personel_ekle():
     try:
         d = request.get_json()
         mdb.ekle_personel(d['ad_soyad'], d.get('ise_giris'), d.get('gorev'),
-                         float(d.get('net_maas', 0)), d.get('banka_iban', ''))
+                         float(d.get('net_maas', 0)), d.get('banka_iban', ''),
+                         d.get('telefon', ''), d.get('tc_kimlik', ''))
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
@@ -1011,15 +1012,34 @@ def api_maas_guncelle():
         yol = float(d.get('yol_parasi', 0))
         mesai = float(d.get('fazla_mesai', 0))
         izin = float(d.get('izin_parasi', 0))
-        toplam = float(d['net_odeme']) + yol + mesai + izin
-        conn.execute("""UPDATE personel_maas SET tarih=?,net_odeme=?,yol_parasi=?,fazla_mesai=?,izin_parasi=?,gelmedi_gun=?,odeme_banka=?,aciklama=?,otel=?
+        avans_dusum = float(d.get('avans_dusum', 0))
+        net_odeme = float(d['net_odeme'])
+        toplam = net_odeme + yol + mesai + izin - avans_dusum
+        odeme_banka = d.get('odeme_banka', '')
+        otel = d.get('otel', 'GENEL')
+        maas_id = int(d['id'])
+        conn.execute("""UPDATE personel_maas SET tarih=?,net_odeme=?,yol_parasi=?,fazla_mesai=?,izin_parasi=?,gelmedi_gun=?,avans_dusum=?,odeme_banka=?,aciklama=?,otel=?
                      WHERE id=?""",
-            (d['tarih'], float(d['net_odeme']), yol, mesai, izin,
-             int(d.get('gelmedi_gun',0)), d.get('odeme_banka',''),
-             d.get('aciklama',''), d.get('otel','GENEL'), d['id']))
-        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?,alacak_hesap=?
-                     WHERE kaynak_tablo='personel_maas' AND kaynak_id=?""",
-            (d['tarih'], toplam, d.get('odeme_banka','102-1'), d['id']))
+            (d['tarih'], net_odeme, yol, mesai, izin,
+             int(d.get('gelmedi_gun',0)), avans_dusum, odeme_banka,
+             d.get('aciklama',''), otel, maas_id))
+        # Personel adını al
+        p_row = conn.execute(
+            "SELECT p.ad_soyad FROM personel_maas pm JOIN personel p ON p.id=pm.personel_id WHERE pm.id=?",
+            (maas_id,)).fetchone()
+        p_ad = p_row['ad_soyad'] if p_row else ''
+        donem_ay = d.get('donem_ay', '')
+        donem_yil = d.get('donem_yil', '')
+        # Eski yevmiye kayıtlarını sil, güncel bilgilerle yeniden yaz (avans mahsubu dahil)
+        conn.execute("DELETE FROM yevmiye WHERE kaynak_tablo='personel_maas' AND kaynak_id=?", (maas_id,))
+        if avans_dusum > 0:
+            mdb._yevmiye_ekle(conn, d['tarih'], 'Personel Maaşı (Avans Mahsubu)', '720', '195',
+                              avans_dusum, f'{p_ad} {donem_ay}/{donem_yil} avans mahsubu', otel,
+                              kaynak_tablo='personel_maas', kaynak_id=maas_id)
+        if toplam > 0:
+            mdb._yevmiye_ekle(conn, d['tarih'], 'Personel Maaşı', '720', odeme_banka or '102-1',
+                              toplam, f'{p_ad} {donem_ay}/{donem_yil} maaş+yol', otel,
+                              kaynak_tablo='personel_maas', kaynak_id=maas_id)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
