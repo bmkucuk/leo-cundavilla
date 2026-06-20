@@ -287,7 +287,7 @@ async function loadPersonel() {
       <td>${p.telefon||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.tc_kimlik||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.banka_iban||'—'}</td>
-      <td style="text-align:right;color:var(--accent3);font-weight:600">${(p.kalan_avans||0)>0?fmt(p.kalan_avans)+' ₺':'—'}</td>
+      <td style="text-align:right;color:var(--accent3);font-weight:600">${(p.kalan_avans||0)>0?fmt(p.kalan_avans):'—'}</td>
       <td>${p.aktif ? '<span class="green">✅ Aktif</span>' : '<span class="red">❌ Pasif</span>'}</td>
       <td style="white-space:nowrap">
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenlePersonel(${p.id})">Düzenle</button>
@@ -323,7 +323,7 @@ async function loadMaaslar() {
       </td>
     </tr>`;
   }).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:20px">Maaş kaydı yok</td></tr>';
-  document.getElementById('maas-toplam').textContent = `${yil} Yılı Toplam: ${fmt(toplam)} ₺`;
+  document.getElementById('maas-toplam').textContent = `${yil} Yılı Toplam: ${fmt(toplam)}`;
 }
 
 async function silMaas(id) {
