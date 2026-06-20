@@ -367,7 +367,7 @@ def get_dashboard(today_str):
         "SELECT * FROM rezervasyonlar WHERE giris<=? AND cikis>? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY oda_no",
         (today_str, today_str)).fetchall()]
     kahvalti = conn.execute(
-        "SELECT SUM(yetiskin+cocuk) FROM rezervasyonlar WHERE giris<=? AND cikis>=? AND (durum IS NULL OR durum != 'Kapora Yandı')",
+        "SELECT SUM(yetiskin+cocuk) FROM rezervasyonlar WHERE giris<=? AND cikis>=? AND (durum IS NULL OR durum != 'Kapora Yandı') AND (kahvalti IS NULL OR kahvalti != 'Kahvaltısız')",
         (today_str, today_str)).fetchone()[0] or 0
     conn.close()
     return girisler, cikislar, aktifler, int(kahvalti)

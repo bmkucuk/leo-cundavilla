@@ -537,6 +537,32 @@ def api_acente():
     yil = request.args.get('yil', date.today().year, type=int)
     acente = request.args.get('acente', '')
     conn = mdb.get_conn()
+
+    # Föy'e bağlı (otomatik) kayıtları, rezervasyonun GÜNCEL fiyatı ve acentenin
+    # GÜNCEL komisyon oranıyla yeniden hesaplayıp senkronize et (fiyat sonradan
+    # değiştirilmiş olabilir, eski komisyon donuk kalmasın).
+    oto_rows = conn.execute(
+        "SELECT id, foy_no, acente_kod, komisyon_tl, rez_tutari FROM acente_cari WHERE foy_no IS NOT NULL AND foy_no!=''"
+    ).fetchall()
+    for r in oto_rows:
+        rez = conn.execute(
+            "SELECT toplam_fiyat FROM rezervasyonlar WHERE foy_no=?", (r['foy_no'],)
+        ).fetchone()
+        if not rez:
+            continue
+        guncel_tutar = float(rez['toplam_fiyat'] or 0)
+        a = conn.execute(
+            "SELECT komisyon_orani FROM acenteler WHERE kod=?", (r['acente_kod'],)
+        ).fetchone()
+        oran = float(a['komisyon_orani']) if a else 0.0
+        guncel_kom = round(guncel_tutar * oran / 100, 2)
+        if abs(guncel_tutar - float(r['rez_tutari'] or 0)) > 0.005 or abs(guncel_kom - float(r['komisyon_tl'] or 0)) > 0.005:
+            conn.execute(
+                "UPDATE acente_cari SET rez_tutari=?, komisyon_oran=?, komisyon_tl=? WHERE id=?",
+                (guncel_tutar, oran, guncel_kom, r['id'])
+            )
+    conn.commit()
+
     q = "SELECT * FROM acente_cari WHERE strftime('%Y',tarih)=?"
     params = [str(yil)]
     if acente: q += " AND acente_kod=?"; params.append(acente)

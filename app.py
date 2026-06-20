@@ -147,6 +147,7 @@ def api_gunluk_liste():
         "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no "
         "FROM rezervasyonlar "
         "WHERE giris < ? AND cikis >= ? AND (durum IS NULL OR durum != 'Kapora Yandı') "
+        "AND (kahvalti IS NULL OR kahvalti != 'Kahvaltısız') "
         "ORDER BY otel, oda_no", (tarih, tarih)
     ).fetchall()
     conn.close()

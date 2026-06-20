@@ -51,11 +51,12 @@
         <th style="text-align:right">Kapora</th>
         <th style="text-align:right">Bakiye</th>
         <th style="text-align:center">Durum</th>
+        <th style="text-align:center">Kahvaltı</th>
         <th style="text-align:right">İşlem</th>
       </tr>
     </thead>
     <tbody id="rez-tbody">
-      <tr class="loading-row"><td colspan="11"><span class="spinner"></span></td></tr>
+      <tr class="loading-row"><td colspan="12"><span class="spinner"></span></td></tr>
     </tbody>
   </table>
 </div>
@@ -273,7 +274,6 @@ async function load() {
     const subParts = [];
     if (r.cocuk>0) subParts.push(r.cocuk+' çocuk');
     if (r.ek_yatak && r.ek_yatak!=='Yok') subParts.push(r.ek_yatak);
-    if (r.kahvalti==='Kahvaltısız') subParts.push('Kahvaltısız');
 
     let islemHtml;
     if (gercekDurum === 'Tamamlandı') {
@@ -312,6 +312,7 @@ async function load() {
       <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--text2)">${r.kapora>0?fmt(r.kapora):'—'}</td>
       <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600;color:${r.rez_bakiye>0?'var(--accent3)':'var(--pos)'}">${r.rez_bakiye>0?fmt(r.rez_bakiye):'Temiz'}</td>
       <td style="text-align:center"><span class="rez-durum-pill" style="background:${durumBg};color:${durumC}">${gercekDurum}</span></td>
+      <td style="text-align:center">${r.kahvalti==='Kahvaltısız' ? '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(255,111,125,.15);color:var(--accent3);font-weight:600">Kahvaltısız</span>' : '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(47,221,155,.15);color:var(--pos);font-weight:600">Kahvaltılı</span>'}</td>
       <td style="text-align:right;white-space:nowrap">${islemHtml}</td>
     </tr>`;
   }).join('');
