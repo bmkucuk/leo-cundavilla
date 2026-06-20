@@ -87,7 +87,7 @@
     <div class="section-title" style="border:none;margin:0 0 4px;color:var(--accent)">🔎 Müsaitlik Sorgu</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Misafirin istediği tarihleri gir, boş odaları anında gör.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-      <div class="ms-field"><label>Giriş</label><input type="date" id="ms-giris"></div>
+      <div class="ms-field"><label>Giriş</label><input type="date" id="ms-giris" onchange="msAutoCikis()"></div>
       <div class="ms-field"><label>Çıkış</label><input type="date" id="ms-cikis"></div>
       <div class="ms-field"><label>Otel</label><select id="ms-otel"><option>Tümü</option><option>LEO</option><option>CV</option></select></div>
       <button class="btn btn-primary" onclick="sorgula()" style="padding:9px 18px">Sorgula</button>
@@ -268,6 +268,14 @@ function render(d){
 }
 
 // ── Müsaitlik Sorgu ──────────────────────────────────────────────────────
+function msAutoCikis(){
+  const giris = document.getElementById('ms-giris').value;
+  if(!giris) return;
+  const g = new Date(giris+'T00:00:00');
+  g.setDate(g.getDate()+1);
+  document.getElementById('ms-cikis').value = toISO(g);
+}
+
 async function sorgula(){
   const giris = document.getElementById('ms-giris').value;
   const cikis = document.getElementById('ms-cikis').value;
