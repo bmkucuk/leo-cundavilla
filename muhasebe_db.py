@@ -218,9 +218,8 @@ def init_db():
         ("340",    "Alınan Avanslar (Kaparo)",              "Pasif",     "Kaparo"),
         ("649",    "Diğer Olağan Gelir ve Karlar",  "Gelir",     "Diğer"),
         ("500-LK", "LK Cari (Levent Koçoğlu)",  "Ozkaynak",  "Ortak"),
-        ("500-BT", "BT Cari (Barış Taşdelen)",  "Ozkaynak",  "Ortak"),
+        ("500-BT", "BT Cari (Burçin Taşdelen)",  "Ozkaynak",  "Ortak"),
         ("500-FK", "FK Cari (Fırat Koçoğlu)",   "Ozkaynak",  "Ortak"),
-        ("500-BC", "Burçin Cari",               "Ozkaynak",  "Kişisel"),
         ("600",    "Konaklama Geliri - Leo",     "Gelir",     "Gelir"),
         ("601",    "Konaklama Geliri - CV",      "Gelir",     "Gelir"),
         ("610",    "Adisyon Geliri",        "Gelir",     "Gelir"),
@@ -247,11 +246,21 @@ def init_db():
         ("FK-KK", "Fırat KK",       ""),
         ("LK-NKT","Levent Nakit",   ""),
         ("LK-KK", "Levent KK",      ""),
-        ("BC-NKT","Burçin Nakit",   ""),
-        ("BC-KK", "Burçin KK",      ""),
+        ("BT-NKT","Burçin Nakit",   ""),
+        ("BT-KK", "Burçin KK",      ""),
     ]
     for b in bankalar:
         c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES(?,?,?)", b)
+
+    # Migration: BT hesap adı Barış Taşdelen'den Burçin Taşdelen'e düzeltildi
+    c.execute("UPDATE hesaplar SET ad='BT Cari (Burçin Taşdelen)' WHERE kod='500-BT'")
+    # Migration: eski ayrı Burçin kişisel hesabı varsa resmi BT ortak hesabına birleştir
+    c.execute("SELECT 1 FROM hesaplar WHERE kod='500-BC'")
+    if c.fetchone():
+        c.execute("UPDATE yevmiye SET borc_hesap='500-BT' WHERE borc_hesap='500-BC'")
+        c.execute("UPDATE yevmiye SET alacak_hesap='500-BT' WHERE alacak_hesap='500-BC'")
+        c.execute("DELETE FROM hesaplar WHERE kod='500-BC'")
+        c.execute("DELETE FROM bankalar WHERE kod='BC-NKT' OR kod='BC-KK'")
 
     acenteler = [
         ("BKG",     "Booking.com",  15.0),

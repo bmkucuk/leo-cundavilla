@@ -422,13 +422,13 @@ BANKA_AD_KODU = {
     'Ziraat Bankası': '102-2', 'Denizbank': '102-3', 'Deniz Bank': '102-3',
     'Fırat Nakit': '500-FK', 'Fırat KK': '500-FK',
     'Levent Nakit': '500-LK', 'Levent KK': '500-LK',
-    'Burçin Nakit': '500-BC', 'Burçin KK': '500-BC',
+    'Burçin Nakit': '500-BT', 'Burçin KK': '500-BT',
 }
 BANKA_HESAP_KODU = {'100': '100', '102-1': '102-1', '102-2': '102-2', '102-3': '102-3',
                     'KASA': '100', 'IS': '102-1', 'ZRH': '102-2', 'DNZ': '102-3',
                     'FK-NKT': '500-FK', 'FK-KK': '500-FK',
                     'LK-NKT': '500-LK', 'LK-KK': '500-LK',
-                    'BC-NKT': '500-BC', 'BC-KK': '500-BC'}
+                    'BT-NKT': '500-BT', 'BT-KK': '500-BT'}
 
 
 @muh.route('/api/muhasebe/demirbas/ekle', methods=['POST'])
