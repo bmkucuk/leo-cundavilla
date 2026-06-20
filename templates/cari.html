@@ -41,15 +41,20 @@
     <div class="section-title" style="margin:0;border:0">💳 Föy Bazlı Cari Durum</div>
     <div style="flex:1"></div>
     <button id="btn-secim-kaldir" class="btn btn-default" style="font-size:11px;padding:4px 10px;display:none" onclick="secimKaldir()">✕ Seçimi Kaldır</button>
-    <input type="text" id="cari-search" placeholder="🔍 Misafir, föy, oda ara..."
-      style="padding:6px 12px;background:var(--card2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;width:250px"
-      oninput="filterCari()">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
-      <input type="checkbox" id="cb-cari-aktif" onchange="filterCari()" style="width:15px;height:15px;accent-color:var(--accent)"> Aktif
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;background:var(--header);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px">
+    <div style="flex:1;display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:9px 14px">
+      <span style="color:var(--text2);font-size:14px">⊙</span>
+      <input type="text" id="cari-search" placeholder="Misafir, föy no, oda ara..."
+        style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:13px"
+        oninput="filterCari()">
+    </div>
+    <label id="btn-acik-hesap" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text2);white-space:nowrap;background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:9px 16px;user-select:none">
+      <input type="checkbox" id="cb-cari-aktif" onchange="filterCari()" style="display:none">
+      <span id="acik-hesap-dot" style="width:8px;height:8px;border-radius:50%;background:var(--border);flex:none"></span>
+      Sadece açık hesaplar
     </label>
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2);white-space:nowrap">
-      <input type="checkbox" id="cb-cari-tamam" onchange="filterCari()" style="width:15px;height:15px;accent-color:#5d5"> Tamamlandı
-    </label>
+    <div id="cari-count" style="font-size:12.5px;color:var(--text2);white-space:nowrap;padding:0 4px">— föy</div>
   </div>
   <div class="table-wrap" style="max-height:480px;overflow-y:auto">
     <table>
@@ -206,8 +211,7 @@ async function load() {
   const d = await api('/api/cari');
   allData = d.rezervasyonlar;
   ozetData = d.ozet;
-  renderCari(allData);
-  if (selFoy) {
+  filterCari();
     await loadDokum(selFoy);
     updateCards();
   } else updateCards();
@@ -255,8 +259,7 @@ function renderCari(data) {
 
 function filterCari() {
   const q = document.getElementById('cari-search').value.toLowerCase();
-  const showAktif = document.getElementById('cb-cari-aktif').checked;
-  const showTamam = document.getElementById('cb-cari-tamam').checked;
+  const sadeceAcik = document.getElementById('cb-cari-aktif').checked;
 
   let result = allData;
 
@@ -266,14 +269,24 @@ function filterCari() {
     );
   }
 
-  if (showAktif || showTamam) {
+  if (sadeceAcik) {
     result = result.filter(r => {
       const tamam = (r.rez_bakiye <= 0) && (r.adis_bakiye <= 0);
-      if (showAktif && !tamam) return true;
-      if (showTamam && tamam) return true;
-      return false;
+      return !tamam;
     });
   }
+
+  const pill = document.getElementById('btn-acik-hesap');
+  const dot = document.getElementById('acik-hesap-dot');
+  if (pill) {
+    pill.style.background = sadeceAcik ? 'rgba(255,111,125,.15)' : 'var(--card2)';
+    pill.style.borderColor = sadeceAcik ? 'var(--accent3)' : 'var(--border)';
+    pill.style.color = sadeceAcik ? 'var(--accent3)' : 'var(--text2)';
+  }
+  if (dot) dot.style.background = sadeceAcik ? 'var(--accent3)' : 'var(--border)';
+
+  const countEl = document.getElementById('cari-count');
+  if (countEl) countEl.textContent = `${result.length} föy`;
 
   renderCari(result);
 }
@@ -282,7 +295,7 @@ async function selectRow(foy) {
   selFoy = foy;
   selectedRez = false;
   selectedAdisNolar = new Set();
-  renderCari(allData);
+  filterCari();
   document.getElementById('alt-panel').style.display = 'flex';
   document.getElementById('btn-secim-kaldir').style.display = 'inline-block';
   await loadDokum(foy);
