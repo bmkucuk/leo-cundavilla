@@ -13,8 +13,21 @@
   </div>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Ad Soyad</th><th>Görev</th><th style="text-align:right">Net Maaş</th><th>İşe Giriş</th><th>Telefon</th><th>TC Kimlik</th><th>IBAN</th><th style="text-align:right">Kalan Avans</th><th>Durum</th><th></th></tr></thead>
-      <tbody id="pers-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
+      <thead><tr><th>Ad Soyad</th><th>Görev</th><th style="text-align:right">Net Maaş</th><th>İşe Giriş</th><th>Telefon</th><th>TC Kimlik</th><th>IBAN</th><th>Durum</th><th></th></tr></thead>
+      <tbody id="pers-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Açık Avans Bakiyeleri -->
+<div class="panel" style="margin-bottom:16px">
+  <div class="toolbar" style="margin-bottom:10px">
+    <div class="section-title" style="margin:0;border:0">💰 Açık Avans Bakiyeleri</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ad Soyad</th><th style="text-align:right">Kalan Avans</th><th></th></tr></thead>
+      <tbody id="avans-bakiye-tbody"><tr class="loading-row"><td colspan="3"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
 </div>
@@ -287,13 +300,22 @@ async function loadPersonel() {
       <td>${p.telefon||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.tc_kimlik||'—'}</td>
       <td style="font-size:11px;color:var(--text2)">${p.banka_iban||'—'}</td>
-      <td style="text-align:right;color:var(--accent3);font-weight:600">${(p.kalan_avans||0)>0?fmt(p.kalan_avans):'—'}</td>
       <td>${p.aktif ? '<span class="green">✅ Aktif</span>' : '<span class="red">❌ Pasif</span>'}</td>
       <td style="white-space:nowrap">
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenlePersonel(${p.id})">Düzenle</button>
         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silPersonel(${p.id})">Sil</button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Personel yok</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Personel yok</td></tr>';
+
+  const acikAvanslilar = personelList.filter(p => (p.kalan_avans||0) > 0);
+  document.getElementById('avans-bakiye-tbody').innerHTML = acikAvanslilar.length ? acikAvanslilar.map(p => `
+    <tr>
+      <td>${p.ad_soyad}</td>
+      <td style="text-align:right;color:var(--accent3);font-weight:600">${fmt(p.kalan_avans)}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--card2);color:var(--text2)" onclick="avansGecmisi(${p.id},'${p.ad_soyad}')">📋 Geçmiş</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:16px">Açık avans bakiyesi yok</td></tr>';
 }
 
 async function loadMaaslar() {
