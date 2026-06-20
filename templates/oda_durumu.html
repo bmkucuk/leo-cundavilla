@@ -48,7 +48,8 @@
 .oda-grid{display:grid;gap:3px;min-width:max-content}
 
 .oda-label{background:var(--card);padding:5px 8px;font-size:12.5px;font-weight:700;
-  border-radius:7px;border:1px solid var(--border);width:100px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  border-radius:7px;border:1px solid var(--border);width:100px;white-space:nowrap;display:flex;align-items:center;gap:7px;
+  position:sticky;left:0;z-index:6}
 .oda-label .dot{width:7px;height:7px;border-radius:50%;flex:none}
 .oda-label.leo{color:var(--leo)}
 .oda-label.leo .dot{background:var(--leo)}
@@ -309,6 +310,9 @@ async function sorgula(){
     const lbl = o.otel==='LEO'?`LEO ${o.oda_no}`:`CV ${o.oda_no}`;
     return `<div class="ms-room-pill ${cls}" onclick="lokalizeOda('${o.otel}',${o.oda_no},'${giris}','${cikis}')">${lbl}</div>`;
   }).join('') : '<span style="color:var(--text2);font-size:12.5px">Bu tarih aralığında müsait oda yok</span>';
+
+  // Bir odaya tıklamadan önce, sorgulanan aralığı tüm satırları kapsayacak şekilde anında işaretle
+  await vurgulaAralik(giris, cikis);
 }
 
 // Müsait oda etiketine tıklanınca: ilgili satıra git, sorgulanan tarih aralığındaki
@@ -321,36 +325,32 @@ function clearHighlight(){
   document.getElementById('clear-hl-btn').style.display='none';
 }
 
-async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
+// Pencereyi sorgu aralığı ortada kalacak şekilde merkezleyip TÜM satırları kapsayan
+// tarih-aralığı kutusunu çizer. Belirli bir oda seçmeden, sadece tarih bandını gösterir.
+async function vurgulaAralik(girisStr, cikisStr){
   const g = new Date(girisStr+'T00:00:00');
   const c = new Date(cikisStr+'T00:00:00');
   const span = Math.round((c-g)/86400000);
 
-  // Pencereyi her zaman sorgu aralığı ortada kalacak şekilde merkezle
   const bosKalan = Math.max(GRID_DAYS - span, 0);
   const oncekiGun = Math.floor(bosKalan/2);
   startDate = new Date(g);
   startDate.setDate(startDate.getDate() - oncekiGun);
   await load();
 
-  const gridEl = document.getElementById('oda-grid');
   clearHighlight();
+  const gridEl = document.getElementById('oda-grid');
 
-  const roomKey = `${otel}-${odaNo}`;
-
-  requestAnimationFrame(()=>{
-    const firstCell = gridEl.querySelector(`[data-room="${CSS.escape(roomKey)}"][data-date="${girisStr}"]`);
+  return new Promise(resolve => requestAnimationFrame(()=>{
+    const firstCell = gridEl.querySelector(`[data-date="${girisStr}"]`);
     let lastDateStr = lastDates.filter(d=>d>=girisStr && d<cikisStr).pop();
-    const lastCell  = lastDateStr ? gridEl.querySelector(`[data-room="${CSS.escape(roomKey)}"][data-date="${lastDateStr}"]`) : firstCell;
-    if(!firstCell || !lastCell){
-      toast('Bu tarih aralığı görünür takvim penceresinde değil', 'error');
-      return;
-    }
+    const lastCell  = lastDateStr ? gridEl.querySelector(`[data-date="${lastDateStr}"]`) : firstCell;
+    if(!firstCell || !lastCell){ resolve(); return; }
+
     const gRect = gridEl.getBoundingClientRect();
     const fRect = firstCell.getBoundingClientRect();
     const lRect = lastCell.getBoundingClientRect();
 
-    // Tarih aralığı kutusu
     const box = document.createElement('div');
     box.className = 'ms-highlight-box';
     box.style.left   = (fRect.left - gRect.left) + 'px';
@@ -358,6 +358,26 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
     box.style.width  = (lRect.right - fRect.left) + 'px';
     box.style.height = gridEl.scrollHeight + 'px';
     gridEl.appendChild(box);
+
+    document.getElementById('clear-hl-btn').style.display='inline-block';
+    resolve();
+  }));
+}
+
+async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
+  await vurgulaAralik(girisStr, cikisStr);
+
+  const gridEl = document.getElementById('oda-grid');
+  const roomKey = `${otel}-${odaNo}`;
+
+  requestAnimationFrame(()=>{
+    const firstCell = gridEl.querySelector(`[data-room="${CSS.escape(roomKey)}"][data-date="${girisStr}"]`);
+    if(!firstCell){
+      toast('Bu oda görünür takvim penceresinde değil', 'error');
+      return;
+    }
+    const gRect = gridEl.getBoundingClientRect();
+    const fRect = firstCell.getBoundingClientRect();
 
     // Odanın satırını yatayda da işaretle
     const rowLine = document.createElement('div');
@@ -368,17 +388,16 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
     rowLine.style.height = fRect.height + 'px';
     gridEl.appendChild(rowLine);
 
-    document.getElementById('clear-hl-btn').style.display='inline-block';
-
-    // Odayı "seçili" yap ve satırı dikeyde ortala
+    // Odayı "seçili" yap
     const labelEl = Array.from(gridEl.querySelectorAll('.oda-label')).find(el => el.textContent.replace(/\s+/g,' ').trim().includes(`${otel==='LEO'?'LEO':'CV'} – ${odaNo}`));
     if(labelEl) labelEl.classList.add('selected');
 
+    // Satırı dikeyde TEK seferde ortala (iki ayrı scrollTo çağrısı birbirini iptal ediyordu)
     const gridWrap = document.getElementById('grid-wrap');
     const wrapRect = gridWrap.getBoundingClientRect();
-    const targetScrollTop = gridWrap.scrollTop + (fRect.top - wrapRect.top) - (wrapRect.height/2) + (fRect.height/2);
-    gridWrap.scrollTo({top: Math.max(targetScrollTop,0), behavior:'smooth'});
-    gridWrap.scrollTo({left: Math.max((fRect.left-gRect.left) - (wrapRect.width/2), 0), behavior:'smooth'});
+    const targetTop  = Math.max(gridWrap.scrollTop + (fRect.top - wrapRect.top) - (wrapRect.height/2) + (fRect.height/2), 0);
+    const targetLeft = Math.max(gridWrap.scrollLeft + (fRect.left - wrapRect.left) - (wrapRect.width/2) + (fRect.width/2), 0);
+    gridWrap.scrollTo({top: targetTop, left: targetLeft, behavior:'smooth'});
   });
 
   toast(`${otel} ${odaNo} — ${new Date(girisStr).toLocaleDateString('tr-TR')} → ${new Date(cikisStr).toLocaleDateString('tr-TR')} aralığı işaretlendi`);
