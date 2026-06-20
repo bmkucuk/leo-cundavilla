@@ -88,7 +88,7 @@
           <th style="width:32px"></th>
           <th>Tür</th>
           <th>Tarih</th>
-          <th>Açıklama</th>
+          <th style="width:70px">Açk.</th>
           <th style="text-align:right">Tutar</th>
           <th style="text-align:right">Tahsilat</th>
           <th style="text-align:center">Ödeme</th>
@@ -333,7 +333,7 @@ function renderDokum(r) {
         <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
         <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
         <td style="font-size:12px;color:var(--text2)">—</td>
-        <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Rez. Borcu</td>
+        <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Rez. Borcu">Föy #${r.foy_no} · Rez. Borcu</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(rezBak)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
@@ -351,7 +351,7 @@ function renderDokum(r) {
           <td></td>
           <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px">${fmtDate(t.tarih)}</td>
-          <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Rez. Borcu</td>
+          <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Rez. Borcu">Föy #${r.foy_no} · Rez. Borcu</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(oncekiBakiye)}</td>
           <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(t.tutar)}</td>
           <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${t.odeme}</td>
@@ -368,7 +368,7 @@ function renderDokum(r) {
           <td style="text-align:center"><input type="checkbox" ${selectedRez?'checked':''} onchange="toggleRez(this.checked)"></td>
           <td><span style="background:#1a3a6b;color:#7af;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">REZ</span></td>
           <td style="font-size:12px;color:var(--text2)">—</td>
-          <td style="font-size:13px;font-weight:600">Föy #${r.foy_no} · Kalan Borç</td>
+          <td style="font-size:13px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Föy #${r.foy_no} · Kalan Borç">Föy #${r.foy_no} · Kalan Borç</td>
           <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
           <td style="text-align:right;color:var(--text2)">—</td>
           <td style="text-align:center;color:var(--text2)">—</td>
@@ -395,7 +395,7 @@ function renderDokum(r) {
         <td></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${fmtDate(o.tarih)}</td>
-        <td style="font-size:13px">${a.aciklama||'Adisyon'}</td>
+        <td style="font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.aciklama||'Adisyon'}">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:var(--text2)">${fmt(a.tutar)}</td>
         <td style="text-align:right;font-weight:700;font-size:14px;color:#5c5">${fmt(o.tutar)}</td>
         <td style="text-align:center;font-size:12px;font-weight:600;color:#5c5">${o.odeme_sekli}</td>
@@ -413,7 +413,7 @@ function renderDokum(r) {
         <td style="text-align:center"><input type="checkbox" ${chk?'checked':''} onchange="toggleAdis(${itemKey}, this.checked)"></td>
         <td><span style="background:#1a3a1a;color:#7fb;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700">ADİS #${a.adisyon_no}</span></td>
         <td style="font-size:12px">${a.tarih||'—'}</td>
-        <td style="font-size:13px">${a.aciklama||'Adisyon'}</td>
+        <td style="font-size:13px;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.aciklama||'Adisyon'}">${a.aciklama||'Adisyon'}</td>
         <td style="text-align:right;font-weight:800;font-size:14px;color:#e55">${fmt(kalanBakiye)}</td>
         <td style="text-align:right;color:var(--text2)">—</td>
         <td style="text-align:center;color:var(--text2)">—</td>
