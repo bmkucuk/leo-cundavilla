@@ -44,8 +44,15 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Belge No</label><input type="text" id="f-belge"></div>
-      <div class="form-group"><label>Kategori</label>
+      <div class="form-group">
+        <label id="kat-odeme-label">Kategori</label>
         <select id="f-kat"><option>Tamir/Bakım</option><option>Market/Alışveriş</option><option>Elektrik/Su</option><option>Yakıt</option><option>Yemek</option><option>Ulaşım</option><option>Diğer</option></select>
+        <select id="f-odeme" style="display:none">
+          <option>Nakit (Kasa)</option>
+          <option>İş Bankası</option>
+          <option>Ziraat Bankası</option>
+          <option>Deniz Bank</option>
+        </select>
       </div>
     </div>
     <div class="form-row single"><div class="form-group"><label>Açıklama</label><input type="text" id="f-aciklama"></div></div>
@@ -53,19 +60,7 @@
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="f-tutar" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
       <div class="form-group"><label>İade (₺)</label><input type="number" id="f-iade" value="0"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Ödeme / Kaynak</label>
-        <select id="f-odeme">
-          <option>Nakit (Kendi)</option>
-          <option>Kredi Kartı (Kendi)</option>
-          <option>Nakit (Kasa)</option>
-          <option>İş Bankası</option>
-          <option>Ziraat Bankası</option>
-          <option>Deniz Bank</option>
-        </select>
-      </div>
-      <div class="form-group"><label>Otel</label><select id="f-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
-    </div>
+    <div class="form-row single"><div class="form-group"><label>Otel</label><select id="f-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div></div>
     <div class="modal-footer">
       <button class="btn btn-default" onclick="closeModal()">İptal</button>
       <button class="btn btn-primary" onclick="save()">💾 Kaydet</button>
@@ -124,22 +119,33 @@ async function load() {
   // rendered below style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
 }
 
+function onIslemChange() {
+  const tip = document.getElementById('f-islem-tipi').value;
+  const isGeri = tip === 'Ortaga Geri Odeme';
+  document.getElementById('f-kat').style.display = isGeri ? 'none' : '';
+  document.getElementById('f-odeme').style.display = isGeri ? '' : 'none';
+  document.getElementById('kat-odeme-label').textContent = isGeri ? 'Ödeme Kaynağı' : 'Kategori';
+}
+
 function openModal() {
   document.getElementById('f-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-islem-tipi').value = 'Ortak Gider (Kendi Cebinden)';
+  onIslemChange();
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
 
 async function save() {
+  const isGeri = document.getElementById('f-islem-tipi').value === 'Ortaga Geri Odeme';
   const data = {
     tarih: document.getElementById('f-tarih').value,
     ortak: document.getElementById('f-ortak').value,
     belge_no: document.getElementById('f-belge').value,
     aciklama: document.getElementById('f-aciklama').value,
-    gider_kategori: document.getElementById('f-kat').value,
+    gider_kategori: isGeri ? '' : document.getElementById('f-kat').value,
     tutar: parseFloat(document.getElementById('f-tutar').value)||0,
     iade: parseFloat(document.getElementById('f-iade').value)||0,
-    odeme_sekli: document.getElementById('f-odeme').value,
+    odeme_sekli: isGeri ? document.getElementById('f-odeme').value : '',
     otel: document.getElementById('f-otel').value,
     islem_tipi: document.getElementById('f-islem-tipi').value,
   };
@@ -163,10 +169,12 @@ async function duzenle(id) {
   document.getElementById('f-ortak').value = r.ortak || 'LK';
   document.getElementById('f-aciklama').value = r.aciklama || '';
   document.getElementById('f-belge').value = r.belge_no || '';
+  document.getElementById('f-islem-tipi').value = r.odeme_sekli ? 'Ortaga Geri Odeme' : 'Ortak Gider (Kendi Cebinden)';
+  onIslemChange();
   document.getElementById('f-kat').value = r.gider_kategori || 'Tamir/Bakım';
+  document.getElementById('f-odeme').value = r.odeme_sekli || 'Nakit (Kasa)';
   document.getElementById('f-tutar').value = r.tutar || 0;
   document.getElementById('f-iade').value = r.iade || 0;
-  document.getElementById('f-odeme').value = r.odeme_sekli || 'KK';
   document.getElementById('f-otel').value = r.otel || 'GENEL';
   document.getElementById('modal').classList.add('open');
 }
