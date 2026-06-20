@@ -115,6 +115,12 @@
   <div class="modal" style="max-width:600px">
     <h2 id="maas-modal-baslik">Maaş Ödemesi Ekle</h2>
     <div class="form-row single"><div class="form-group"><label>Personel</label><select id="m-pers" onchange="onPersChange()"></select></div></div>
+    <div class="form-row single" style="margin-top:-8px;margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn" style="font-size:11px;padding:5px 10px;background:var(--accent2);color:#000" onclick="avansVerFromMaas()">💰 Avans Ver</button>
+        <button type="button" class="btn" style="font-size:11px;padding:5px 10px;background:var(--card2);color:var(--text2)" onclick="avansGecmisiFromMaas()">📋 Avans Geçmişi</button>
+      </div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label>Ödeme Tarihi</label><input type="date" id="m-tarih"></div>
       <div class="form-group"><label>Dönem Yılı</label><input type="number" id="m-yil" min="2020" max="2030"></div>
@@ -302,8 +308,6 @@ async function loadPersonel() {
       <td style="white-space:nowrap">
         <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenlePersonel(${p.id})">Düzenle</button>
         <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silPersonel(${p.id})">Sil</button>
-        <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--accent2);color:#000;margin-left:4px" onclick="avansVer(${p.id},'${p.ad_soyad}')">💰 Avans</button>
-        <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--card2);color:var(--text2);margin-left:4px" onclick="avansGecmisi(${p.id},'${p.ad_soyad}')">📋 Geçmiş</button>
       </td>
     </tr>`).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Personel yok</td></tr>';
 }
@@ -445,6 +449,39 @@ let editAvansId = null;
 let _avans_toplam = 0;
 let avansListeData = [];
 
+// Modal yığını: bir modali gecici olarak gizleyip ustune baska bir modal
+// acarken kullanilir; ustteki modal kapanınca altta bekleyen geri acilir.
+let modalStack = [];
+function pushHideModal(modalId, onReturn) {
+  document.getElementById(modalId).classList.remove('open');
+  modalStack.push({ id: modalId, onReturn });
+}
+function popShowModal() {
+  const top = modalStack.pop();
+  if (top) {
+    document.getElementById(top.id).classList.add('open');
+    if (top.onReturn) top.onReturn();
+  }
+}
+
+function avansVerFromMaas() {
+  const sel = document.getElementById('m-pers');
+  const persId = parseInt(sel.value);
+  if (!persId) { toast('Önce personel seçin', 'error'); return; }
+  const ad = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+  pushHideModal('maas-modal', loadAvanslar);
+  avansVer(persId, ad);
+}
+
+function avansGecmisiFromMaas() {
+  const sel = document.getElementById('m-pers');
+  const persId = parseInt(sel.value);
+  if (!persId) { toast('Önce personel seçin', 'error'); return; }
+  const ad = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+  pushHideModal('maas-modal', loadAvanslar);
+  avansGecmisi(persId, ad);
+}
+
 function avansVer(id, ad) {
   avansPersonelId = id;
   avansPersonelAd = ad;
@@ -456,7 +493,10 @@ function avansVer(id, ad) {
   document.getElementById('av-aciklama').value = '';
   document.getElementById('avans-modal').classList.add('open');
 }
-function closeAvansModal() { document.getElementById('avans-modal').classList.remove('open'); }
+function closeAvansModal() {
+  document.getElementById('avans-modal').classList.remove('open');
+  popShowModal();
+}
 
 async function saveAvans() {
   const tutar = parseFloat(document.getElementById('av-tutar').value) || 0;
@@ -473,11 +513,8 @@ async function saveAvans() {
   const r = await api(url, data);
   if (r.ok) {
     toast(editAvansId ? 'Avans güncellendi ✓' : 'Avans kaydedildi ✓');
-    closeAvansModal();
     loadPersonel();
-    if (document.getElementById('avans-liste-modal').classList.contains('open')) {
-      avansGecmisi(avansPersonelId, avansPersonelAd);
-    }
+    closeAvansModal();
   }
   else toast(r.error, 'error');
 }
@@ -512,6 +549,7 @@ function duzenleAvans(id) {
   const a = avansListeData.find(x => x.id === id);
   if (!a) return;
   editAvansId = id;
+  pushHideModal('avans-liste-modal', () => avansGecmisi(avansPersonelId, avansPersonelAd));
   document.getElementById('avans-modal-baslik').textContent = `✏️ ${avansPersonelAd} - Avans Düzenle`;
   document.getElementById('av-tarih').value = a.tarih || '';
   document.getElementById('av-tutar').value = a.tutar || 0;
@@ -527,7 +565,10 @@ async function silAvans(id) {
   else toast(r.error, 'error');
 }
 
-function closeAvansListeModal() { document.getElementById('avans-liste-modal').classList.remove('open'); }
+function closeAvansListeModal() {
+  document.getElementById('avans-liste-modal').classList.remove('open');
+  popShowModal();
+}
 document.getElementById('avans-liste-modal').addEventListener('click', e => {
   if (e.target.id === 'avans-liste-modal') closeAvansListeModal();
 });
