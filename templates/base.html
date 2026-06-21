@@ -271,7 +271,7 @@ async function api(url, data=null) {
 
 function fmt(v) {
   const n = parseFloat(v) || 0;
-  return n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:0}) + ' ₺';
+  return n.toLocaleString('tr-TR', {minimumFractionDigits:0, maximumFractionDigits:2}) + ' ₺';
 }
 
 function fmtDate(s) {

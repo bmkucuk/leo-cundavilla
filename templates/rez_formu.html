@@ -283,7 +283,7 @@
     <div class="kf-prow c3">
       <div class="kf-pcell">
         <b>Gün Fiyatı (₺)</b>
-        <input type="number" id="kf-gunfiyat" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
+        <input type="number" id="kf-gunfiyat" value="0" min="0" step="any" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
       </div>
       <div class="kf-pcell">
         <b>Kişi Sayısı (Yetişkin / Çocuk)</b>
@@ -323,7 +323,7 @@
     <div class="kf-prow">
       <div class="kf-pcell">
         <b>Kapora (₺)</b>
-        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
+        <input type="number" id="kf-kapora" value="0" min="0" step="any" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
       </div>
       <div class="kf-pcell">
         <b>Kapora Tarihi</b>
@@ -387,7 +387,7 @@
       <div class="am-chip" data-sekil="Deniz Bank" onclick="selectOdemeSekli('Deniz Bank',this)">🏦 Deniz Bank</div>
     </div>
     <div class="am-label">Tutar (₺)</div>
-    <input type="number" id="am-tutar" class="am-tutar-input" placeholder="0" min="0">
+    <input type="number" id="am-tutar" class="am-tutar-input" placeholder="0" min="0" step="any">
     <div class="am-footer">
       <div class="kf-btn kf-btn-def" onclick="clearAlacak()">Temizle</div>
       <div style="flex:1"></div>
