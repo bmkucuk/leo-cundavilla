@@ -275,6 +275,8 @@ def api_bankalar():
 # ── API — Kasa/Banka ─────────────────────────────────────────────────────────
 
 # Banka kodu → yevmiye hesap kodu eşleştirmesi
+ACENTE_HESAP = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4'}
+
 BANKA_HESAP = {
     'KASA': '100',
     'IS':   '102-1',
@@ -536,6 +538,19 @@ def api_vergi_onayla():
 
 # ── API — Acente Cari ─────────────────────────────────────────────────────────
 
+@muh.route('/api/muhasebe/acente-bakiye')
+def api_acente_bakiye():
+    """Acente cari hesabının (320-x) yevmiyeden gerçek bakiyesi: + ise acente bize borçlu."""
+    kod = request.args.get('kod', '')
+    hesap = ACENTE_HESAP.get(kod)
+    if not hesap:
+        return jsonify({'bakiye': 0, 'hesap': None, 'borc': 0, 'alacak': 0})
+    conn = mdb.get_conn()
+    borc = conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE borc_hesap=?", (hesap,)).fetchone()[0]
+    alacak = conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE alacak_hesap=?", (hesap,)).fetchone()[0]
+    conn.close()
+    return jsonify({'bakiye': borc - alacak, 'hesap': hesap, 'borc': borc, 'alacak': alacak})
+
 @muh.route('/api/muhasebe/acente')
 def api_acente():
     yil = request.args.get('yil', date.today().year, type=int)
@@ -590,46 +605,27 @@ def api_acente():
 
 @muh.route('/api/muhasebe/acente/ekle', methods=['POST'])
 def api_acente_ekle():
+    """Acentelerden gelen FATURA TAHSİLATINI kaydeder (her zaman banka).
+    Rezervasyon bazlı borç/komisyon kayıtları artık rezervasyon kaydedilirken
+    otomatik oluşturuluyor (bkz. app.py acente_jolly_oto_kaydet)."""
     try:
         d = request.get_json()
         conn = mdb.get_conn()
-        komisyon = float(d.get('komisyon_tl', 0))
-        gelen = float(d.get('gelen_odeme', 0))
+        gelen = float(d.get('gelen_odeme', d.get('tutar', 0)))
         conn.execute("""
             INSERT INTO acente_cari
             (tarih,acente_kod,foy_no,rez_no,misafir,rez_tutari,komisyon_oran,komisyon_tl,gelen_odeme,otel)
             VALUES (?,?,?,?,?,?,?,?,?,?)
-        """, (d['tarih'], d['acente_kod'], d.get('foy_no'), d.get('rez_no', ''),
-              d.get('misafir', ''), float(d['rez_tutari']),
-              float(d.get('komisyon_oran', 15)), komisyon,
+        """, (d['tarih'], d['acente_kod'], None, '', 'Fatura Tahsilatı', 0, 0, 0,
               gelen, d.get('otel', 'LEO')))
         acente_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        if komisyon > 0:
-            acente_hesap = '320-1'
-            if d['acente_kod'] == 'EXP': acente_hesap = '320-2'
-            elif d['acente_kod'] in ('JLY','TTS'): acente_hesap = '320-3'
-            odeme_tipi = d.get('komisyon_odeme', 'Mahsup')
-            if odeme_tipi == 'Banka':
-                banka = d.get('odeme_banka', 'IS')
-                banka_hesap = '100' if banka=='NAKIT' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
-                mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Komisyonu (Banka)',
-                                  '730', banka_hesap, komisyon,
-                                  f"{d['acente_kod']} komisyon", d.get('otel','LEO'),
-                                  kaynak_tablo='acente_cari', kaynak_id=acente_id)
-            else:
-                mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Komisyonu (Mahsup)',
-                                  '730', acente_hesap, komisyon,
-                                  f"{d['acente_kod']} komisyon mahsup", d.get('otel','LEO'),
-                                  kaynak_tablo='acente_cari', kaynak_id=acente_id)
         if gelen > 0:
             banka = d.get('odeme_banka', 'IS')
-            banka_hesap = '100' if banka=='NAKIT' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
-            acente_hesap = '320-1'
-            if d['acente_kod'] == 'EXP': acente_hesap = '320-2'
-            elif d['acente_kod'] in ('JLY','TTS'): acente_hesap = '320-3'
-            mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Tahsilat',
+            banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
+            acente_hesap = ACENTE_HESAP.get(d['acente_kod'], '320-1')
+            mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Fatura Tahsilatı',
                               banka_hesap, acente_hesap, gelen,
-                              f"{d['acente_kod']} net ödeme", d.get('otel','LEO'),
+                              f"{d['acente_kod']} fatura tahsilatı", d.get('otel','LEO'),
                               kaynak_tablo='acente_cari', kaynak_id=acente_id)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
@@ -1089,20 +1085,18 @@ def api_demirbas_guncelle():
 def api_acente_guncelle():
     try:
         d = request.get_json()
-        komisyon = float(d.get('komisyon_tl', 0))
-        gelen = float(d.get('gelen_odeme', 0))
+        gelen = float(d.get('gelen_odeme', d.get('tutar', 0)))
         conn = mdb.get_conn()
-        conn.execute("""UPDATE acente_cari SET tarih=?,acente_kod=?,foy_no=?,rez_no=?,
-                     misafir=?,rez_tutari=?,komisyon_oran=?,komisyon_tl=?,gelen_odeme=?,otel=?
+        conn.execute("""UPDATE acente_cari SET tarih=?,acente_kod=?,gelen_odeme=?,otel=?
                      WHERE id=?""",
-            (d['tarih'], d['acente_kod'], d.get('foy_no'), d.get('rez_no',''),
-             d.get('misafir',''), float(d['rez_tutari']),
-             float(d.get('komisyon_oran',15)), komisyon, gelen,
-             d.get('otel','LEO'), d['id']))
-        # Yevmiye güncelle
-        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?
+            (d['tarih'], d['acente_kod'], gelen, d.get('otel','LEO'), d['id']))
+        # Yevmiye güncelle (tutar + hesap kodu, banka değişmiş olabilir)
+        banka = d.get('odeme_banka', 'IS')
+        banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
+        acente_hesap = ACENTE_HESAP.get(d['acente_kod'], '320-1')
+        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?,borc_hesap=?,alacak_hesap=?
                      WHERE kaynak_tablo='acente_cari' AND kaynak_id=?""",
-            (d['tarih'], komisyon or gelen, d['id']))
+            (d['tarih'], gelen, banka_hesap, acente_hesap, d['id']))
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
