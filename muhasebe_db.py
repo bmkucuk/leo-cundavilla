@@ -260,6 +260,9 @@ def init_db():
 
     # Migration: BT hesap adı Barış Taşdelen'den Burçin Taşdelen'e düzeltildi
     c.execute("UPDATE hesaplar SET ad='BT Cari (Burçin Taşdelen)' WHERE kod='500-BT'")
+    # Migration: Booking.com -> Booking adı düzeltildi
+    c.execute("UPDATE hesaplar SET ad='Booking Cari' WHERE kod='320-1'")
+    c.execute("UPDATE acenteler SET ad='Booking' WHERE kod='BKG'")
     # Migration: eski ayrı Burçin kişisel hesabı varsa resmi BT ortak hesabına birleştir
     c.execute("SELECT 1 FROM hesaplar WHERE kod='500-BC'")
     if c.fetchone():
@@ -293,7 +296,7 @@ def init_db():
             c.execute(ddl)
 
     acenteler = [
-        ("BKG",     "Booking.com",  15.0),
+        ("BKG",     "Booking",  15.0),
         ("EXP",     "Expedia",      15.0),
         ("JLY",     "JollyTur",     15.0),
         ("TTS",     "TatilSepeti",  15.0),

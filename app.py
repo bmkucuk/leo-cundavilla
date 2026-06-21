@@ -40,7 +40,7 @@ KANAL_MAP = {
 # + komisyon otomatik düşülür). Diğer kanallar (EXP, Telefon, Kapıdan) eskisi gibi kalır.
 ACENTE_OTO_KODLAR = {'JLY', 'BKG', 'ETS', 'TTS'}
 ACENTE_HESAP_KODU = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4', 'ETS': '320-5'}
-ACENTE_ADI = {'BKG': 'Booking.com', 'EXP': 'Expedia', 'JLY': 'JollyTur', 'TTS': 'TatilSepeti', 'ETS': 'ETSTUR'}
+ACENTE_ADI = {'BKG': 'Booking', 'EXP': 'Expedia', 'JLY': 'JollyTur', 'TTS': 'TatilSepeti', 'ETS': 'ETSTUR'}
 
 # ── Kullanıcılar ──────────────────────────────────────────────────────────────
 USERS = {
@@ -756,7 +756,7 @@ def api_tahsilat_gecmis():
     odeme_map = {
         '100': 'Nakit', '102-1': 'İş Bankası', '102-2': 'Ziraat',
         '102-3': 'Denizbank', '120': 'Müşteri Cari', '340': 'Alınan Kaparo',
-        '320-1': 'Booking.com', '320-2': 'Expedia',
+        '320-1': 'Booking', '320-2': 'Expedia',
         '320-3': 'JollyTur', '320-4': 'TatilSepeti', '320-5': 'ETSTUR',
     }
     result = []

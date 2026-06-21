@@ -932,7 +932,7 @@ def api_mizan():
         a_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?", (yil, hesap)).fetchone()[0] or 0
         a_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?", (yil, hesap)).fetchone()[0] or 0
         if a_borc or a_alacak:
-            adi = {'BKG':'Booking.com Cari','EXP':'Expedia Cari','JLY':'JollyTur Cari','TTS':'TatilSepeti Cari','ETS':'ETSTUR Cari'}.get(kod, f'{kod} Cari')
+            adi = {'BKG':'Booking Cari','EXP':'Expedia Cari','JLY':'JollyTur Cari','TTS':'TatilSepeti Cari','ETS':'ETSTUR Cari'}.get(kod, f'{kod} Cari')
             acente_satirlari.append((hesap, adi, a_borc, a_alacak))
 
     # 120 Müşteri Cari
