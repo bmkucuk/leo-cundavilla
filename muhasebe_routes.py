@@ -551,6 +551,50 @@ def api_acente_bakiye():
     conn.close()
     return jsonify({'bakiye': borc - alacak, 'hesap': hesap, 'borc': borc, 'alacak': alacak})
 
+@muh.route('/api/muhasebe/acente-detay')
+def api_acente_detay():
+    """Acente cari hesabının (320-x) föy bazlı dökümü — fatura kesmek için.
+    Her föy için: rez. bedeli (borç), komisyon (alacak), net bakiye, ve o föye
+    ait bankadan gelen fatura tahsilatları (varsa) ayrı satırda gösterilir."""
+    kod = request.args.get('kod', '')
+    yil = request.args.get('yil', date.today().year, type=int)
+    hesap = ACENTE_HESAP.get(kod)
+    if not hesap:
+        return jsonify({'foyler': [], 'fatura_disi_bakiye': 0})
+    conn = mdb.get_conn()
+    rows = conn.execute("""
+        SELECT tarih, islem_tipi, borc_hesap, alacak_hesap, tutar, aciklama
+        FROM yevmiye
+        WHERE (borc_hesap=? OR alacak_hesap=?) AND yil=?
+        ORDER BY tarih ASC, id ASC
+    """, (hesap, hesap, yil)).fetchall()
+    conn.close()
+
+    import re as _re
+    foyler = {}
+    fatura_disi_bakiye = 0.0  # fatura tahsilatı gibi föy'e bağlı olmayan hareketler
+    for r in rows:
+        m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
+        if not m:
+            # föy'e bağlı olmayan (fatura tahsilatı vb.) hareket
+            tutar = r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
+            fatura_disi_bakiye += tutar
+            continue
+        foy_no, misafir = m.group(1), m.group(2)
+        f = foyler.setdefault(foy_no, {'foy_no': foy_no, 'misafir': misafir,
+                                        'tarih': r['tarih'], 'rez_tutari': 0, 'komisyon': 0})
+        if r['borc_hesap'] == hesap:
+            f['rez_tutari'] += r['tutar']
+        else:
+            f['komisyon'] += r['tutar']
+
+    sonuc = []
+    for f in foyler.values():
+        f['net'] = round(f['rez_tutari'] - f['komisyon'], 2)
+        sonuc.append(f)
+    sonuc.sort(key=lambda x: x['tarih'])
+    return jsonify({'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2)})
+
 @muh.route('/api/muhasebe/acente')
 def api_acente():
     yil = request.args.get('yil', date.today().year, type=int)

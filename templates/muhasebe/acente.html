@@ -15,7 +15,22 @@
 <div class="cards-row" id="kartlar" style="margin-bottom:16px"></div>
 <div style="font-size:11px;color:var(--text2);margin:-8px 0 16px">
   Rezervasyon bazlı borç ve komisyon kayıtları artık JollyTur rezervasyonu girilirken otomatik oluşturuluyor.
-  Bu sayfa yalnızca acenteden gelen <b>fatura tahsilatlarını</b> (bankaya gelen ödemeler) kaydetmek içindir.
+  Bu tablodan fatura kesilecek föyleri ve tutarları görebilirsin; alttaki "Fatura Tahsilatı" tablosu ise yalnızca bankaya gelen ödemeleri kaydetmek içindir.
+</div>
+
+<div class="table-wrap" id="detay-wrap" style="display:none;margin-bottom:24px">
+  <div class="section-title" style="margin:0 0 8px;border:0;font-size:13px">📋 Föy Bazlı Borç Dökümü (fatura kesmek için)</div>
+  <table>
+    <thead><tr>
+  <th style="width:95px">Tarih</th>
+  <th style="width:70px">Föy</th>
+  <th>Misafir</th>
+  <th style="text-align:right">Rez. Bedeli</th>
+  <th style="text-align:right">Komisyon (%15)</th>
+  <th style="text-align:right">Net (Faturalanacak)</th>
+</tr></thead>
+    <tbody id="detay-tbody"></tbody>
+  </table>
 </div>
 
 <div class="table-wrap">
@@ -94,10 +109,28 @@ async function load() {
 
   // Gerçek cari bakiye (yevmiyeden) — sadece tek acente seçiliyken anlamlı
   let bakiyeHtml = '';
+  const detayWrap = document.getElementById('detay-wrap');
   if (acenteSecili) {
     const b = await api(`/api/muhasebe/acente-bakiye?kod=${acenteSecili}`);
     bakiyeHtml = `<div class="stat-card"><div class="label">${acenteSecili} Bakiye (bize borçlu)</div>
       <div class="value ${b.bakiye>0?'red':'green'}">${fmt(b.bakiye)}</div></div>`;
+
+    const det = await api(`/api/muhasebe/acente-detay?kod=${acenteSecili}&yil=${yil}`);
+    if (det.foyler && det.foyler.length) {
+      detayWrap.style.display = '';
+      document.getElementById('detay-tbody').innerHTML = det.foyler.map(f => `<tr>
+          <td>${fmtDate(f.tarih)}</td>
+          <td>${f.foy_no ? '<a href="/rezervasyonlar?q='+f.foy_no+'" style="color:var(--accent)">'+f.foy_no+'</a>' : '—'}</td>
+          <td>${f.misafir||'—'}</td>
+          <td style="text-align:right">${fmt(f.rez_tutari)}</td>
+          <td class="red" style="text-align:right">${fmt(f.komisyon)}</td>
+          <td class="green" style="text-align:right;font-weight:600">${fmt(f.net)}</td>
+        </tr>`).join('');
+    } else {
+      detayWrap.style.display = 'none';
+    }
+  } else {
+    detayWrap.style.display = 'none';
   }
 
   document.getElementById('kartlar').innerHTML = `
