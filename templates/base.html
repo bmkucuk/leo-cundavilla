@@ -166,7 +166,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     </a>
     {% if session.get('role') in ['admin', 'partner'] %}
     <div style="margin:12px 18px 4px;font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.8px;text-transform:uppercase">Muhasebe</div>
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/muhasebe/yevmiye" class="{% if active=='muh-yevmiye' %}active{% endif %}">
       <span class="icon">📒</span> Yevmiye
     </a>
@@ -174,7 +174,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     <a href="/muhasebe/kasa-banka" class="{% if active=='muh-kasa' %}active{% endif %}">
       <span class="icon">🏦</span> Kasa & Banka
     </a>
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/muhasebe/personel" class="{% if active=='muh-personel' %}active{% endif %}">
       <span class="icon">👥</span> Personel
     </a>
@@ -185,7 +185,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     <a href="/muhasebe/demirbaş" class="{% if active=='muh-demirbas' %}active{% endif %}">
       <span class="icon">🪑</span> Demirbaş
     </a>
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/muhasebe/vergi" class="{% if active=='muh-vergi' %}active{% endif %}">
       <span class="icon">🧾</span> Vergi
     </a>
@@ -193,7 +193,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     <a href="/muhasebe/acente" class="{% if active=='muh-acente' %}active{% endif %}">
       <span class="icon">🤝</span> Acenteler
     </a>
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/muhasebe/ortak-cari" class="{% if active=='muh-ortak' %}active{% endif %}">
       <span class="icon">👤</span> Ortak Cari
     </a>
@@ -204,7 +204,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     {% endif %}
   </nav>
   <div class="sidebar-bottom">
-    {% if session.get('role') == 'admin' %}
+    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/import" class="btn-sm">📥 Excel Aktar</a>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:700;text-transform:uppercase">Yedekle</div>

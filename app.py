@@ -81,7 +81,7 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if not session.get('user'):
             return redirect('/login')
-        if session.get('role') != 'admin':
+        if session.get('role') not in ('admin', 'partner'):
             return redirect('/')
         return f(*args, **kwargs)
     return decorated

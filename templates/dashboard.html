@@ -51,7 +51,7 @@
   <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--pos)"></span><div class="label">Boş Oda</div><div class="value" id="s-bos">—</div><div class="sub">müsait · satışa açık</div></div>
 </div>
 
-{% if session.role == 'admin' %}
+{% if session.role in ['admin', 'partner'] %}
 <div class="panel" id="aktif-kullanici-widget" style="margin-bottom:16px;display:none">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div class="section-title" style="margin:0;padding:0;border:none">Aktif Kullanıcılar</div>
@@ -163,7 +163,7 @@ async function load() {
 }
 load();
 
-{% if session.role == 'admin' %}
+{% if session.role in ['admin', 'partner'] %}
 async function loadAktifKullanicilar() {
   try {
     const liste = await api('/api/aktif-kullanicilar');
