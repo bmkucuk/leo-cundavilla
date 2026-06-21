@@ -275,7 +275,7 @@ def api_bankalar():
 # ── API — Kasa/Banka ─────────────────────────────────────────────────────────
 
 # Banka kodu → yevmiye hesap kodu eşleştirmesi
-ACENTE_HESAP = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4'}
+ACENTE_HESAP = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4', 'ETS': '320-5'}
 
 BANKA_HESAP = {
     'KASA': '100',
@@ -577,7 +577,7 @@ def api_acente_detay():
     fatura_disi_bakiye = 0.0  # genel (föy'e bağlı olmayan) fatura tahsilatları
     BANKA_AD = {'102-1': 'İş Bankası', '102-2': 'Ziraat Bankası', '102-3': 'Denizbank'}
     for r in rows:
-        m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
+        m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[ACENTE-OTO\]', r['aciklama'] or '')
         if m:
             foy_no, misafir = m.group(1), m.group(2)
             f = foyler.setdefault(foy_no, {'foy_no': foy_no, 'misafir': misafir,
@@ -587,7 +587,7 @@ def api_acente_detay():
             else:
                 f['komisyon'] += r['tutar']
             continue
-        mf = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-FATURA\]', r['aciklama'] or '')
+        mf = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[ACENTE-FATURA\]', r['aciklama'] or '')
         if mf:
             faturalanan.add(mf.group(1))
             banka_kodu = r['borc_hesap'] if r['borc_hesap'] != hesap else r['alacak_hesap']
@@ -638,20 +638,20 @@ def api_acente_fatura_kes():
         for foy_no in foy_nolar:
             rows = conn.execute("""
                 SELECT borc_hesap, alacak_hesap, tutar, aciklama FROM yevmiye
-                WHERE (borc_hesap=? OR alacak_hesap=?) AND aciklama LIKE ? AND aciklama LIKE '%[JLY-OTO]%'
+                WHERE (borc_hesap=? OR alacak_hesap=?) AND aciklama LIKE ? AND aciklama LIKE '%[ACENTE-OTO]%'
             """, (hesap, hesap, f'Föy#{foy_no} %')).fetchall()
             if not rows:
                 continue
             zaten_var = conn.execute("""
-                SELECT 1 FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+                SELECT 1 FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[ACENTE-FATURA]%'
             """, (f'Föy#{foy_no} %',)).fetchone()
             if zaten_var:
                 continue
             net = 0.0
             misafir = ''
             for r in rows:
-                m = _re.search(r'\[JLY-OTO\]', r['aciklama'] or '')
-                mm = _re.search(r'Föy#\d+\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
+                m = _re.search(r'\[ACENTE-OTO\]', r['aciklama'] or '')
+                mm = _re.search(r'Föy#\d+\s+(.*?)\s+\[ACENTE-OTO\]', r['aciklama'] or '')
                 if mm:
                     misafir = mm.group(1)
                 net += r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
@@ -659,7 +659,7 @@ def api_acente_fatura_kes():
             if net <= 0:
                 continue
             mdb._yevmiye_ekle(conn, tarih, 'Acente Fatura Tahsilatı', banka_hesap, hesap, net,
-                              f'Föy#{foy_no} {misafir} [JLY-FATURA] fatura tahsilatı' +
+                              f'Föy#{foy_no} {misafir} [ACENTE-FATURA] fatura tahsilatı' +
                               (f' [FATURA:{fatura_no}]' if fatura_no else ''), otel)
             toplam += net
             detaylar.append({'foy_no': foy_no, 'misafir': misafir, 'net': net})
@@ -679,7 +679,7 @@ def api_acente_fatura_iptal():
             return jsonify({'ok': False, 'error': 'Föy no eksik'}), 400
         conn = mdb.get_conn()
         silinen = conn.execute("""
-            DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+            DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[ACENTE-FATURA]%'
         """, (f'Föy#{foy_no} %',))
         adet = silinen.rowcount
         conn.commit(); conn.close()
@@ -706,7 +706,7 @@ def api_acente_fatura_duzenle():
         conn = mdb.get_conn()
         row = conn.execute("""
             SELECT id, aciklama, alacak_hesap FROM yevmiye
-            WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+            WHERE aciklama LIKE ? AND aciklama LIKE '%[ACENTE-FATURA]%'
         """, (f'Föy#{foy_no} %',)).fetchone()
         if not row:
             conn.close()
@@ -932,7 +932,7 @@ def api_mizan():
         a_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?", (yil, hesap)).fetchone()[0] or 0
         a_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?", (yil, hesap)).fetchone()[0] or 0
         if a_borc or a_alacak:
-            adi = {'BKG':'Booking.com Cari','EXP':'Expedia Cari','JLY':'JollyTur Cari','TTS':'TatilSepeti Cari'}.get(kod, f'{kod} Cari')
+            adi = {'BKG':'Booking.com Cari','EXP':'Expedia Cari','JLY':'JollyTur Cari','TTS':'TatilSepeti Cari','ETS':'ETSTUR Cari'}.get(kod, f'{kod} Cari')
             acente_satirlari.append((hesap, adi, a_borc, a_alacak))
 
     # 120 Müşteri Cari

@@ -31,12 +31,16 @@ KANAL_MAP = {
     'EXP': 'EXP', 'Expedia': 'EXP',
     'JLY': 'JLY', 'JollyTur': 'JLY',
     'TTS': 'TTS', 'TatilSepeti': 'TTS',
+    'ETS': 'ETS', 'ETSTUR': 'ETS', 'ETStur': 'ETS',
     'Telefon': 'Telefon',
     'Kapıdan': 'Kapidan',
 }
-# JollyTur cari hesabı — diğer acentelerden farklı olarak rez. bedeli direkt
-# müşteriden değil JollyTur'dan tahsil edildiği için otomatik muhasebeleşir.
-JOLLY_HESAP = '320-3'
+# Bu acenteler için rez. bedeli direkt müşteriden değil acenteden tahsil edildiği
+# için rezervasyon kaydedilirken otomatik muhasebeleşir (borç acente / alacak müşteri
+# + komisyon otomatik düşülür). Diğer kanallar (EXP, Telefon, Kapıdan) eskisi gibi kalır.
+ACENTE_OTO_KODLAR = {'JLY', 'BKG', 'ETS', 'TTS'}
+ACENTE_HESAP_KODU = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4', 'ETS': '320-5'}
+ACENTE_ADI = {'BKG': 'Booking.com', 'EXP': 'Expedia', 'JLY': 'JollyTur', 'TTS': 'TatilSepeti', 'ETS': 'ETSTUR'}
 
 # ── Kullanıcılar ──────────────────────────────────────────────────────────────
 USERS = {
@@ -352,13 +356,13 @@ def api_rez_yeni():
             kapora_tarihi=data.get('kapora_tarihi')
         )
         acente_kod = KANAL_MAP.get(data.get('kanal', ''), data.get('kanal', ''))
-        if acente_kod == 'JLY':
-            acente_jolly_oto_kaydet(foy_no, float(data.get('toplam_fiyat') or 0),
-                                    data.get('otel', 'LEO'),
-                                    data.get('giris') or bugun().isoformat(),
-                                    data.get('musteri', ''))
+        if acente_kod in ACENTE_OTO_KODLAR:
+            acente_oto_kaydet(foy_no, float(data.get('toplam_fiyat') or 0),
+                              data.get('otel', 'LEO'),
+                              data.get('giris') or bugun().isoformat(),
+                              data.get('musteri', ''), acente_kod)
         else:
-            acente_jolly_oto_temizle(foy_no)
+            acente_oto_temizle(foy_no)
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
@@ -505,13 +509,13 @@ def api_rez_guncelle():
             guncelleme=True
         )
         acente_kod = KANAL_MAP.get(data.get('kanal', ''), data.get('kanal', ''))
-        if acente_kod == 'JLY':
-            acente_jolly_oto_kaydet(foy_no, float(data.get('toplam_fiyat') or 0),
-                                    data.get('otel', 'LEO'),
-                                    data.get('giris') or bugun().isoformat(),
-                                    data.get('musteri', ''))
+        if acente_kod in ACENTE_OTO_KODLAR:
+            acente_oto_kaydet(foy_no, float(data.get('toplam_fiyat') or 0),
+                              data.get('otel', 'LEO'),
+                              data.get('giris') or bugun().isoformat(),
+                              data.get('musteri', ''), acente_kod)
         else:
-            acente_jolly_oto_temizle(foy_no)
+            acente_oto_temizle(foy_no)
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
@@ -550,15 +554,16 @@ def yevmiye_rez_kaydet(foy_no, toplam_fiyat, otel, giris, musteri,
 
 def acente_cari_oto_kaydet(data):
     """Rezervasyon kaydedilince kanala göre acente_cari'ye otomatik kayıt yazar.
-    JollyTur (JLY) hariç — onun borç/komisyon kaydı artık yevmiyeye doğrudan
-    ve otomatik yazılıyor (bkz. acente_jolly_oto_kaydet)."""
+    Otomatik muhasebe kapsamındaki acenteler (BKG/JLY/TTS/ETS) hariç — onların
+    borç/komisyon kaydı artık yevmiyeye doğrudan ve otomatik yazılıyor
+    (bkz. acente_oto_kaydet)."""
     try:
         kanal = data.get('kanal', '')
         if not kanal:
             return
         acente_kod = KANAL_MAP.get(kanal, kanal)
         foy_no = data.get('foy_no')
-        if acente_kod == 'JLY':
+        if acente_kod in ACENTE_OTO_KODLAR:
             # Eski/şahsi kayıt kalmasın diye temizle, yeni kayıt açmıyoruz
             conn = mdb.get_conn()
             conn.execute("DELETE FROM acente_cari WHERE foy_no=?", (foy_no,))
@@ -613,31 +618,36 @@ def acente_cari_oto_sil(foy_no):
         print(f'Acente oto sil hatası: {e}')
 
 
-def acente_jolly_oto_kaydet(foy_no, toplam_fiyat, otel, tarih, musteri):
-    """JollyTur rezervasyonu kaydedilince/güncellenince otomatik olarak:
-      1) 320-3 JollyTur Cari Borç / 120 Müşteri Cari Alacak  (rez. bedeli — tam tutar)
-      2) 730 Acente Komisyonu Borç / 320-3 JollyTur Cari Alacak (komisyon — JollyTur'a
-         net fatura kesildiği için bedel hemen düşülür)
-    Müşterinin borcu JollyTur'a devredilmiş olur; ayrıca elle 'Ödeme Al' yapılmasına
+def acente_oto_kaydet(foy_no, toplam_fiyat, otel, tarih, musteri, acente_kod):
+    """Acente üzerinden gelen (BKG/JLY/TTS/ETS) rezervasyon kaydedilince/güncellenince
+    otomatik olarak:
+      1) {acente_hesap} Borç / 120 Müşteri Cari Alacak  (rez. bedeli — tam tutar)
+      2) 730 Acente Komisyonu Borç / {acente_hesap} Alacak (komisyon — acenteye net
+         fatura kesildiği için bedel hemen düşülür)
+    Müşterinin borcu acenteye devredilmiş olur; ayrıca elle 'Ödeme Al' yapılmasına
     gerek kalmaz. Föy'e ait önceki otomatik kayıtlar silinip yeniden yazılır (idempotent)."""
+    hesap = ACENTE_HESAP_KODU.get(acente_kod)
+    adi = ACENTE_ADI.get(acente_kod, acente_kod)
+    if not hesap:
+        return
     try:
         conn = mdb.get_conn()
         # Önceki otomatik kayıtları temizle
-        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-OTO]%'",
+        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[ACENTE-OTO]%'",
                      (f'Föy#{foy_no} %',))
 
         if toplam_fiyat and toplam_fiyat > 0:
-            aciklama = f'Föy#{foy_no} {musteri} [JLY-OTO] rez tahsilat'
-            mdb._yevmiye_ekle(conn, tarih, 'Acente Tahsilat (JollyTur)',
-                              JOLLY_HESAP, '120', toplam_fiyat, aciklama, otel)
+            aciklama = f'Föy#{foy_no} {musteri} [ACENTE-OTO] rez tahsilat'
+            mdb._yevmiye_ekle(conn, tarih, f'Acente Tahsilat ({adi})',
+                              hesap, '120', toplam_fiyat, aciklama, otel)
 
-            a = conn.execute("SELECT komisyon_orani FROM acenteler WHERE kod='JLY'").fetchone()
+            a = conn.execute("SELECT komisyon_orani FROM acenteler WHERE kod=?", (acente_kod,)).fetchone()
             oran = float(a['komisyon_orani']) if a else 15.0
             komisyon = round(toplam_fiyat * oran / 100, 2)
             if komisyon > 0:
-                aciklama_kom = f'Föy#{foy_no} {musteri} [JLY-OTO] komisyon'
-                mdb._yevmiye_ekle(conn, tarih, 'Acente Komisyonu (JollyTur)',
-                                  '730', JOLLY_HESAP, komisyon, aciklama_kom, otel)
+                aciklama_kom = f'Föy#{foy_no} {musteri} [ACENTE-OTO] komisyon'
+                mdb._yevmiye_ekle(conn, tarih, f'Acente Komisyonu ({adi})',
+                                  '730', hesap, komisyon, aciklama_kom, otel)
 
         conn.commit(); conn.close()
 
@@ -645,22 +655,22 @@ def acente_jolly_oto_kaydet(foy_no, toplam_fiyat, otel, tarih, musteri):
         # ödeme alınmasına gerek kalmasın
         otel_conn = db.get_conn()
         otel_conn.execute("""
-            UPDATE rezervasyonlar SET rez_tahsilat=?, rez_bakiye=0, rez_odeme_sekli='Acente (JollyTur)'
+            UPDATE rezervasyonlar SET rez_tahsilat=?, rez_bakiye=0, rez_odeme_sekli=?
             WHERE foy_no=?
-        """, (toplam_fiyat or 0, foy_no))
+        """, (toplam_fiyat or 0, f'Acente ({adi})', foy_no))
         otel_conn.commit(); otel_conn.close()
     except Exception as e:
-        print(f'JollyTur oto kayıt hatası: {e}')
+        print(f'Acente oto kayıt hatası ({acente_kod}): {e}')
 
 
-def acente_jolly_oto_temizle(foy_no):
-    """Bir rezervasyonun acentesi JollyTur'dan başka bir şeye değiştirildiğinde
-    (veya föy silindiğinde) otomatik JollyTur kayıtlarını temizler ve rezervasyonun
-    tahsilat alanlarını sıfırlar (yalnızca tahsilat 'Acente (JollyTur)' ise — elle
+def acente_oto_temizle(foy_no):
+    """Bir rezervasyonun acentesi otomatik-muhasebe kapsamından çıktığında
+    (veya föy silindiğinde) otomatik acente kayıtlarını temizler ve rezervasyonun
+    tahsilat alanlarını sıfırlar (yalnızca tahsilat 'Acente (...)' ise — elle
     girilmiş gerçek bir tahsilat varsa dokunulmaz)."""
     try:
         conn = mdb.get_conn()
-        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-OTO]%'",
+        conn.execute("DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[ACENTE-OTO]%'",
                      (f'Föy#{foy_no} %',))
         conn.commit(); conn.close()
 
@@ -668,7 +678,7 @@ def acente_jolly_oto_temizle(foy_no):
         r = otel_conn.execute(
             "SELECT toplam_fiyat, rez_odeme_sekli FROM rezervasyonlar WHERE foy_no=?", (foy_no,)
         ).fetchone()
-        if r and r['rez_odeme_sekli'] == 'Acente (JollyTur)':
+        if r and (r['rez_odeme_sekli'] or '').startswith('Acente ('):
             otel_conn.execute("""
                 UPDATE rezervasyonlar SET rez_tahsilat=0, rez_bakiye=?, rez_odeme_sekli=''
                 WHERE foy_no=?
@@ -676,15 +686,15 @@ def acente_jolly_oto_temizle(foy_no):
             otel_conn.commit()
         otel_conn.close()
     except Exception as e:
-        print(f'JollyTur oto temizleme hatası: {e}')
+        print(f'Acente oto temizleme hatası: {e}')
 
 
-def migrate_jolly_otomatik():
-    """Tek seferlik migration: var olan tüm JollyTur (kanal=JLY) rezervasyonları
+def migrate_acente_otomatik():
+    """Tek seferlik migration: var olan tüm acente (BKG/JLY/TTS/ETS) rezervasyonları
     için eski/elle girilmiş tahsilat-komisyon kayıtlarını temizleyip yeni otomatik
-    320-3 akışını uygular. parametreler tablosundaki bayrak sayesinde bir daha
-    çalışmaz; gerekirse o satır silinip yeniden tetiklenebilir."""
-    FLAG = 'migration_jly_oto_v1'
+    akışı uygular. parametreler tablosundaki bayrak sayesinde bir daha çalışmaz;
+    gerekirse o satır silinip yeniden tetiklenebilir."""
+    FLAG = 'migration_acente_oto_v2'
     try:
         mconn = mdb.get_conn()
         if mconn.execute("SELECT 1 FROM parametreler WHERE anahtar=?", (FLAG,)).fetchone():
@@ -698,7 +708,7 @@ def migrate_jolly_otomatik():
         count = 0
         for r in rezler:
             acente_kod = KANAL_MAP.get(r['kanal'] or '', r['kanal'] or '')
-            if acente_kod != 'JLY':
+            if acente_kod not in ACENTE_OTO_KODLAR:
                 continue
             foy_no = r['foy_no']
             # Bu föy'e ait eski (manuel/yanlış) tahsilat & komisyon kayıtlarını temizle
@@ -706,21 +716,22 @@ def migrate_jolly_otomatik():
                 DELETE FROM yevmiye
                 WHERE aciklama LIKE ?
                   AND (islem_tipi LIKE '%Tahsilat%' OR islem_tipi LIKE '%Komisyon%')
-                  AND aciklama NOT LIKE '%[JLY-OTO]%'
+                  AND aciklama NOT LIKE '%[ACENTE-OTO]%'
+                  AND aciklama NOT LIKE '%[ACENTE-FATURA]%'
             """, (f'Föy#{foy_no} %',))
             mconn.execute("DELETE FROM acente_cari WHERE foy_no=?", (foy_no,))
             mconn.commit()
-            acente_jolly_oto_kaydet(
+            acente_oto_kaydet(
                 foy_no, float(r['toplam_fiyat'] or 0), r['otel'] or 'LEO',
-                r['giris'] or bugun().isoformat(), r['musteri'] or ''
+                r['giris'] or bugun().isoformat(), r['musteri'] or '', acente_kod
             )
             count += 1
         mconn.execute("INSERT OR REPLACE INTO parametreler(anahtar,deger) VALUES(?,?)",
                       (FLAG, f'{count} föy güncellendi — {datetime.now().isoformat()}'))
         mconn.commit(); mconn.close()
-        print(f'[Migration] JollyTur otomatik muhasebe: {count} rezervasyon güncellendi.')
+        print(f'[Migration] Acente otomatik muhasebe (BKG/JLY/TTS/ETS): {count} rezervasyon güncellendi.')
     except Exception as e:
-        print(f'[Migration] JollyTur oto hata: {e}')
+        print(f'[Migration] Acente oto hata: {e}')
 
 ODEME_HESAP_KODU = {
     'Nakit': '100', 'nakit': '100',
@@ -745,7 +756,8 @@ def api_tahsilat_gecmis():
     odeme_map = {
         '100': 'Nakit', '102-1': 'İş Bankası', '102-2': 'Ziraat',
         '102-3': 'Denizbank', '120': 'Müşteri Cari', '340': 'Alınan Kaparo',
-        '320-3': 'JollyTur', '320-4': 'TatilSepeti',
+        '320-1': 'Booking.com', '320-2': 'Expedia',
+        '320-3': 'JollyTur', '320-4': 'TatilSepeti', '320-5': 'ETSTUR',
     }
     result = []
     for r in rows:
@@ -1329,7 +1341,7 @@ def api_import():
 
 
 # Tek seferlik migration — fonksiyon tanımlarının hepsi yüklendikten sonra çalışır
-migrate_jolly_otomatik()
+migrate_acente_otomatik()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

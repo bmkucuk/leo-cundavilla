@@ -219,6 +219,7 @@ def init_db():
         ("320-2",  "Expedia Cari",               "Pasif",     "Acente"),
         ("320-3",  "JollyTur Cari",              "Pasif",     "Acente"),
         ("320-4",  "TatilSepeti Cari",           "Pasif",     "Acente"),
+        ("320-5",  "ETSTUR Cari",                "Pasif",     "Acente"),
         ("360",    "Ödenecek Vergi",             "Pasif",     "Vergi"),
         ("340",    "Alınan Avanslar (Kaparo)",              "Pasif",     "Kaparo"),
         ("649",    "Diğer Olağan Gelir ve Karlar",  "Gelir",     "Diğer"),
@@ -296,6 +297,7 @@ def init_db():
         ("EXP",     "Expedia",      15.0),
         ("JLY",     "JollyTur",     15.0),
         ("TTS",     "TatilSepeti",  15.0),
+        ("ETS",     "ETSTUR",       15.0),
         ("Telefon", "Telefon",       0.0),
         ("Kapidan", "Kapidan",       0.0),
     ]
