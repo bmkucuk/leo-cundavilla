@@ -611,7 +611,7 @@ def api_acente_ekle():
             odeme_tipi = d.get('komisyon_odeme', 'Mahsup')
             if odeme_tipi == 'Banka':
                 banka = d.get('odeme_banka', 'IS')
-                banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
+                banka_hesap = '100' if banka=='NAKIT' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
                 mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Komisyonu (Banka)',
                                   '730', banka_hesap, komisyon,
                                   f"{d['acente_kod']} komisyon", d.get('otel','LEO'),
@@ -623,7 +623,7 @@ def api_acente_ekle():
                                   kaynak_tablo='acente_cari', kaynak_id=acente_id)
         if gelen > 0:
             banka = d.get('odeme_banka', 'IS')
-            banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
+            banka_hesap = '100' if banka=='NAKIT' else '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
             acente_hesap = '320-1'
             if d['acente_kod'] == 'EXP': acente_hesap = '320-2'
             elif d['acente_kod'] in ('JLY','TTS'): acente_hesap = '320-3'
