@@ -70,6 +70,11 @@
 .kf-pcell select{color-scheme:dark}
 .kf-pcell select option{background:var(--card2);color:var(--text)}
 .kf-pcell input[type=date]{font-family:'Geist Mono',monospace;color-scheme:dark}
+.kf-pcell input[type=date]::-webkit-calendar-picker-indicator,
+.kf-ptable input[type=date]::-webkit-calendar-picker-indicator{
+  opacity:0;position:absolute;right:0;top:0;width:100%;height:100%;cursor:pointer;margin:0;padding:0;
+}
+.kf-pcell input[type=date],.kf-ptable input[type=date]{position:relative}
 .kf-pcell input::placeholder{color:var(--text2)}
 .kf-pcell .ro{font-size:13.5px;color:var(--text)}
 
@@ -311,7 +316,9 @@
     <table class="kf-ptable">
       <thead>
         <tr>
-          <th style="width:120px">Tarih</th><th>Açıklama</th>
+          <th style="width:100px">Tarih</th>
+          <th style="width:90px">ADS No</th>
+          <th>Açıklama</th>
           <th style="width:110px;text-align:right">Borç</th>
           <th style="width:140px;text-align:right">Alacak</th>
           <th style="width:120px;text-align:right">Bakiye +/-</th>
@@ -321,7 +328,7 @@
       <tbody id="kf-hareketler"></tbody>
       <tfoot>
         <tr>
-          <td colspan="2" style="font-weight:600;padding:8px 10px">Genel Bakiye</td>
+          <td colspan="3" style="font-weight:600;padding:8px 10px">Genel Bakiye</td>
           <td class="ptbl-bakiye" id="kf-h-borc">0 ₺</td>
           <td class="ptbl-bakiye" id="kf-h-alacak">0 ₺</td>
           <td class="ptbl-bakiye" id="kf-h-net" style="font-weight:700">0 ₺</td>
@@ -347,10 +354,10 @@
   </div>
 </div>
 
-<!-- ░ Alacak / Tahsilat Modalı ░ -->
+<!-- ░ Alacak / Ödeme Şekli Modalı ░ -->
 <div class="am-overlay" id="alacak-modal">
   <div class="am-box">
-    <div class="am-title">Tahsilat Ekle</div>
+    <div class="am-title">Ödeme Şekli Ekle</div>
     <div class="am-label">Ödeme Şekli</div>
     <div class="am-chips">
       <div class="am-chip" data-sekil="Nakit" onclick="selectOdemeSekli('Nakit',this)">💵 Nakit</div>
@@ -413,7 +420,7 @@
 
   <table class="kfp-table" id="kfp-hareket-tablo">
     <thead>
-      <tr><th style="width:80px">Tarih</th><th>Açıklama</th><th style="width:70px;text-align:right">Borç</th><th style="width:70px;text-align:right">Alacak</th><th style="width:90px;text-align:right">Bakiye +/-</th></tr>
+      <tr><th style="width:70px">Tarih</th><th style="width:65px">ADS No</th><th>Açıklama</th><th style="width:70px;text-align:right">Borç</th><th style="width:70px;text-align:right">Alacak</th><th style="width:90px;text-align:right">Bakiye +/-</th></tr>
     </thead>
     <tbody id="kfp-hareket-body"></tbody>
   </table>
@@ -502,7 +509,7 @@ function alacakCellHtml(h) {
         ${fmt(tutar)}<span class="rozet">${h.odeme_sekli || ''}</span>
       </div>`;
   }
-  return `<div class="kf-palacak" onclick="openAlacakModal(${h.id})">+ Tahsilat</div>`;
+  return `<div class="kf-palacak" onclick="openAlacakModal(${h.id})">+ Ödeme Şekli</div>`;
 }
 
 function renderHareketler() {
@@ -510,6 +517,7 @@ function renderHareketler() {
   wrap.innerHTML = hareketler.map(h => `
       <tr data-hid="${h.id}">
         <td><input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)"></td>
+        <td><input placeholder="—" value="${h.ads_no||''}" oninput="updHareket(${h.id},'ads_no',this.value)"></td>
         <td><input placeholder="Açıklama girin…" value="${h.aciklama||''}" oninput="updHareket(${h.id},'aciklama',this.value)"></td>
         <td class="borc-in"><input placeholder="0" value="${h.borc||''}" oninput="updHareket(${h.id},'borc',this.value)"></td>
         <td style="padding:0">${alacakCellHtml(h)}</td>
@@ -519,7 +527,7 @@ function renderHareketler() {
   recomputeBakiye();
 }
 function addHareket(prefill) {
-  hareketler.push(Object.assign({id: hareketId++, tarih:'', aciklama:'', borc:'', alacak:'', odeme_sekli:''}, prefill||{}));
+  hareketler.push(Object.assign({id: hareketId++, tarih:'', ads_no:'', aciklama:'', borc:'', alacak:'', odeme_sekli:''}, prefill||{}));
   renderHareketler();
 }
 function updHareket(id, field, val) {
@@ -532,7 +540,7 @@ function updHareket(id, field, val) {
 }
 function delHareket(id) { hareketler = hareketler.filter(x=>x.id!==id); renderHareketler(); }
 
-// ── Alacak / Tahsilat Modalı ──
+// ── Alacak / Ödeme Şekli Modalı ──
 let alacakModalId = null;
 const ODEME_SEKILLERI = ['Nakit', 'Kredi Kartı', 'İş Bankası', 'Deniz Bank'];
 
@@ -786,17 +794,18 @@ function fillPrintView(data, gun) {
     : `<tr><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td></tr>`;
   document.getElementById('kfp-fiyat').textContent = fmt(data.gun_fiyat) + ' x ' + gun + ' gün = ' + fmt(data.toplam_fiyat);
   document.getElementById('kfp-kanal').textContent = data.kanal || '—';
-  document.getElementById('kfp-taahhut').textContent = document.querySelector('.kf-taahhut').textContent.trim();
+  document.getElementById('kfp-taahhut').textContent = document.querySelector('.kf-ptaahhut').textContent.trim();
 
   // Cari hareketler — sadece doldurulmuş satırlar yazdırılır
   let run = 0;
-  const rows = hareketler.filter(h => (h.tarih||h.aciklama||h.borc||h.alacak));
+  const rows = hareketler.filter(h => (h.tarih||h.ads_no||h.aciklama||h.borc||h.alacak));
   const body = document.getElementById('kfp-hareket-body');
   body.innerHTML = rows.map(h => {
     const borc = parseFloat(h.borc)||0, alacak = parseFloat(h.alacak)||0;
     run += borc - alacak;
     return `<tr>
       <td>${h.tarih ? fmtDate(h.tarih) : ''}</td>
+      <td>${h.ads_no||''}</td>
       <td>${h.aciklama||''}</td>
       <td style="text-align:right">${borc?fmt(borc):''}</td>
       <td style="text-align:right">${alacak?fmt(alacak):''}</td>
