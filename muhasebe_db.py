@@ -267,6 +267,11 @@ def init_db():
         c.execute("DELETE FROM hesaplar WHERE kod='500-BC'")
         c.execute("DELETE FROM bankalar WHERE kod='BC-NKT' OR kod='BC-KK'")
 
+    # Migration: acente_cari tablosuna fatura_no kolonu (sonradan eklendi)
+    acente_cari_cols = [r[1] for r in c.execute("PRAGMA table_info(acente_cari)").fetchall()]
+    if 'fatura_no' not in acente_cari_cols:
+        c.execute("ALTER TABLE acente_cari ADD COLUMN fatura_no TEXT")
+
     # Migration: personel tablosuna sonradan eklenen kolonlar (eski canlı DB'lerde yoktu)
     pers_cols = [r[1] for r in c.execute("PRAGMA table_info(personel)").fetchall()]
     if 'telefon' not in pers_cols:

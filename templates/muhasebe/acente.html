@@ -45,6 +45,7 @@
   <table>
     <thead><tr>
   <th style="width:95px">Tarih</th>
+  <th style="width:120px">Fatura No</th>
   <th style="width:70px">Föy</th>
   <th>Misafir</th>
   <th style="width:140px">Banka</th>
@@ -66,7 +67,10 @@
       </div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label>Fatura No</label><input type="text" id="fm-fatura-no" placeholder="Örn. JLY-2026-0042"></div>
       <div class="form-group"><label>Tarih</label><input type="date" id="fm-tarih"></div>
+    </div>
+    <div class="form-row single">
       <div class="form-group"><label>Ödeme Bankası</label>
         <select id="fm-banka">
           <option value="IS">İş Bankası</option>
@@ -87,11 +91,12 @@
     <thead><tr>
   <th style="width:95px">Tarih</th>
   <th style="width:160px">Acente</th>
+  <th style="width:120px">Fatura No</th>
   <th style="text-align:right">Tutar</th>
   <th style="width:60px;text-align:center">Otel</th>
   <th style="width:100px"></th>
 </tr></thead>
-    <tbody id="tbody"><tr class="loading-row"><td colspan="5"><span class="spinner"></span></td></tr></tbody>
+    <tbody id="tbody"><tr class="loading-row"><td colspan="6"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 
@@ -105,6 +110,9 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="f-gelen" value="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
+      <div class="form-group"><label>Fatura No</label><input type="text" id="f-fatura-no" placeholder="Örn. JLY-2026-0042"></div>
+    </div>
+    <div class="form-row single">
       <div class="form-group"><label>Ödeme Bankası</label>
         <select id="f-odeme-banka">
           <option value="IS">İş Bankası</option>
@@ -182,6 +190,7 @@ async function load() {
       kesilenWrap.style.display = '';
       document.getElementById('kesilen-tbody').innerHTML = kesilenler.map(k => `<tr>
           <td>${fmtDate(k.tarih)}</td>
+          <td>${k.fatura_no||'—'}</td>
           <td>${k.foy_no ? '<a href="/rezervasyonlar?q='+k.foy_no+'" style="color:var(--accent)">'+k.foy_no+'</a>' : '—'}</td>
           <td>${k.misafir||'—'}</td>
           <td>${k.banka||'—'}</td>
@@ -204,10 +213,11 @@ async function load() {
   document.getElementById('tbody').innerHTML = rows.map(r => `<tr>
       <td>${fmtDate(r.tarih)}</td>
       <td>${r.acente_kod}</td>
+      <td>${r.fatura_no||'—'}</td>
       <td class="green" style="text-align:right">${fmt(r.gelen_odeme)}</td>
       <td style="text-align:center">${r.otel||''}</td>
       <td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="sil(${r.id})">Sil</button></td>
-    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
 }
 
 function renderDetayTablosu() {
@@ -277,6 +287,7 @@ function openFaturaModal() {
   const toplam = secilenler.reduce((s,f)=>s+f.net, 0);
   document.getElementById('fm-toplam').textContent = fmt(toplam);
   document.getElementById('fm-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fm-fatura-no').value = '';
   document.getElementById('fatura-modal').classList.add('open');
 }
 function closeFaturaModal() { document.getElementById('fatura-modal').classList.remove('open'); }
@@ -288,6 +299,7 @@ async function confirmFaturaKes() {
     foy_nolar: Array.from(secilenFoylar),
     tarih: document.getElementById('fm-tarih').value,
     odeme_banka: document.getElementById('fm-banka').value,
+    fatura_no: document.getElementById('fm-fatura-no').value.trim(),
   };
   const r = await api('/api/muhasebe/acente-fatura-kes', data);
   if (r.ok) {
@@ -306,6 +318,7 @@ async function openModal() {
   sel.innerHTML = acenteler.map(a => `<option value="${a.kod}">${a.kod} — ${a.ad}</option>`).join('');
   document.getElementById('f-tarih').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-gelen').value = 0;
+  document.getElementById('f-fatura-no').value = '';
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -322,6 +335,7 @@ async function save() {
     gelen_odeme: parseFloat(document.getElementById('f-gelen').value)||0,
     otel: document.getElementById('f-otel').value,
     odeme_banka: document.getElementById('f-odeme-banka').value,
+    fatura_no: document.getElementById('f-fatura-no').value.trim(),
   };
   const url = editId ? '/api/muhasebe/acente/guncelle' : '/api/muhasebe/acente/ekle';
   if (editId) data.id = editId;
@@ -340,6 +354,7 @@ async function duzenle(id) {
   document.getElementById('f-tarih').value = r.tarih || '';
   document.getElementById('f-gelen').value = r.gelen_odeme || 0;
   document.getElementById('f-otel').value = r.otel || 'LEO';
+  document.getElementById('f-fatura-no').value = r.fatura_no || '';
   document.getElementById('modal').classList.add('open');
 }
 

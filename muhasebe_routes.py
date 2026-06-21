@@ -591,9 +591,11 @@ def api_acente_detay():
         if mf:
             faturalanan.add(mf.group(1))
             banka_kodu = r['borc_hesap'] if r['borc_hesap'] != hesap else r['alacak_hesap']
+            fn = _re.search(r'\[FATURA:(.*?)\]', r['aciklama'] or '')
             kesilen_faturalar.append({
                 'tarih': r['tarih'], 'foy_no': mf.group(1), 'misafir': mf.group(2),
-                'tutar': r['tutar'], 'banka': BANKA_AD.get(banka_kodu, banka_kodu)
+                'tutar': r['tutar'], 'banka': BANKA_AD.get(banka_kodu, banka_kodu),
+                'fatura_no': fn.group(1) if fn else ''
             })
             continue
         # föy'e bağlı olmayan (genel fatura tahsilatı) hareket
@@ -623,6 +625,7 @@ def api_acente_fatura_kes():
         tarih = d.get('tarih') or date.today().isoformat()
         banka = d.get('odeme_banka', 'IS')
         otel = d.get('otel', 'LEO')
+        fatura_no = (d.get('fatura_no') or '').strip()
         hesap = ACENTE_HESAP.get(kod)
         if not hesap or not foy_nolar:
             return jsonify({'ok': False, 'error': 'Acente veya föy seçimi eksik'}), 400
@@ -655,7 +658,8 @@ def api_acente_fatura_kes():
             if net <= 0:
                 continue
             mdb._yevmiye_ekle(conn, tarih, 'Acente Fatura Tahsilatı', banka_hesap, hesap, net,
-                              f'Föy#{foy_no} {misafir} [JLY-FATURA] fatura tahsilatı', otel)
+                              f'Föy#{foy_no} {misafir} [JLY-FATURA] fatura tahsilatı' +
+                              (f' [FATURA:{fatura_no}]' if fatura_no else ''), otel)
             toplam += net
             detaylar.append({'foy_no': foy_no, 'misafir': misafir, 'net': net})
         conn.commit(); conn.close()
@@ -745,20 +749,22 @@ def api_acente_ekle():
         d = request.get_json()
         conn = mdb.get_conn()
         gelen = float(d.get('gelen_odeme', d.get('tutar', 0)))
+        fatura_no = (d.get('fatura_no') or '').strip()
         conn.execute("""
             INSERT INTO acente_cari
-            (tarih,acente_kod,foy_no,rez_no,misafir,rez_tutari,komisyon_oran,komisyon_tl,gelen_odeme,otel)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
+            (tarih,acente_kod,foy_no,rez_no,misafir,rez_tutari,komisyon_oran,komisyon_tl,gelen_odeme,otel,fatura_no)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
         """, (d['tarih'], d['acente_kod'], None, '', 'Fatura Tahsilatı', 0, 0, 0,
-              gelen, d.get('otel', 'LEO')))
+              gelen, d.get('otel', 'LEO'), fatura_no))
         acente_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         if gelen > 0:
             banka = d.get('odeme_banka', 'IS')
             banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
             acente_hesap = ACENTE_HESAP.get(d['acente_kod'], '320-1')
+            aciklama = f"{d['acente_kod']} fatura tahsilatı" + (f" [FATURA:{fatura_no}]" if fatura_no else "")
             mdb._yevmiye_ekle(conn, d['tarih'], 'Acente Fatura Tahsilatı',
                               banka_hesap, acente_hesap, gelen,
-                              f"{d['acente_kod']} fatura tahsilatı", d.get('otel','LEO'),
+                              aciklama, d.get('otel','LEO'),
                               kaynak_tablo='acente_cari', kaynak_id=acente_id)
         conn.commit(); conn.close()
         return jsonify({'ok': True})
@@ -1219,17 +1225,19 @@ def api_acente_guncelle():
     try:
         d = request.get_json()
         gelen = float(d.get('gelen_odeme', d.get('tutar', 0)))
+        fatura_no = (d.get('fatura_no') or '').strip()
         conn = mdb.get_conn()
-        conn.execute("""UPDATE acente_cari SET tarih=?,acente_kod=?,gelen_odeme=?,otel=?
+        conn.execute("""UPDATE acente_cari SET tarih=?,acente_kod=?,gelen_odeme=?,otel=?,fatura_no=?
                      WHERE id=?""",
-            (d['tarih'], d['acente_kod'], gelen, d.get('otel','LEO'), d['id']))
+            (d['tarih'], d['acente_kod'], gelen, d.get('otel','LEO'), fatura_no, d['id']))
         # Yevmiye güncelle (tutar + hesap kodu, banka değişmiş olabilir)
         banka = d.get('odeme_banka', 'IS')
         banka_hesap = '102-2' if banka=='ZRH' else '102-3' if banka=='DNZ' else '102-1'
         acente_hesap = ACENTE_HESAP.get(d['acente_kod'], '320-1')
-        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?,borc_hesap=?,alacak_hesap=?
+        aciklama = f"{d['acente_kod']} fatura tahsilatı" + (f" [FATURA:{fatura_no}]" if fatura_no else "")
+        conn.execute("""UPDATE yevmiye SET tarih=?,tutar=?,borc_hesap=?,alacak_hesap=?,aciklama=?
                      WHERE kaynak_tablo='acente_cari' AND kaynak_id=?""",
-            (d['tarih'], gelen, banka_hesap, acente_hesap, d['id']))
+            (d['tarih'], gelen, banka_hesap, acente_hesap, aciklama, d['id']))
         conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
