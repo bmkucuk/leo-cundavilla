@@ -334,6 +334,9 @@
     <table class="kf-ptable">
       <thead>
         <tr>
+          <th colspan="7" id="kf-cari-baslik" style="text-align:left;background:var(--card);border:none;padding:0 0 8px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text2)">Cari Hareketler</th>
+        </tr>
+        <tr>
           <th style="width:90px">Tarih</th>
           <th style="width:52px">ADS No</th>
           <th>Açıklama</th>
@@ -354,8 +357,8 @@
         </tr>
       </tfoot>
     </table>
-    <div class="kf-pkisi-add" onclick="addHareket()">+ Satır Ekle</div>
-    <div style="font-size:11px;color:var(--text2);margin:6px 0 16px">
+    <div class="kf-pkisi-add" id="kf-hareket-ekle-btn" onclick="addHareket()">+ Satır Ekle</div>
+    <div style="font-size:11px;color:var(--text2);margin:6px 0 16px" id="kf-cari-not">
       Not: Cari Hareketler bölümü yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.
     </div>
 
@@ -495,8 +498,26 @@ function delKisi(id) { kisiler = kisiler.filter(x=>x.id!==id); renderKisiler(); 
 
 let hareketId = 1;
 let hareketler = [];
+let cariReadOnly = false;
 
 function fmtSign(n) { return (n>0?'+':'') + fmt(n); }
+
+function updateCariModUI() {
+  const baslik = document.getElementById('kf-cari-baslik');
+  const btn = document.getElementById('kf-hareket-ekle-btn');
+  const not = document.getElementById('kf-cari-not');
+  if (cariReadOnly) {
+    baslik.innerHTML = '🔒 Cari Hareketler — Gerçek Adisyon / Cari Verisi (salt-okunur)';
+    baslik.style.color = 'var(--accent2)';
+    btn.style.display = 'none';
+    not.textContent = 'Bu liste Adisyon ve Cari sayfalarındaki gerçek kayıtları yansıtır. Düzenlemek için Adisyon veya Cari sayfasını kullanın.';
+  } else {
+    baslik.textContent = 'Cari Hareketler';
+    baslik.style.color = 'var(--text2)';
+    btn.style.display = 'inline-flex';
+    not.textContent = "Not: Bu bölüm yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.";
+  }
+}
 
 function recomputeBakiye() {
   let run = 0, totBorc = 0, totAlacak = 0;
@@ -521,6 +542,12 @@ function recomputeBakiye() {
 
 function alacakCellHtml(h) {
   const tutar = parseFloat(h.alacak) || 0;
+  if (cariReadOnly) {
+    if (tutar > 0) {
+      return `<div class="kf-palacak filled">${fmt(tutar)}<span class="rozet">${h.odeme_sekli || ''}</span></div>`;
+    }
+    return `<div class="kf-palacak">—</div>`;
+  }
   const kbd = `tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAlacakModal(${h.id})}"`;
   if (tutar > 0) {
     return `<div class="kf-palacak filled" ${kbd} onclick="openAlacakModal(${h.id})">
@@ -532,6 +559,20 @@ function alacakCellHtml(h) {
 
 function renderHareketler() {
   const wrap = document.getElementById('kf-hareketler');
+  if (cariReadOnly) {
+    wrap.innerHTML = hareketler.length ? hareketler.map(h => `
+      <tr data-hid="${h.id}">
+        <td style="padding:8px 10px">${h.tarih ? fmtDate(h.tarih) : ''}</td>
+        <td style="padding:8px 10px">${h.ads_no||''}</td>
+        <td style="padding:8px 10px">${h.aciklama||''}</td>
+        <td class="borc-in" style="padding:8px 10px">${h.borc ? fmt(parseFloat(h.borc)) : ''}</td>
+        <td style="padding:0">${alacakCellHtml(h)}</td>
+        <td class="ptbl-bakiye">0 ₺</td>
+        <td></td>
+      </tr>`).join('') : `<tr><td colspan="7" style="padding:10px;color:var(--text2);font-size:12px">Bu föy için Adisyon/Cari hareketi bulunmuyor.</td></tr>`;
+    recomputeBakiye();
+    return;
+  }
   wrap.innerHTML = hareketler.map(h => `
       <tr data-hid="${h.id}">
         <td><input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)"></td>
@@ -605,9 +646,11 @@ function clearAlacak() {
 function resetHareketler() {
   hareketler = []; hareketId = 1;
   for (let i=0;i<15;i++) addHareket();
+  updateCariModUI();
 }
 
 function updateRezBedeliRow() {
+  if (cariReadOnly) return; // gercek veri modunda yerel hesaplamayla ezilmesin
   if (!hareketler.length) return;
   const giris = document.getElementById('kf-giris').value;
   const cikis = document.getElementById('kf-cikis').value;
@@ -648,6 +691,7 @@ function autoSetCikis() {
 
 async function resetForm() {
   editFoy = null;
+  cariReadOnly = false;
   document.getElementById('kf-mod-rozet').style.display = 'none';
   document.getElementById('kf-kaydet-btn').textContent = '💾 Kaydet';
   document.getElementById('kf-foy').readOnly = true;
@@ -716,7 +760,7 @@ async function cagirFoy() {
 
   kisiler = parseBeraberindekiler(r.beraberindekiler);
   renderKisiler();
-  resetHareketler(); // not: Cari Hareketler henuz kalici olarak saklanmiyor, Rez Bedeli yeniden hesaplanir
+  await loadGercekCariHareketler(r.foy_no, parseFloat(r.toplam_fiyat)||0, r.giris);
   recalc();
 
   const rozet = document.getElementById('kf-mod-rozet');
@@ -724,6 +768,39 @@ async function cagirFoy() {
   rozet.innerHTML = `<span class="kf-mod-rozet duzenle">✎ Föy #${r.foy_no} düzenleniyor</span>`;
   document.getElementById('kf-kaydet-btn').textContent = '💾 Güncelle';
   toast(`Föy #${r.foy_no} yüklendi`);
+}
+
+// ── Gercek Adisyon + Cari (tahsilat) verisini cek, salt-okunur goster ──
+async function loadGercekCariHareketler(foyNo, toplamFiyat, giris) {
+  cariReadOnly = true;
+  let satirlar = [];
+
+  if (toplamFiyat > 0) {
+    satirlar.push({id: hareketId++, tarih: giris||'', ads_no:'', aciklama:'Rez Bedeli', borc: String(toplamFiyat), alacak:'', odeme_sekli:''});
+  }
+  try {
+    const adisRes = await api(`/api/adisyonlar?foy=${foyNo}`);
+    (adisRes.adisyonlar||[]).forEach(a => {
+      satirlar.push({
+        id: hareketId++, tarih: a.tarih||'', ads_no: a.adisyon_no||'',
+        aciklama: a.aciklama || 'Adisyon', borc: String(a.tutar||0), alacak:'', odeme_sekli:''
+      });
+    });
+  } catch(e) {}
+  try {
+    const tahData = await api(`/api/tahsilat/gecmis?foy_no=${foyNo}`);
+    (tahData||[]).forEach(t => {
+      satirlar.push({
+        id: hareketId++, tarih: t.tarih||'', ads_no:'',
+        aciklama: t.tur || 'Tahsilat', borc:'', alacak: String(t.tutar||0), odeme_sekli: t.odeme||''
+      });
+    });
+  } catch(e) {}
+
+  satirlar.sort((a,b) => (a.tarih||'').localeCompare(b.tarih||''));
+  hareketler = satirlar;
+  renderHareketler();
+  updateCariModUI();
 }
 
 async function kaydet() {
