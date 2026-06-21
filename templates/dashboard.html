@@ -51,6 +51,16 @@
   <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--pos)"></span><div class="label">Boş Oda</div><div class="value" id="s-bos">—</div><div class="sub">müsait · satışa açık</div></div>
 </div>
 
+{% if session.role == 'admin' %}
+<div class="panel" id="aktif-kullanici-widget" style="margin-bottom:16px;display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="section-title" style="margin:0;padding:0;border:none">Aktif Kullanıcılar</div>
+    <div style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text2);background:var(--card2);padding:3px 9px;border-radius:20px" id="aktif-kullanici-count">—</div>
+  </div>
+  <div id="aktif-kullanici-list" style="display:flex;flex-direction:column;gap:8px"></div>
+</div>
+{% endif %}
+
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
   <div class="table-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
@@ -152,5 +162,36 @@ async function load() {
     </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Şu an otelde misafir yok</td></tr>';
 }
 load();
+
+{% if session.role == 'admin' %}
+async function loadAktifKullanicilar() {
+  try {
+    const liste = await api('/api/aktif-kullanicilar');
+    const widget = document.getElementById('aktif-kullanici-widget');
+    const box = document.getElementById('aktif-kullanici-list');
+    const countEl = document.getElementById('aktif-kullanici-count');
+    if (!liste.length) {
+      widget.style.display = 'none';
+      return;
+    }
+    widget.style.display = '';
+    countEl.textContent = liste.length + ' kullanıcı';
+    box.innerHTML = liste.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card2);border-radius:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--pos)"></span>
+          <span style="font-size:13px;font-weight:500">${u.kullanici}</span>
+        </div>
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--text2)">
+          ${u.giris} girişli · ${u.son_aktivite_dk} dk önce aktif
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    // sessizce geç
+  }
+}
+loadAktifKullanicilar();
+setInterval(loadAktifKullanicilar, 30000);
+{% endif %}
 </script>
 {% endblock %}

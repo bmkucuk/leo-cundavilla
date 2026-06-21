@@ -48,6 +48,25 @@ USERS = {
     'villacunda':        {'hash': '29624e2e4c4ccee26ed8f3e0ca1012ea57a8f2191be6149f632250f7036119cc', 'role': 'personel'},
 }
 
+# ── Aktif Kullanıcı Takibi (tek worker, bellek içi) ─────────────────────────
+AKTIF_KULLANICILAR = {}  # {username: {'role':..., 'giris':datetime, 'son_aktivite':datetime}}
+AKTIF_ESIK_DK = 10  # bu süre içinde istek atmayan kullanıcı "aktif" sayılmaz
+
+@app.before_request
+def _aktivite_guncelle():
+    u = session.get('user')
+    if u:
+        simdi = datetime.now(TR_TZ)
+        kayit = AKTIF_KULLANICILAR.get(u)
+        if kayit:
+            kayit['son_aktivite'] = simdi
+        else:
+            AKTIF_KULLANICILAR[u] = {
+                'role': session.get('role'),
+                'giris': simdi,
+                'son_aktivite': simdi,
+            }
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -93,8 +112,31 @@ def login():
 
 @app.route('/logout')
 def logout():
+    AKTIF_KULLANICILAR.pop(session.get('user'), None)
     session.clear()
     return redirect('/login')
+
+@app.route('/api/aktif-kullanicilar')
+@admin_required
+def api_aktif_kullanicilar():
+    simdi = datetime.now(TR_TZ)
+    sonuc = []
+    silinecek = []
+    for kullanici, bilgi in AKTIF_KULLANICILAR.items():
+        fark_dk = (simdi - bilgi['son_aktivite']).total_seconds() / 60
+        if fark_dk > AKTIF_ESIK_DK:
+            silinecek.append(kullanici)
+            continue
+        if bilgi['role'] == 'admin':
+            continue  # admin widget'ta görünmez
+        sonuc.append({
+            'kullanici': kullanici,
+            'giris': bilgi['giris'].strftime('%H:%M'),
+            'son_aktivite_dk': round(fark_dk),
+        })
+    for k in silinecek:
+        AKTIF_KULLANICILAR.pop(k, None)
+    return jsonify(sonuc)
 
 
 # ── Sayfalar ──────────────────────────────────────────────────────────────────
