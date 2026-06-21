@@ -595,6 +595,7 @@ def api_acente_detay():
             kesilen_faturalar.append({
                 'tarih': r['tarih'], 'foy_no': mf.group(1), 'misafir': mf.group(2),
                 'tutar': r['tutar'], 'banka': BANKA_AD.get(banka_kodu, banka_kodu),
+                'banka_kodu': banka_kodu,
                 'fatura_no': fn.group(1) if fn else ''
             })
             continue
@@ -684,6 +685,47 @@ def api_acente_fatura_iptal():
         conn.commit(); conn.close()
         if adet == 0:
             return jsonify({'ok': False, 'error': 'Bu föy için faturalandırılmış kayıt bulunamadı'}), 404
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+
+@muh.route('/api/muhasebe/acente-fatura-duzenle', methods=['POST'])
+def api_acente_fatura_duzenle():
+    """Kesilmiş bir föy faturasının tarihini, fatura no'sunu veya bankasını düzeltir
+    (tutar değişmez — tutarı değiştirmek için önce iptal edip föyü yeniden faturalandırın)."""
+    try:
+        d = request.get_json()
+        foy_no = str(d.get('foy_no', ''))
+        tarih = d.get('tarih')
+        fatura_no = (d.get('fatura_no') or '').strip()
+        banka = d.get('odeme_banka', 'IS')
+        if not foy_no or not tarih:
+            return jsonify({'ok': False, 'error': 'Föy no veya tarih eksik'}), 400
+        banka_hesap = '102-2' if banka == 'ZRH' else '102-3' if banka == 'DNZ' else '102-1'
+
+        conn = mdb.get_conn()
+        row = conn.execute("""
+            SELECT id, aciklama, alacak_hesap FROM yevmiye
+            WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+        """, (f'Föy#{foy_no} %',)).fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'ok': False, 'error': 'Bu föy için faturalandırılmış kayıt bulunamadı'}), 404
+
+        import re as _re
+        eski_aciklama = row['aciklama']
+        if _re.search(r'\[FATURA:.*?\]', eski_aciklama):
+            yeni_aciklama = _re.sub(r'\[FATURA:.*?\]', f'[FATURA:{fatura_no}]', eski_aciklama) if fatura_no \
+                else _re.sub(r'\s*\[FATURA:.*?\]', '', eski_aciklama)
+        elif fatura_no:
+            yeni_aciklama = f'{eski_aciklama} [FATURA:{fatura_no}]'
+        else:
+            yeni_aciklama = eski_aciklama
+
+        conn.execute("""
+            UPDATE yevmiye SET tarih=?, borc_hesap=?, aciklama=? WHERE id=?
+        """, (tarih, banka_hesap, yeni_aciklama, row['id']))
+        conn.commit(); conn.close()
         return jsonify({'ok': True})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400

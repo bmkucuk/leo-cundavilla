@@ -50,9 +50,36 @@
   <th>Misafir</th>
   <th style="width:140px">Banka</th>
   <th style="text-align:right">Tutar</th>
+  <th style="width:70px"></th>
 </tr></thead>
     <tbody id="kesilen-tbody"></tbody>
   </table>
+</div>
+
+<!-- Fatura Düzenle Modalı -->
+<div class="modal-overlay" id="fatura-duzenle-modal">
+  <div class="modal">
+    <h2>Fatura Düzenle</h2>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Föy #<b id="fd-foy"></b> — <span id="fd-misafir"></span></div>
+    <div class="form-row">
+      <div class="form-group"><label>Fatura No</label><input type="text" id="fd-fatura-no"></div>
+      <div class="form-group"><label>Tarih</label><input type="date" id="fd-tarih"></div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Ödeme Bankası</label>
+        <select id="fd-banka">
+          <option value="IS">İş Bankası</option>
+          <option value="ZRH">Ziraat Bankası</option>
+          <option value="DNZ">Deniz Bank</option>
+        </select>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Not: Tutarı değiştirmek için önce "İptal Et" ile geri alıp föyü yeniden faturalandırın.</div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeFaturaDuzenleModal()">İptal</button>
+      <button class="btn btn-primary" onclick="confirmFaturaDuzenle()">💾 Kaydet</button>
+    </div>
+  </div>
 </div>
 
 <!-- Fatura Kes Onay Modalı -->
@@ -146,6 +173,7 @@ let editId = null;
 let allData = [];
 let detayFoyler = [];
 let secilenFoylar = new Set();
+let kesilenListesi = [];
 
 async function load() {
   const yil = yilSel.value;
@@ -186,6 +214,7 @@ async function load() {
 
     const kesilenWrap = document.getElementById('kesilen-wrap');
     const kesilenler = det.kesilen_faturalar || [];
+    kesilenListesi = kesilenler;
     if (kesilenler.length) {
       kesilenWrap.style.display = '';
       document.getElementById('kesilen-tbody').innerHTML = kesilenler.map(k => `<tr>
@@ -195,6 +224,7 @@ async function load() {
           <td>${k.misafir||'—'}</td>
           <td>${k.banka||'—'}</td>
           <td class="green" style="text-align:right;font-weight:600">${fmt(k.tutar)}</td>
+          <td><button class="btn" style="padding:3px 8px;font-size:11px;background:var(--accent4);color:#000" onclick="openFaturaDuzenleModal('${k.foy_no}')">Düzenle</button></td>
         </tr>`).join('');
     } else {
       kesilenWrap.style.display = 'none';
@@ -259,6 +289,34 @@ async function faturaIptal(foyNo) {
   if (!confirm(`Föy #${foyNo} için kesilmiş faturayı iptal etmek istediğinize emin misiniz?\n\nFöy yeniden "Bekliyor" durumuna dönecek ve tekrar faturalandırılabilecek.`)) return;
   const r = await api('/api/muhasebe/acente-fatura-iptal', { foy_no: foyNo });
   if (r.ok) { toast('Fatura iptal edildi, föy yeniden aktif ✓'); load(); }
+  else toast(r.error, 'error');
+}
+
+const BANKA_KODU_TERS = { '102-1': 'IS', '102-2': 'ZRH', '102-3': 'DNZ' };
+
+function openFaturaDuzenleModal(foyNo) {
+  const k = kesilenListesi.find(x => x.foy_no === foyNo);
+  if (!k) return;
+  document.getElementById('fd-foy').textContent = k.foy_no;
+  document.getElementById('fd-misafir').textContent = k.misafir || '';
+  document.getElementById('fd-fatura-no').value = k.fatura_no || '';
+  document.getElementById('fd-tarih').value = k.tarih || '';
+  document.getElementById('fd-banka').value = BANKA_KODU_TERS[k.banka_kodu] || 'IS';
+  document.getElementById('fatura-duzenle-modal').dataset.foy = foyNo;
+  document.getElementById('fatura-duzenle-modal').classList.add('open');
+}
+function closeFaturaDuzenleModal() { document.getElementById('fatura-duzenle-modal').classList.remove('open'); }
+
+async function confirmFaturaDuzenle() {
+  const foyNo = document.getElementById('fatura-duzenle-modal').dataset.foy;
+  const data = {
+    foy_no: foyNo,
+    tarih: document.getElementById('fd-tarih').value,
+    fatura_no: document.getElementById('fd-fatura-no').value.trim(),
+    odeme_banka: document.getElementById('fd-banka').value,
+  };
+  const r = await api('/api/muhasebe/acente-fatura-duzenle', data);
+  if (r.ok) { toast('Fatura güncellendi ✓'); closeFaturaDuzenleModal(); load(); }
   else toast(r.error, 'error');
 }
 
@@ -367,6 +425,7 @@ async function sil(id) {
 
 document.getElementById('modal').addEventListener('click', e => { if (e.target.id==='modal') closeModal(); });
 document.getElementById('fatura-modal').addEventListener('click', e => { if (e.target.id==='fatura-modal') closeFaturaModal(); });
+document.getElementById('fatura-duzenle-modal').addEventListener('click', e => { if (e.target.id==='fatura-duzenle-modal') closeFaturaDuzenleModal(); });
 load();
 </script>
 {% endblock %}
