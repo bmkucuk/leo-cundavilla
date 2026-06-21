@@ -358,6 +358,10 @@
       </tfoot>
     </table>
     <div class="kf-pkisi-add" id="kf-hareket-ekle-btn" onclick="addHareket()">+ Satır Ekle</div>
+    <div id="kf-gercek-btns" style="display:none;gap:8px;margin-bottom:4px">
+      <div class="kf-pkisi-add" onclick="openAdisyonEkleModal()">+ Adisyon Ekle</div>
+      <div class="kf-pkisi-add" onclick="openOdemeAlModal()">💰 Ödeme Al</div>
+    </div>
     <div style="font-size:11px;color:var(--text2);margin:6px 0 16px" id="kf-cari-not">
       Not: Cari Hareketler bölümü yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.
     </div>
@@ -384,7 +388,7 @@
       <div class="am-chip" data-sekil="Nakit" onclick="selectOdemeSekli('Nakit',this)">💵 Nakit</div>
       <div class="am-chip" data-sekil="Kredi Kartı" onclick="selectOdemeSekli('Kredi Kartı',this)">💳 Kredi Kartı</div>
       <div class="am-chip" data-sekil="İş Bankası" onclick="selectOdemeSekli('İş Bankası',this)">🏦 İş Bankası</div>
-      <div class="am-chip" data-sekil="Deniz Bank" onclick="selectOdemeSekli('Deniz Bank',this)">🏦 Deniz Bank</div>
+      <div class="am-chip" data-sekil="Denizbank" onclick="selectOdemeSekli('Denizbank',this)">🏦 Denizbank</div>
     </div>
     <div class="am-label">Tutar (₺)</div>
     <input type="number" id="am-tutar" class="am-tutar-input" placeholder="0" min="0" step="any">
@@ -393,6 +397,52 @@
       <div style="flex:1"></div>
       <div class="kf-btn kf-btn-def" onclick="closeAlacakModal()">İptal</div>
       <div class="kf-btn kf-btn-gold" onclick="confirmAlacak()">Tamam</div>
+    </div>
+  </div>
+</div>
+
+<!-- ░ Adisyon Ekle Modalı ░ -->
+<div class="am-overlay" id="adisyon-ekle-modal">
+  <div class="am-box">
+    <div class="am-title">Adisyon Kalemi Ekle</div>
+    <div class="am-label">Tarih</div>
+    <input type="date" id="ae-tarih" class="am-tutar-input" style="font-size:14px;font-weight:600;margin-bottom:14px">
+    <div class="am-label">Açıklama</div>
+    <input type="text" id="ae-aciklama" class="am-tutar-input" placeholder="Minibar, Restoran, vb." style="font-size:14px;font-weight:600;font-family:Geist,sans-serif;margin-bottom:14px">
+    <div class="am-label">Tutar (₺)</div>
+    <input type="number" id="ae-tutar" class="am-tutar-input" placeholder="0" min="0" step="any">
+    <div class="am-footer">
+      <div style="flex:1"></div>
+      <div class="kf-btn kf-btn-def" onclick="closeAdisyonEkleModal()">İptal</div>
+      <div class="kf-btn kf-btn-gold" onclick="confirmAdisyonEkle()">Ekle</div>
+    </div>
+  </div>
+</div>
+
+<!-- ░ Ödeme Al Modalı ░ -->
+<div class="am-overlay" id="odeme-al-modal">
+  <div class="am-box">
+    <div class="am-title">Ödeme Al</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:10px 12px;background:var(--card2);border-radius:9px">
+      <span style="font-size:12px;color:var(--text2);font-weight:600">Toplam Açık Borç</span>
+      <span id="oa-toplam-borc" style="font-size:16px;font-weight:800;color:var(--accent3)">0 ₺</span>
+    </div>
+    <div class="am-label">Ödeme Şekli</div>
+    <div class="am-chips">
+      <div class="am-chip oa-chip" data-sekil="Nakit" onclick="selectOdemeAlSekli('Nakit',this)">💵 Nakit</div>
+      <div class="am-chip oa-chip" data-sekil="Kredi Kartı" onclick="selectOdemeAlSekli('Kredi Kartı',this)">💳 Kredi Kartı</div>
+      <div class="am-chip oa-chip" data-sekil="İş Bankası" onclick="selectOdemeAlSekli('İş Bankası',this)">🏦 İş Bankası</div>
+      <div class="am-chip oa-chip" data-sekil="Denizbank" onclick="selectOdemeAlSekli('Denizbank',this)">🏦 Denizbank</div>
+    </div>
+    <div class="am-label">Alınan Tutar (₺)</div>
+    <input type="number" id="oa-tutar" class="am-tutar-input" placeholder="0" min="0" step="any">
+    <div style="font-size:11px;color:var(--text2);margin:8px 0 16px">
+      Tutar önce rezervasyon bakiyesine, kalanı sırayla adisyon kalemlerine düşülür.
+    </div>
+    <div class="am-footer">
+      <div style="flex:1"></div>
+      <div class="kf-btn kf-btn-def" onclick="closeOdemeAlModal()">İptal</div>
+      <div class="kf-btn kf-btn-gold" onclick="confirmOdemeAl()">💾 Ödeme Al</div>
     </div>
   </div>
 </div>
@@ -506,15 +556,18 @@ function updateCariModUI() {
   const baslik = document.getElementById('kf-cari-baslik');
   const btn = document.getElementById('kf-hareket-ekle-btn');
   const not = document.getElementById('kf-cari-not');
+  const gercekBtns = document.getElementById('kf-gercek-btns');
   if (cariReadOnly) {
-    baslik.innerHTML = '🔒 Cari Hareketler — Gerçek Adisyon / Cari Verisi (salt-okunur)';
+    baslik.innerHTML = '🔒 Cari Hareketler — Gerçek Adisyon / Cari Verisi';
     baslik.style.color = 'var(--accent2)';
     btn.style.display = 'none';
-    not.textContent = 'Bu liste Adisyon ve Cari sayfalarındaki gerçek kayıtları yansıtır. Düzenlemek için Adisyon veya Cari sayfasını kullanın.';
+    gercekBtns.style.display = 'flex';
+    not.textContent = 'Bu liste Adisyon ve Cari sayfalarıyla aynı, canlı veriyi gösterir. Aşağıdaki butonlarla buradan da işlem girebilirsin.';
   } else {
     baslik.textContent = 'Cari Hareketler';
     baslik.style.color = 'var(--text2)';
     btn.style.display = 'inline-flex';
+    gercekBtns.style.display = 'none';
     not.textContent = "Not: Bu bölüm yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.";
   }
 }
@@ -643,6 +696,99 @@ function clearAlacak() {
   renderHareketler();
 }
 
+// ── Form'dan dogrudan Adisyon Ekle ──
+function openAdisyonEkleModal() {
+  if (!editFoy) { toast('Önce bir föy çağırın', 'error'); return; }
+  document.getElementById('ae-tarih').value = today;
+  document.getElementById('ae-aciklama').value = '';
+  document.getElementById('ae-tutar').value = '';
+  document.getElementById('adisyon-ekle-modal').classList.add('open');
+}
+function closeAdisyonEkleModal() {
+  document.getElementById('adisyon-ekle-modal').classList.remove('open');
+}
+async function confirmAdisyonEkle() {
+  const tarih = document.getElementById('ae-tarih').value;
+  const aciklama = document.getElementById('ae-aciklama').value.trim();
+  const tutar = parseFloat(document.getElementById('ae-tutar').value);
+  if (!tarih) { toast('Tarih girin', 'error'); return; }
+  if (!aciklama) { toast('Açıklama girin', 'error'); return; }
+  if (!(tutar > 0)) { toast('Tutar > 0 olmalı', 'error'); return; }
+
+  const next = await api('/api/next-adisyon');
+  const r = await api('/api/adisyon/ekle', {
+    adisyon_no: next.adisyon_no, foy_no: editFoy, tarih, tutar, odeme: 'Oda Hesabına', aciklama
+  });
+  if (r.ok) {
+    toast(`Adisyon eklendi ✓ (#${next.adisyon_no})`);
+    closeAdisyonEkleModal();
+    await reloadGercekCari();
+  } else {
+    toast(r.error || 'Adisyon eklenemedi', 'error');
+  }
+}
+
+// ── Form'dan dogrudan Odeme Al ──
+let odemeAlSekli = '';
+function openOdemeAlModal() {
+  if (!editFoy || !gercekRez) { toast('Önce bir föy çağırın', 'error'); return; }
+  const rezBakiye = Math.max(0, gercekRez.rez_bakiye || 0);
+  let adisBakiye = 0;
+  gercekAdisyonlar.forEach(a => { adisBakiye += Math.max(0, a.tutar - (a.odenen_tutar||0)); });
+  const toplam = rezBakiye + adisBakiye;
+
+  document.getElementById('oa-toplam-borc').textContent = fmt(toplam);
+  document.getElementById('oa-tutar').value = toplam || '';
+  odemeAlSekli = '';
+  document.querySelectorAll('.oa-chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('odeme-al-modal').classList.add('open');
+}
+function closeOdemeAlModal() {
+  document.getElementById('odeme-al-modal').classList.remove('open');
+}
+function selectOdemeAlSekli(sekil, btn) {
+  document.querySelectorAll('.oa-chip').forEach(c => c.classList.remove('selected'));
+  btn.classList.add('selected');
+  odemeAlSekli = sekil;
+}
+async function confirmOdemeAl() {
+  const tutar = parseFloat(document.getElementById('oa-tutar').value);
+  if (!(tutar > 0)) { toast('Tutar > 0 olmalı', 'error'); return; }
+  if (!odemeAlSekli) { toast('Ödeme şekli seçin', 'error'); return; }
+
+  let kalan = tutar;
+  const rezBakiye = Math.max(0, gercekRez.rez_bakiye || 0);
+
+  if (rezBakiye > 0 && kalan > 0) {
+    const rezPay = Math.min(kalan, rezBakiye);
+    const rr = await api('/api/tahsilat/rez', {foy_no: editFoy, tutar: rezPay, odeme: odemeAlSekli});
+    if (!rr.ok) { toast(rr.error || 'Rezervasyon ödemesi kaydedilemedi', 'error'); return; }
+    kalan -= rezPay;
+  }
+
+  if (kalan > 0) {
+    const adisyon_nolar = [];
+    const adis_tutarlar = {};
+    for (const a of [...gercekAdisyonlar].sort((x,y)=>x.adisyon_no-y.adisyon_no)) {
+      if (kalan <= 0) break;
+      const bakiye = a.tutar - (a.odenen_tutar||0);
+      if (bakiye <= 0) continue;
+      const pay = Math.min(kalan, bakiye);
+      adisyon_nolar.push(a.adisyon_no);
+      adis_tutarlar[a.adisyon_no] = pay;
+      kalan -= pay;
+    }
+    if (adisyon_nolar.length) {
+      const ar = await api('/api/tahsilat/adis', {foy_no: editFoy, odeme: odemeAlSekli, adisyon_nolar, adis_tutarlar});
+      if (!ar.ok) { toast(ar.error || 'Adisyon ödemesi kaydedilemedi', 'error'); return; }
+    }
+  }
+
+  toast(kalan > 0 ? `Ödeme alındı ✓ — ${fmt(kalan)} fazla girildi` : 'Ödeme alındı ✓');
+  closeOdemeAlModal();
+  await reloadGercekCari();
+}
+
 function resetHareketler() {
   hareketler = []; hareketId = 1;
   for (let i=0;i<15;i++) addHareket();
@@ -760,6 +906,7 @@ async function cagirFoy() {
 
   kisiler = parseBeraberindekiler(r.beraberindekiler);
   renderKisiler();
+  gercekRez = r;
   await loadGercekCariHareketler(r.foy_no, parseFloat(r.toplam_fiyat)||0, r.giris);
   recalc();
 
@@ -771,6 +918,9 @@ async function cagirFoy() {
 }
 
 // ── Gercek Adisyon + Cari (tahsilat) verisini cek, salt-okunur goster ──
+let gercekRez = null;
+let gercekAdisyonlar = [];
+
 async function loadGercekCariHareketler(foyNo, toplamFiyat, giris) {
   cariReadOnly = true;
   let satirlar = [];
@@ -780,7 +930,8 @@ async function loadGercekCariHareketler(foyNo, toplamFiyat, giris) {
   }
   try {
     const adisRes = await api(`/api/adisyonlar?foy=${foyNo}`);
-    (adisRes.adisyonlar||[]).forEach(a => {
+    gercekAdisyonlar = adisRes.adisyonlar || [];
+    gercekAdisyonlar.forEach(a => {
       satirlar.push({
         id: hareketId++, tarih: a.tarih||'', ads_no: a.adisyon_no||'',
         aciklama: a.aciklama || 'Adisyon', borc: String(a.tutar||0), alacak:'', odeme_sekli:''
@@ -801,6 +952,14 @@ async function loadGercekCariHareketler(foyNo, toplamFiyat, giris) {
   hareketler = satirlar;
   renderHareketler();
   updateCariModUI();
+}
+
+async function reloadGercekCari() {
+  if (!editFoy) return;
+  const allRez = await api(`/api/rezervasyonlar?q=${encodeURIComponent(editFoy)}&otel=Tümü`);
+  const r = allRez.find(x => String(x.foy_no) === String(editFoy));
+  gercekRez = r || null;
+  await loadGercekCariHareketler(editFoy, parseFloat(r?.toplam_fiyat)||0, r?.giris);
 }
 
 async function kaydet() {
