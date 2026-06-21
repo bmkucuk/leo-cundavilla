@@ -178,17 +178,37 @@ function rowHtml(r) {
     <td class="red" style="text-align:right">${r.cikis > 0 ? fmt(r.cikis) : '—'}</td>
     <td class="${r.bakiye_kum >= 0 ? 'green' : 'red'}" style="text-align:right;font-weight:600">${fmt(r.bakiye_kum)}</td>
     <td style="text-align:center">
-      <button onclick="silKasaKaydi(${r.id}, ${r.kaynak_tablo ? 'true' : 'false'})"
+      <button onclick='silKasaKaydi(${r.id}, ${JSON.stringify(r.kaynak_tablo||null)}, ${JSON.stringify(r.aciklama||"")})'
         title="Sil" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:4px">🗑️</button>
     </td>
   </tr>`;
 }
 
-async function silKasaKaydi(id, baglantili) {
-  const mesaj = baglantili
-    ? 'Bu kayıt bir rezervasyon/adisyon işlemine bağlı. Buradan silmek sadece muhasebe kaydını siler, ilgili kaydı silmez ve tutarsızlığa yol açabilir. Yine de silmek istediğinize emin misiniz?\n\nBağlı kaydı silmek için ilgili Rezervasyon/Adisyon sayfasından silmeniz önerilir.'
-    : 'Bu kaydı silmek istediğinize emin misiniz?';
-  if (!confirm(mesaj)) return;
+// kaynak_tablo / açıklama desenine göre kaydın hangi sayfaya ait olduğunu bulur
+const KAYNAK_SAYFA = {
+  personel_avans: 'Personel (Avans)',
+  personel_maas:  'Personel',
+  vergi:          'Vergi',
+  acente_cari:    'Acenteler',
+  ortak_cari:     'Ortak Cari',
+  stok:           'Stok',
+  'demirbaş':     'Demirbaş',
+};
+
+function baglantiliSayfa(kaynakTablo, aciklama) {
+  if (kaynakTablo && KAYNAK_SAYFA[kaynakTablo]) return KAYNAK_SAYFA[kaynakTablo];
+  if (/Föy#\d+/.test(aciklama || '')) return 'Rez. Formu (ilgili föyü açıp tahsilatı oradan kaldırın)';
+  if ((aciklama || '').includes('[OTEL-AKTARIM]')) return 'Dashboard gelir aktarımı (ilgili ayı yeniden aktararak güncelleyin)';
+  return null;
+}
+
+async function silKasaKaydi(id, kaynakTablo, aciklama) {
+  const sayfa = baglantiliSayfa(kaynakTablo, aciklama);
+  if (sayfa) {
+    alert(`Bu kayıt buradan silinemez çünkü başka bir işleme bağlı.\n\nSilmek için: ${sayfa}`);
+    return;
+  }
+  if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
   const r = await api('/api/muhasebe/kasa/sil', { id });
   if (r.ok) { toast('Kayıt silindi ✓'); load(); }
   else toast(r.error, 'error');
