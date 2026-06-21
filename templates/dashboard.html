@@ -170,11 +170,12 @@ async function loadAktifKullanicilar() {
     const widget = document.getElementById('aktif-kullanici-widget');
     const box = document.getElementById('aktif-kullanici-list');
     const countEl = document.getElementById('aktif-kullanici-count');
+    widget.style.display = '';
     if (!liste.length) {
-      widget.style.display = 'none';
+      countEl.textContent = '0 kullanıcı';
+      box.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:6px 2px">Şu an başka aktif kullanıcı yok</div>';
       return;
     }
-    widget.style.display = '';
     countEl.textContent = liste.length + ' kullanıcı';
     box.innerHTML = liste.map(u => `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card2);border-radius:8px">
