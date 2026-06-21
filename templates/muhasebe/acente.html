@@ -191,7 +191,9 @@ function renderDetayTablosu() {
         <td style="text-align:right">${fmt(f.rez_tutari)}</td>
         <td class="red" style="text-align:right">${fmt(f.komisyon)}</td>
         <td style="text-align:right;font-weight:600">${fmt(f.net)}</td>
-        <td style="text-align:center"><span style="font-size:10px;background:#163a23;color:#4ade80;padding:2px 8px;border-radius:10px">✓ Faturalandı</span></td>
+        <td style="text-align:center"><span style="font-size:10px;background:#163a23;color:#4ade80;padding:2px 8px;border-radius:10px">✓ Faturalandı</span>
+          <button onclick="faturaIptal('${f.foy_no}')" title="Faturayı iptal et" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:11px;margin-left:6px;text-decoration:underline">İptal Et</button>
+        </td>
       </tr>`;
     }
     return `<tr>
@@ -211,6 +213,13 @@ function renderDetayTablosu() {
 function toggleFoy(foyNo, checked) {
   if (checked) secilenFoylar.add(foyNo); else secilenFoylar.delete(foyNo);
   guncelleSecimOzeti();
+}
+
+async function faturaIptal(foyNo) {
+  if (!confirm(`Föy #${foyNo} için kesilmiş faturayı iptal etmek istediğinize emin misiniz?\n\nFöy yeniden "Bekliyor" durumuna dönecek ve tekrar faturalandırılabilecek.`)) return;
+  const r = await api('/api/muhasebe/acente-fatura-iptal', { foy_no: foyNo });
+  if (r.ok) { toast('Fatura iptal edildi, föy yeniden aktif ✓'); load(); }
+  else toast(r.error, 'error');
 }
 
 function toggleHepsi(cb) {

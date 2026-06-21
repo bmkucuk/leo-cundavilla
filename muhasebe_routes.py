@@ -654,6 +654,27 @@ def api_acente_fatura_kes():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
+@muh.route('/api/muhasebe/acente-fatura-iptal', methods=['POST'])
+def api_acente_fatura_iptal():
+    """Tek bir föy için kesilmiş faturayı (bankaya gelen tahsilat kaydını) geri alır.
+    Föy yeniden 'Bekliyor' durumuna döner, dilenirse tekrar faturalandırılabilir."""
+    try:
+        d = request.get_json()
+        foy_no = str(d.get('foy_no', ''))
+        if not foy_no:
+            return jsonify({'ok': False, 'error': 'Föy no eksik'}), 400
+        conn = mdb.get_conn()
+        silinen = conn.execute("""
+            DELETE FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+        """, (f'Föy#{foy_no} %',))
+        adet = silinen.rowcount
+        conn.commit(); conn.close()
+        if adet == 0:
+            return jsonify({'ok': False, 'error': 'Bu föy için faturalandırılmış kayıt bulunamadı'}), 404
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+
 @muh.route('/api/muhasebe/acente')
 def api_acente():
     yil = request.args.get('yil', date.today().year, type=int)
