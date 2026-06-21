@@ -903,23 +903,37 @@ def api_mizan():
         "SELECT COALESCE(SUM(ao.tutar),0) FROM adisyon_odemeler ao JOIN rezervasyonlar r ON ao.foy_no=r.foy_no WHERE ao.odeme_sekli='Nakit' AND strftime('%Y',r.giris)=?",
         (yil_str,)).fetchone()[0] or 0
     # Manuel yevmiye nakit giriş/çıkışları
-    yev_nakit_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='100' AND islem_tipi NOT LIKE '%Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
+    yev_nakit_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='100' AND islem_tipi NOT LIKE 'Rezervasyon Tahsilat%' AND islem_tipi NOT LIKE 'Adisyon Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
     yev_nakit_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap='100'", (yil,)).fetchone()[0] or 0
     kasa_borc = nakit_rez + nakit_adis + yev_nakit_borc
     kasa_alacak = yev_nakit_alacak
     kasa_bak = kasa_borc - kasa_alacak
 
-    # 102-1 İş Bankası - banka tahsilatlar
-    banka_rez = sum(_f(r['rez_tahsilat']) for r in rezler if r.get('rez_odeme_sekli','') not in ('Nakit',''))
+    # 102-1 İş Bankası - banka tahsilatlar (acente üzerinden ödenen rezervasyonlar hariç —
+    # onlar gerçekten bankaya gelmedi, acente cari hesabına yazılır, fatura kesilince banka girer)
+    banka_rez = sum(_f(r['rez_tahsilat']) for r in rezler
+                     if r.get('rez_odeme_sekli','') not in ('Nakit','') and not str(r.get('rez_odeme_sekli','')).startswith('Acente'))
+    acente_rez = sum(_f(r['rez_tahsilat']) for r in rezler if str(r.get('rez_odeme_sekli','')).startswith('Acente'))
     banka_kapora = sum(_f(r['kapora']) for r in rezler)
     banka_adis = otel.execute(
         "SELECT COALESCE(SUM(ao.tutar),0) FROM adisyon_odemeler ao JOIN rezervasyonlar r ON ao.foy_no=r.foy_no WHERE ao.odeme_sekli!='Nakit' AND strftime('%Y',r.giris)=?",
         (yil_str,)).fetchone()[0] or 0
-    yev_banka_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='102-1' AND islem_tipi NOT LIKE '%Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
+    # Manuel/otomatik yevmiye banka hareketleri — acente fatura tahsilatı dahil (gerçekten bankaya giren para)
+    yev_banka_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='102-1' AND islem_tipi NOT LIKE 'Rezervasyon Tahsilat%' AND islem_tipi NOT LIKE 'Adisyon Tahsilat%' AND islem_tipi != 'Kapora'", (yil,)).fetchone()[0] or 0
     yev_banka_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap='102-1'", (yil,)).fetchone()[0] or 0
     banka_borc = banka_rez + banka_kapora + banka_adis + yev_banka_borc
     banka_alacak = yev_banka_alacak
     banka_bak = banka_borc - banka_alacak
+
+    # 320-x Acente Cari — JollyTur vb. (yevmiyeden gerçek bakiye; rezervasyon yılına göre değil
+    # hesabın o ana kadarki toplam hareketine göre — Mizan'da "bakiye" mantığı bu şekilde tutarlı kalır)
+    acente_satirlari = []
+    for kod, hesap in ACENTE_HESAP.items():
+        a_borc = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?", (yil, hesap)).fetchone()[0] or 0
+        a_alacak = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?", (yil, hesap)).fetchone()[0] or 0
+        if a_borc or a_alacak:
+            adi = {'BKG':'Booking.com Cari','EXP':'Expedia Cari','JLY':'JollyTur Cari','TTS':'TatilSepeti Cari'}.get(kod, f'{kod} Cari')
+            acente_satirlari.append((hesap, adi, a_borc, a_alacak))
 
     # 120 Müşteri Cari
     muc_borc = sum(_f(r['toplam_fiyat']) for r in rezler)  # konaklama geliri
@@ -929,7 +943,7 @@ def api_mizan():
     muc_borc += adis_gelir
 
     muc_alacak = (banka_rez + banka_kapora + banka_adis +
-                  nakit_rez + nakit_adis)
+                  nakit_rez + nakit_adis + acente_rez)
     muc_bak = muc_borc - muc_alacak
 
     # ── GELİRLER ──
@@ -944,6 +958,7 @@ def api_mizan():
     stok  = mizan_yev.get('stok', 0) or 0
     dem   = mizan_yev.get('demirbaş', 0) or 0
     ortak = (mizan_yev.get('ortak_lk',0) or 0) + (mizan_yev.get('ortak_bt',0) or 0) + (mizan_yev.get('ortak_fk',0) or 0)
+    komisyon = muh_conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap='730'", (yil,)).fetchone()[0] or 0
 
     otel.close(); muh_conn.close()
 
@@ -962,6 +977,8 @@ def api_mizan():
     satir('100',   'Kasa TL',     kasa_borc,  kasa_alacak)
     satir('102-1', 'İş Bankası',  banka_borc, banka_alacak)
     satir('120',   'Müşteri Cari',muc_borc,   muc_alacak)
+    for hesap, adi, a_borc, a_alacak in acente_satirlari:
+        satir(hesap, adi, a_borc, a_alacak)
     satirlar.append({'tip':'bos'})
 
     satirlar.append({'tip':'baslik','kod':'━━','ad':'GELİRLER','borc':0,'alacak':0})
@@ -976,13 +993,14 @@ def api_mizan():
     if stok:  satir('740','Stok/Market',   stok,  0, 'Gider')
     if dem:   satir('255','Demirbaş',      dem,   0, 'Gider')
     if ortak: satir('500','Ortak Cari',    ortak, 0, 'Gider')
+    if komisyon: satir('730','Acente Komisyonu', komisyon, 0, 'Gider')
     satirlar.append({'tip':'bos'})
 
     satirlar.append({'tip':'baslik','kod':'━━','ad':'ÖZKAYNAKLAR','borc':0,'alacak':0})
     satirlar.append({'tip':'bos'})
 
     gelir_toplam = leo_kon + cv_kon + adis_gel
-    gider_toplam = maas + vergi + stok + dem + ortak
+    gider_toplam = maas + vergi + stok + dem + ortak + komisyon
     net = gelir_toplam - gider_toplam
 
     satirlar.append({'tip':'net','kod':'NET','ad':'NET KÂR / ZARAR',
