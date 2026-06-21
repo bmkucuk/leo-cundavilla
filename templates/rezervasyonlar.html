@@ -286,6 +286,7 @@ async function load() {
         `<button class="rez-btn rez-btn-danger" onclick="silRez(${r.foy_no})">Sil</button>` +
         (r.kapora>0 && r.durum!=='Kapora Yandı' ? ` <button class="rez-btn rez-btn-warn" onclick="kaporaYandi(${r.foy_no})">🔥 Kapora Yandı</button>` : '');
     }
+    islemHtml += ` <a class="rez-btn rez-btn-def" href="/rez-formu?foy=${r.foy_no}" style="text-decoration:none;display:inline-block">📝 Form</a>`;
 
     return `<tr ${rowId} style="${rowBg}">
       <td style="font-family:'Geist Mono',monospace;color:var(--text2)">#${r.foy_no}</td>

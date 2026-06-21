@@ -41,6 +41,8 @@
 .kf-btn-def{background:var(--card);color:var(--text2);border:1px solid var(--border)}
 .kf-btn-gold{background:linear-gradient(150deg,#ffc24d,#f0a52e);color:#1a1206}
 .kf-btn-blue{background:var(--card2);color:var(--accent2);border:1px solid var(--border)}
+.kf-mod-rozet{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:9px;font-size:12.5px;font-weight:600}
+.kf-mod-rozet.duzenle{background:rgba(67,198,255,.14);color:var(--accent2);border:1px solid rgba(67,198,255,.4)}
 
 .kf-hareket-tablo{border:1px solid var(--border);border-radius:10px;overflow:hidden;width:max-content;max-width:100%}
 .kf-hareket-head{display:grid;grid-template-columns:150px 230px 110px 140px 120px 34px;background:var(--card2)}
@@ -114,6 +116,18 @@
 </style>
 
 <div id="kf-screen">
+
+  <!-- Föy Çağır -->
+  <div class="kf-section" style="padding:16px 24px">
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+      <div class="kf-field" style="flex:none;width:160px">
+        <label>Föy No ile Getir</label>
+        <input type="number" id="kf-cagir-no" placeholder="örn. 1042" onkeydown="if(event.key==='Enter')cagirFoy()">
+      </div>
+      <div class="kf-btn kf-btn-blue" onclick="cagirFoy()">🔍 Getir</div>
+      <div id="kf-mod-rozet" style="display:none;margin-left:auto;align-self:center"></div>
+    </div>
+  </div>
 
   <!-- Oda & Föy -->
   <div class="kf-section">
@@ -272,7 +286,7 @@
   <div class="kf-actions">
     <div class="kf-btn kf-btn-def" onclick="resetForm()">Temizle</div>
     <div class="kf-btn kf-btn-blue" onclick="yazdir()">🖨️ Yazdır</div>
-    <div class="kf-btn kf-btn-gold" onclick="kaydet()">💾 Kaydet</div>
+    <div class="kf-btn kf-btn-gold" onclick="kaydet()" id="kf-kaydet-btn">💾 Kaydet</div>
   </div>
 </div>
 
@@ -551,6 +565,10 @@ function autoSetCikis() {
 }
 
 async function resetForm() {
+  editFoy = null;
+  document.getElementById('kf-mod-rozet').style.display = 'none';
+  document.getElementById('kf-kaydet-btn').textContent = '💾 Kaydet';
+  document.getElementById('kf-foy').readOnly = true;
   fillOdaSelect();
   const d = await api('/api/next-foy');
   document.getElementById('kf-foy').value = d.foy_no;
@@ -574,6 +592,56 @@ async function resetForm() {
   renderKisiler();
   resetHareketler();
   recalc();
+}
+
+// ── Föy Çağır / Düzenleme Modu ──
+let editFoy = null;
+
+function parseBeraberindekiler(str) {
+  if (!str) return [];
+  return str.split(';').map(s => s.trim()).filter(Boolean).map(s => {
+    const m = s.match(/^(.*?)\s*\(TC:\s*([0-9]*)\)\s*$/);
+    return m ? { id: kisiId++, ad: m[1].trim(), tc: m[2].trim() } : { id: kisiId++, ad: s, tc: '' };
+  });
+}
+
+async function cagirFoy() {
+  const no = document.getElementById('kf-cagir-no').value;
+  if (!no) { toast('Föy numarası girin', 'error'); return; }
+  const allRez = await api(`/api/rezervasyonlar?q=${encodeURIComponent(no)}&otel=Tümü`);
+  const r = allRez.find(x => String(x.foy_no) === String(no));
+  if (!r) { toast(`Föy #${no} bulunamadı`, 'error'); return; }
+
+  editFoy = r.foy_no;
+  document.getElementById('kf-foy').readOnly = true;
+  document.getElementById('kf-foy').value = r.foy_no;
+  document.getElementById('kf-oda').value = r.oda_no;
+  onOdaChange();
+  document.getElementById('kf-giris').value = r.giris || '';
+  document.getElementById('kf-cikis').value = r.cikis || '';
+  document.getElementById('kf-ad').value = r.musteri || '';
+  document.getElementById('kf-tc').value = r.tc_kimlik || '';
+  document.getElementById('kf-arac').value = r.arac_plaka || '';
+  document.getElementById('kf-tel').value = r.telefon || '';
+  document.getElementById('kf-yetiskin').value = r.yetiskin || 2;
+  document.getElementById('kf-cocuk').value = r.cocuk || 0;
+  document.getElementById('kf-kanal').value = r.kanal || '';
+  document.getElementById('kf-kahvalti').value = r.kahvalti || 'Kahvaltılı';
+  document.getElementById('kf-gunfiyat').value = r.gun_fiyat || 0;
+  document.getElementById('kf-kapora').value = r.kapora || 0;
+  document.getElementById('kf-kapora-tarihi').value = r.kapora_tarihi || '';
+  document.getElementById('kf-ek').value = r.ek_yatak || 'Yok';
+
+  kisiler = parseBeraberindekiler(r.beraberindekiler);
+  renderKisiler();
+  resetHareketler(); // not: Cari Hareketler henuz kalici olarak saklanmiyor, Rez Bedeli yeniden hesaplanir
+  recalc();
+
+  const rozet = document.getElementById('kf-mod-rozet');
+  rozet.style.display = 'block';
+  rozet.innerHTML = `<span class="kf-mod-rozet duzenle">✎ Föy #${r.foy_no} düzenleniyor</span>`;
+  document.getElementById('kf-kaydet-btn').textContent = '💾 Güncelle';
+  toast(`Föy #${r.foy_no} yüklendi`);
 }
 
 async function kaydet() {
@@ -619,11 +687,12 @@ async function kaydet() {
     beraberindekiler,
   };
 
-  // Çifte rezervasyon kontrolü
+  // Çifte rezervasyon kontrolü (düzenlerken kendi kaydını çakışma saymaz)
   const allRez = await api(`/api/rezervasyonlar?q=&otel=Tümü`);
   const odaNo = parseInt(data.oda_no);
   const conflict = allRez.find(r =>
     r.oda_no === odaNo && r.otel === data.otel &&
+    r.foy_no !== (editFoy ? parseInt(editFoy) : -1) &&
     r.giris && r.cikis &&
     data.giris < r.cikis && data.cikis > r.giris
   );
@@ -632,9 +701,10 @@ async function kaydet() {
     return;
   }
 
-  const r = await api('/api/rezervasyon/yeni', data);
+  const url = editFoy ? '/api/rezervasyon/guncelle' : '/api/rezervasyon/yeni';
+  const r = await api(url, data);
   if (r.ok) {
-    toast(`Föy #${data.foy_no} kaydedildi ✓ — Rezervasyonlar'a eklendi`);
+    toast(editFoy ? `Föy #${data.foy_no} güncellendi ✓` : `Föy #${data.foy_no} kaydedildi ✓ — Rezervasyonlar'a eklendi`);
     fillPrintView(data, gun);
     resetForm();
   } else {
@@ -710,6 +780,12 @@ function yazdir() {
   fillOdaSelect();
   renderKisiler();
   await resetForm();
+  const params = new URLSearchParams(window.location.search);
+  const foyParam = params.get('foy');
+  if (foyParam) {
+    document.getElementById('kf-cagir-no').value = foyParam;
+    await cagirFoy();
+  }
 })();
 </script>
 {% endblock %}
