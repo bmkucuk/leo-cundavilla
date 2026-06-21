@@ -42,12 +42,7 @@ ACENTE_OTO_KODLAR = {'JLY', 'BKG', 'ETS', 'TTS', 'EXP'}
 ACENTE_HESAP_KODU = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4', 'ETS': '320-5'}
 ACENTE_ADI = {'BKG': 'Booking', 'EXP': 'Expedia', 'JLY': 'JollyTur', 'TTS': 'TatilSepeti', 'ETS': 'ETSTUR'}
 
-# ── Kullanıcılar ──────────────────────────────────────────────────────────────
-USERS = {
-    'murre34':    {'hash': '8f1a8b898d8a632b4956fbcce7ca9712a8d39eb506a12771dd6a9ff697a87f57', 'role': 'admin'},
-    'partners':   {'hash': '4d5296e9567a1ee4de44145cdfe133db19e6a40743c1569487ee4ec3fb7064bd', 'role': 'partner'},
-    'resepsiyon': {'hash': 'fa61e4ef37caf74bc7c5a15f6389b0790b5d18b90cac54b6753e2a49ee08000b', 'role': 'resepsiyon'},
-}
+# Kullanıcılar artık veritabanında (kullanicilar tablosu) — bkz. database.py init_db()
 
 # ── Aktif Kullanıcı Takibi (tek worker, bellek içi) ─────────────────────────
 AKTIF_KULLANICILAR = {}  # {username: {'role':..., 'giris':datetime, 'son_aktivite':datetime}}
@@ -103,19 +98,52 @@ def login():
         username = request.form.get('username','').strip()
         password = request.form.get('password','')
         h = hashlib.sha256(password.encode()).hexdigest()
-        user = USERS.get(username)
+        user = db.kullanici_getir(username)
         if user and user['hash'] == h:
             session['user'] = username
             session['role'] = user['role']
+            session['ad'] = user['ad']
+            db.log_yaz(username, user['role'], datetime.now(TR_TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                       'giris', 'auth', '/login', f"{username} giriş yaptı", 200)
             return redirect('/')
+        db.log_yaz(username or '(boş)', None, datetime.now(TR_TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                   'giris_basarisiz', 'auth', '/login', f"{username} için başarısız giriş denemesi", 401)
         return render_template('login.html', error='Kullanıcı adı veya şifre yanlış')
     return render_template('login.html', error=None)
 
 @app.route('/logout')
 def logout():
+    u, r = session.get('user'), session.get('role')
+    if u:
+        db.log_yaz(u, r, datetime.now(TR_TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                   'cikis', 'auth', '/logout', f"{u} çıkış yaptı", 200)
     AKTIF_KULLANICILAR.pop(session.get('user'), None)
     session.clear()
     return redirect('/login')
+
+@app.route('/sifre-degistir', methods=['GET', 'POST'])
+@login_required
+def sifre_degistir():
+    if session.get('role') not in ('admin', 'partner'):
+        return redirect('/')
+    hata, basari = None, None
+    if request.method == 'POST':
+        mevcut = request.form.get('mevcut_sifre', '')
+        yeni = request.form.get('yeni_sifre', '')
+        tekrar = request.form.get('yeni_sifre_tekrar', '')
+        user = db.kullanici_getir(session['user'])
+        if not user or user['hash'] != hashlib.sha256(mevcut.encode()).hexdigest():
+            hata = 'Mevcut şifre yanlış'
+        elif len(yeni) < 6:
+            hata = 'Yeni şifre en az 6 karakter olmalı'
+        elif yeni != tekrar:
+            hata = 'Yeni şifreler birbiriyle eşleşmiyor'
+        else:
+            db.kullanici_sifre_guncelle(session['user'], hashlib.sha256(yeni.encode()).hexdigest())
+            db.log_yaz(session['user'], session.get('role'), datetime.now(TR_TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                       'sifre_degistir', 'auth', '/sifre-degistir', f"{session['user']} şifresini değiştirdi", 200)
+            basari = 'Şifreniz başarıyla güncellendi'
+    return render_template('sifre_degistir.html', hata=hata, basari=basari)
 
 @app.route('/api/aktif-kullanicilar')
 @admin_required
@@ -138,6 +166,49 @@ def api_aktif_kullanicilar():
     for k in silinecek:
         AKTIF_KULLANICILAR.pop(k, None)
     return jsonify(sonuc)
+
+@app.route('/islem-gecmisi')
+@admin_required
+def islem_gecmisi():
+    return render_template('islem_gecmisi.html')
+
+@app.route('/api/islem-loglari')
+@admin_required
+def api_islem_loglari():
+    kullanici = request.args.get('kullanici') or None
+    baslangic = request.args.get('baslangic') or None
+    bitis = request.args.get('bitis') or None
+    arama = request.args.get('arama') or None
+    loglar = db.log_listele(limit=500, kullanici=kullanici, baslangic=baslangic, bitis=bitis, arama=arama)
+    return jsonify(loglar)
+
+# Veri değiştiren (POST) isteklerin otomatik denetim kaydı
+_LOG_HARIC_YOLLAR = {'/login', '/sifre-degistir'}
+
+@app.after_request
+def _islem_logla(response):
+    try:
+        if request.method == 'POST' and request.path not in _LOG_HARIC_YOLLAR and session.get('user'):
+            ozet_parcalari = []
+            kaynak = request.get_json(silent=True) or request.form
+            if kaynak:
+                for k, v in list(kaynak.items())[:8]:
+                    kl = k.lower()
+                    if 'sifre' in kl or 'password' in kl or 'hash' in kl:
+                        continue
+                    deger = str(v)
+                    if len(deger) > 60:
+                        deger = deger[:60] + '…'
+                    ozet_parcalari.append(f"{k}={deger}")
+            ozet = ', '.join(ozet_parcalari)[:500]
+            db.log_yaz(
+                session.get('user'), session.get('role'),
+                datetime.now(TR_TZ).strftime('%Y-%m-%d %H:%M:%S'),
+                'islem', request.endpoint or '', request.path, ozet, response.status_code
+            )
+    except Exception:
+        pass  # log yazımı asla asıl isteği bozmasın
+    return response
 
 
 # ── Sayfalar ──────────────────────────────────────────────────────────────────

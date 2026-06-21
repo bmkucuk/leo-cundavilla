@@ -211,6 +211,12 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
       <a href="/yedekleme-talimati" class="btn-sm" style="margin-bottom:8px;color:var(--accent4)">📋 Yedekleme Talimatı</a>
     </div>
     {% endif %}
+    {% if session.get('role') == 'admin' %}
+    <a href="/islem-gecmisi" class="btn-sm {% if active=='islem-gecmisi' %}active{% endif %}">🕵️ İşlem Geçmişi</a>
+    {% endif %}
+    {% if session.get('role') in ['admin', 'partner'] %}
+    <a href="/sifre-degistir" class="btn-sm {% if active=='sifre-degistir' %}active{% endif %}" style="margin-bottom:8px">🔑 Şifremi Değiştir</a>
+    {% endif %}
     <a href="/logout" class="btn-sm" style="color:var(--accent3)">Cikis Yap</a>
   </div>
 </div>

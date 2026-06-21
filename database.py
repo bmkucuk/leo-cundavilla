@@ -78,6 +78,28 @@ def init_db():
         otel    TEXT NOT NULL,
         tip     TEXT DEFAULT 'Standart'
     );
+
+    CREATE TABLE IF NOT EXISTS kullanicilar (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        username      TEXT UNIQUE NOT NULL,
+        ad            TEXT NOT NULL,
+        hash          TEXT NOT NULL,
+        role          TEXT NOT NULL,
+        aktif         INTEGER DEFAULT 1,
+        created_at    TEXT DEFAULT (datetime('now','localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS islem_loglari (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        kullanici   TEXT NOT NULL,
+        rol         TEXT,
+        zaman       TEXT NOT NULL,
+        islem_tipi  TEXT NOT NULL,
+        modul       TEXT,
+        yol         TEXT,
+        ozet        TEXT,
+        durum       INTEGER
+    );
     """)
     # Oda listesini doldur
     count = conn.execute("SELECT COUNT(*) FROM odalar").fetchone()[0]
@@ -117,8 +139,79 @@ def init_db():
         conn.execute("ALTER TABLE adisyonlar ADD COLUMN odenen_tutar REAL DEFAULT 0")
         # Mevcut tam ödenmişlerin odenen_tutar'ını tutar'a eşitle
         conn.execute("UPDATE adisyonlar SET odenen_tutar=tutar WHERE odendi=1")
+
+    # İlk kullanıcılar (yalnızca tablo boşsa eklenir)
+    if conn.execute("SELECT COUNT(*) FROM kullanicilar").fetchone()[0] == 0:
+        import hashlib
+        ilk_kullanicilar = [
+            ('murre34',    'Murat',  'Mk192837+-',  'admin'),
+            ('LeventK',    'Levent', 'Lk415263+-',  'partner'),
+            ('FiratB',     'Fırat',  'Fb415263+-',  'partner'),
+            ('BurcinT',    'Burçin', 'Bt415263+-',  'partner'),
+            ('resepsiyon', 'Resepsiyon', 'res708090/', 'resepsiyon'),
+        ]
+        for username, ad, pw, role in ilk_kullanicilar:
+            h = hashlib.sha256(pw.encode()).hexdigest()
+            conn.execute(
+                "INSERT INTO kullanicilar(username, ad, hash, role) VALUES (?,?,?,?)",
+                (username, ad, h, role)
+            )
+
     conn.commit()
     conn.close()
+
+
+# ── Kullanıcı yönetimi ──────────────────────────────────────────────────────
+
+def kullanici_getir(username):
+    conn = get_conn()
+    row = conn.execute(
+        "SELECT * FROM kullanicilar WHERE username=? AND aktif=1", (username,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def kullanici_sifre_guncelle(username, yeni_hash):
+    conn = get_conn()
+    conn.execute("UPDATE kullanicilar SET hash=? WHERE username=?", (yeni_hash, username))
+    conn.commit()
+    conn.close()
+
+
+# ── İşlem günlüğü ────────────────────────────────────────────────────────────
+
+def log_yaz(kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum):
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO islem_loglari(kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum) "
+        "VALUES (?,?,?,?,?,?,?,?)",
+        (kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum)
+    )
+    conn.commit()
+    conn.close()
+
+def log_listele(limit=300, kullanici=None, baslangic=None, bitis=None, arama=None):
+    conn = get_conn()
+    q = "SELECT * FROM islem_loglari WHERE 1=1"
+    params = []
+    if kullanici:
+        q += " AND kullanici=?"
+        params.append(kullanici)
+    if baslangic:
+        q += " AND zaman>=?"
+        params.append(baslangic)
+    if bitis:
+        q += " AND zaman<=?"
+        params.append(bitis + ' 23:59:59')
+    if arama:
+        q += " AND (ozet LIKE ? OR modul LIKE ? OR yol LIKE ?)"
+        like = f"%{arama}%"
+        params += [like, like, like]
+    q += " ORDER BY id DESC LIMIT ?"
+    params.append(limit)
+    rows = conn.execute(q, params).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 # ── Rezervasyon CRUD ──────────────────────────────────────────────────────────
