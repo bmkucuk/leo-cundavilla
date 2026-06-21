@@ -572,28 +572,87 @@ def api_acente_detay():
 
     import re as _re
     foyler = {}
-    fatura_disi_bakiye = 0.0  # fatura tahsilatı gibi föy'e bağlı olmayan hareketler
+    faturalanan = set()
+    fatura_disi_bakiye = 0.0  # genel (föy'e bağlı olmayan) fatura tahsilatları
     for r in rows:
         m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
-        if not m:
-            # föy'e bağlı olmayan (fatura tahsilatı vb.) hareket
-            tutar = r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
-            fatura_disi_bakiye += tutar
+        if m:
+            foy_no, misafir = m.group(1), m.group(2)
+            f = foyler.setdefault(foy_no, {'foy_no': foy_no, 'misafir': misafir,
+                                            'tarih': r['tarih'], 'rez_tutari': 0, 'komisyon': 0})
+            if r['borc_hesap'] == hesap:
+                f['rez_tutari'] += r['tutar']
+            else:
+                f['komisyon'] += r['tutar']
             continue
-        foy_no, misafir = m.group(1), m.group(2)
-        f = foyler.setdefault(foy_no, {'foy_no': foy_no, 'misafir': misafir,
-                                        'tarih': r['tarih'], 'rez_tutari': 0, 'komisyon': 0})
-        if r['borc_hesap'] == hesap:
-            f['rez_tutari'] += r['tutar']
-        else:
-            f['komisyon'] += r['tutar']
+        mf = _re.search(r'Föy#(\d+)\s+.*?\[JLY-FATURA\]', r['aciklama'] or '')
+        if mf:
+            faturalanan.add(mf.group(1))
+            continue
+        # föy'e bağlı olmayan (genel fatura tahsilatı) hareket
+        tutar = r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
+        fatura_disi_bakiye += tutar
 
     sonuc = []
     for f in foyler.values():
         f['net'] = round(f['rez_tutari'] - f['komisyon'], 2)
+        f['fatura_edildi'] = f['foy_no'] in faturalanan
         sonuc.append(f)
     sonuc.sort(key=lambda x: x['tarih'])
     return jsonify({'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2)})
+
+@muh.route('/api/muhasebe/acente-fatura-kes', methods=['POST'])
+def api_acente_fatura_kes():
+    """Seçilen föyleri 'faturalandı' işaretler: her föy için net tutar kadar
+    banka borç / acente hesabı alacak kaydı açar (tek tek, föy etiketli — böylece
+    hangi föylerin faturalandığı sonradan da görülebilir)."""
+    import re as _re
+    try:
+        d = request.get_json()
+        kod = d.get('acente_kod') or d.get('kod')
+        foy_nolar = [str(x) for x in d.get('foy_nolar', [])]
+        tarih = d.get('tarih') or date.today().isoformat()
+        banka = d.get('odeme_banka', 'IS')
+        otel = d.get('otel', 'LEO')
+        hesap = ACENTE_HESAP.get(kod)
+        if not hesap or not foy_nolar:
+            return jsonify({'ok': False, 'error': 'Acente veya föy seçimi eksik'}), 400
+        banka_hesap = '102-2' if banka == 'ZRH' else '102-3' if banka == 'DNZ' else '102-1'
+
+        conn = mdb.get_conn()
+        toplam = 0.0
+        detaylar = []
+        for foy_no in foy_nolar:
+            rows = conn.execute("""
+                SELECT borc_hesap, alacak_hesap, tutar, aciklama FROM yevmiye
+                WHERE (borc_hesap=? OR alacak_hesap=?) AND aciklama LIKE ? AND aciklama LIKE '%[JLY-OTO]%'
+            """, (hesap, hesap, f'Föy#{foy_no} %')).fetchall()
+            if not rows:
+                continue
+            zaten_var = conn.execute("""
+                SELECT 1 FROM yevmiye WHERE aciklama LIKE ? AND aciklama LIKE '%[JLY-FATURA]%'
+            """, (f'Föy#{foy_no} %',)).fetchone()
+            if zaten_var:
+                continue
+            net = 0.0
+            misafir = ''
+            for r in rows:
+                m = _re.search(r'\[JLY-OTO\]', r['aciklama'] or '')
+                mm = _re.search(r'Föy#\d+\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
+                if mm:
+                    misafir = mm.group(1)
+                net += r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
+            net = round(net, 2)
+            if net <= 0:
+                continue
+            mdb._yevmiye_ekle(conn, tarih, 'Acente Fatura Tahsilatı', banka_hesap, hesap, net,
+                              f'Föy#{foy_no} {misafir} [JLY-FATURA] fatura tahsilatı', otel)
+            toplam += net
+            detaylar.append({'foy_no': foy_no, 'misafir': misafir, 'net': net})
+        conn.commit(); conn.close()
+        return jsonify({'ok': True, 'toplam': round(toplam, 2), 'detaylar': detaylar})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/acente')
 def api_acente():
