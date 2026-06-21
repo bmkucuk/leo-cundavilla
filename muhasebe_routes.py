@@ -25,7 +25,26 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def muhasebe_required(f):
+    """Muhasebe modülüne erişim: admin + partner. resepsiyon (kısıtlı) erişemez."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('user'):
+            return redirect('/login')
+        if session.get('role') not in ('admin', 'partner'):
+            return redirect('/')
+        return f(*args, **kwargs)
+    return decorated
+
 muh = Blueprint('muhasebe', __name__)
+
+@muh.before_request
+def _muhasebe_blueprint_guard():
+    """Tüm /muhasebe ve /api/muhasebe rotaları: sadece admin + partner. resepsiyon erişemez."""
+    if not session.get('user'):
+        return redirect('/login')
+    if session.get('role') not in ('admin', 'partner'):
+        return redirect('/')
 
 AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
          "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
@@ -43,7 +62,7 @@ def muhasebe_yevmiye():
     return render_template('muhasebe/yevmiye.html')
 
 @muh.route('/muhasebe/kasa-banka')
-@login_required
+@muhasebe_required
 def muhasebe_kasa():
     return render_template('muhasebe/kasa_banka.html')
 
@@ -53,12 +72,12 @@ def muhasebe_personel():
     return render_template('muhasebe/personel.html')
 
 @muh.route('/muhasebe/stok')
-@login_required
+@muhasebe_required
 def muhasebe_stok():
     return render_template('muhasebe/stok.html')
 
 @muh.route('/muhasebe/demirbaş')
-@login_required
+@muhasebe_required
 def muhasebe_demirbaş():
     return render_template('muhasebe/demirbaş.html')
 
@@ -68,12 +87,12 @@ def muhasebe_vergi():
     return render_template('muhasebe/vergi.html')
 
 @muh.route('/muhasebe/acente')
-@login_required
+@muhasebe_required
 def muhasebe_acente():
     return render_template('muhasebe/acente.html')
 
 @muh.route('/muhasebe/gider-girisleri')
-@login_required
+@muhasebe_required
 def muhasebe_gider():
     return render_template('muhasebe/gider_girisleri.html')
 
@@ -182,6 +201,7 @@ def api_gosterge():
 # ── API — Yevmiye ─────────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/yevmiye')
+@admin_required
 def api_yevmiye():
     yil = request.args.get('yil', date.today().year, type=int)
     ay  = request.args.get('ay', 0, type=int) or None
@@ -194,6 +214,7 @@ def api_yevmiye():
     return jsonify(rows)
 
 @muh.route('/api/muhasebe/yevmiye/ekle', methods=['POST'])
+@admin_required
 def api_yevmiye_ekle():
     try:
         d = request.get_json()
@@ -203,6 +224,7 @@ def api_yevmiye_ekle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/yevmiye/sil', methods=['POST'])
+@admin_required
 def api_yevmiye_sil():
     try:
         import re as _re, sqlite3 as _sq
@@ -325,10 +347,12 @@ def api_kasa():
 # ── API — Personel ────────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/personel')
+@admin_required
 def api_personel():
     return jsonify(mdb.get_personel())
 
 @muh.route('/api/muhasebe/personel/ekle', methods=['POST'])
+@admin_required
 def api_personel_ekle():
     try:
         d = request.get_json()
@@ -340,6 +364,7 @@ def api_personel_ekle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/maaslar')
+@admin_required
 def api_maaslar():
     yil = request.args.get('yil', date.today().year, type=int)
     conn = mdb.get_conn()
@@ -365,6 +390,7 @@ def api_maaslar():
     return jsonify(result)
 
 @muh.route('/api/muhasebe/maas/ekle', methods=['POST'])
+@admin_required
 def api_maas_ekle():
     try:
         d = request.get_json()
@@ -484,6 +510,7 @@ def api_demirbas_sil():
 # ── API — Vergi ────────────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/vergi')
+@admin_required
 def api_vergi():
     yil = request.args.get('yil', date.today().year, type=int)
     conn = mdb.get_conn()
@@ -496,6 +523,7 @@ def api_vergi():
     return jsonify(rows)
 
 @muh.route('/api/muhasebe/vergi/ekle', methods=['POST'])
+@admin_required
 def api_vergi_ekle():
     try:
         d = request.get_json()
@@ -512,6 +540,7 @@ def api_vergi_ekle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/vergi/onayla', methods=['POST'])
+@admin_required
 def api_vergi_onayla():
     try:
         d = request.get_json()
@@ -817,6 +846,7 @@ def api_acente_ekle():
 # ── API — Ortak Cari ──────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/ortak')
+@admin_required
 def api_ortak():
     yil = request.args.get('yil', date.today().year, type=int)
     ortak = request.args.get('ortak', '')
@@ -855,6 +885,7 @@ def _ortak_yevmiye_yaz(conn, ortak_id, d):
 
 
 @muh.route('/api/muhasebe/ortak/ekle', methods=['POST'])
+@admin_required
 def api_ortak_ekle():
     try:
         d = request.get_json()
@@ -880,6 +911,7 @@ def api_ortak_ekle():
 
 @muh.route('/api/muhasebe/mizan')
 @login_required
+@admin_required
 def api_mizan():
     """Mizan - dogrudan otel.db tablolarından hesaplar, yevmiyeye bagımlı değil."""
     yil = request.args.get('yil', date.today().year, type=int)
@@ -1105,6 +1137,7 @@ def api_stok_sil():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/vergi/sil', methods=['POST'])
+@admin_required
 def api_vergi_sil():
     try:
         d = request.get_json()
@@ -1117,6 +1150,7 @@ def api_vergi_sil():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/personel/maas/sil', methods=['POST'])
+@admin_required
 def api_maas_sil():
     try:
         d = request.get_json()
@@ -1129,6 +1163,7 @@ def api_maas_sil():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/ortak-cari/sil', methods=['POST'])
+@admin_required
 def api_ortak_cari_sil():
     try:
         d = request.get_json()
@@ -1187,6 +1222,7 @@ def api_stok_guncelle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/vergi/guncelle', methods=['POST'])
+@admin_required
 def api_vergi_guncelle():
     try:
         d = request.get_json()
@@ -1202,6 +1238,7 @@ def api_vergi_guncelle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/personel/maas/guncelle', methods=['POST'])
+@admin_required
 def api_maas_guncelle():
     try:
         d = request.get_json()
@@ -1243,6 +1280,7 @@ def api_maas_guncelle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/ortak-cari/guncelle', methods=['POST'])
+@admin_required
 def api_ortak_cari_guncelle():
     try:
         d = request.get_json()
@@ -1307,6 +1345,7 @@ def api_acente_guncelle():
 # ── API — Personel Avans ──────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/avans', methods=['GET'])
+@admin_required
 def api_avans():
     personel_id = request.args.get('personel_id', type=int)
     yil = request.args.get('yil', type=int)
@@ -1314,6 +1353,7 @@ def api_avans():
     return jsonify(mdb.get_avans(personel_id=personel_id, yil=yil, ay=ay))
 
 @muh.route('/api/muhasebe/avans/ekle', methods=['POST'])
+@admin_required
 def api_avans_ekle():
     try:
         d = request.get_json()
@@ -1325,6 +1365,7 @@ def api_avans_ekle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/avans/sil', methods=['POST'])
+@admin_required
 def api_avans_sil():
     try:
         d = request.get_json()
@@ -1337,6 +1378,7 @@ def api_avans_sil():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/avans/guncelle', methods=['POST'])
+@admin_required
 def api_avans_guncelle():
     try:
         d = request.get_json()
@@ -1368,6 +1410,7 @@ def api_avans_guncelle():
 # ── API — Personel Güncelle / Sil ────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/personel/guncelle', methods=['POST'])
+@admin_required
 def api_personel_guncelle():
     try:
         d = request.get_json()
@@ -1383,6 +1426,7 @@ def api_personel_guncelle():
         return jsonify({'ok': False, 'error': str(e)}), 400
 
 @muh.route('/api/muhasebe/personel/sil', methods=['POST'])
+@admin_required
 def api_personel_sil():
     try:
         d = request.get_json()

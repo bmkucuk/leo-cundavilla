@@ -44,8 +44,9 @@ ACENTE_ADI = {'BKG': 'Booking', 'EXP': 'Expedia', 'JLY': 'JollyTur', 'TTS': 'Tat
 
 # ── Kullanıcılar ──────────────────────────────────────────────────────────────
 USERS = {
-    'bmkucuk@gmail.com': {'hash': '23b5c5e0915483302bbd48e555a85f5999f52dbed8c7c7a5809811bba234e0a1', 'role': 'admin'},
-    'villacunda':        {'hash': '29624e2e4c4ccee26ed8f3e0ca1012ea57a8f2191be6149f632250f7036119cc', 'role': 'personel'},
+    'murre34':    {'hash': '8f1a8b898d8a632b4956fbcce7ca9712a8d39eb506a12771dd6a9ff697a87f57', 'role': 'admin'},
+    'partners':   {'hash': '4d5296e9567a1ee4de44145cdfe133db19e6a40743c1569487ee4ec3fb7064bd', 'role': 'partner'},
+    'resepsiyon': {'hash': 'fa61e4ef37caf74bc7c5a15f6389b0790b5d18b90cac54b6753e2a49ee08000b', 'role': 'resepsiyon'},
 }
 
 # ── Aktif Kullanıcı Takibi (tek worker, bellek içi) ─────────────────────────

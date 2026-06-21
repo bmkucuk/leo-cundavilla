@@ -164,6 +164,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     <a href="/gunluk-liste" class="{% if active=='gunluk-liste' %}active{% endif %}">
       <span class="icon">📅</span> Günlük Liste
     </a>
+    {% if session.get('role') in ['admin', 'partner'] %}
     <div style="margin:12px 18px 4px;font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.8px;text-transform:uppercase">Muhasebe</div>
     {% if session.get('role') == 'admin' %}
     <a href="/muhasebe/yevmiye" class="{% if active=='muh-yevmiye' %}active{% endif %}">
@@ -199,6 +200,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
     <a href="/muhasebe/mizan" class="{% if active=='muh-mizan' %}active{% endif %}">
       <span class="icon">⚖️</span> Mizan
     </a>
+    {% endif %}
     {% endif %}
   </nav>
   <div class="sidebar-bottom">
