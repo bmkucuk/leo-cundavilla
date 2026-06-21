@@ -500,7 +500,7 @@ let hareketId = 1;
 let hareketler = [];
 let cariReadOnly = false;
 
-function fmtSign(n) { return (n>0?'+':'') + fmt(n); }
+function fmtSign(n) { return n<0 ? '-'+fmt(Math.abs(n)) : fmt(n); }
 
 function updateCariModUI() {
   const baslik = document.getElementById('kf-cari-baslik');
