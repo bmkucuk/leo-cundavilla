@@ -40,6 +40,20 @@
   </table>
 </div>
 
+<div class="table-wrap" id="kesilen-wrap" style="display:none;margin-bottom:24px">
+  <div class="section-title" style="margin:0 0 8px;border:0;font-size:13px">🧾 Kesilen Faturalar (Geçmiş)</div>
+  <table>
+    <thead><tr>
+  <th style="width:95px">Tarih</th>
+  <th style="width:70px">Föy</th>
+  <th>Misafir</th>
+  <th style="width:140px">Banka</th>
+  <th style="text-align:right">Tutar</th>
+</tr></thead>
+    <tbody id="kesilen-tbody"></tbody>
+  </table>
+</div>
+
 <!-- Fatura Kes Onay Modalı -->
 <div class="modal-overlay" id="fatura-modal">
   <div class="modal">
@@ -161,8 +175,24 @@ async function load() {
     } else {
       detayWrap.style.display = 'none';
     }
+
+    const kesilenWrap = document.getElementById('kesilen-wrap');
+    const kesilenler = det.kesilen_faturalar || [];
+    if (kesilenler.length) {
+      kesilenWrap.style.display = '';
+      document.getElementById('kesilen-tbody').innerHTML = kesilenler.map(k => `<tr>
+          <td>${fmtDate(k.tarih)}</td>
+          <td>${k.foy_no ? '<a href="/rezervasyonlar?q='+k.foy_no+'" style="color:var(--accent)">'+k.foy_no+'</a>' : '—'}</td>
+          <td>${k.misafir||'—'}</td>
+          <td>${k.banka||'—'}</td>
+          <td class="green" style="text-align:right;font-weight:600">${fmt(k.tutar)}</td>
+        </tr>`).join('');
+    } else {
+      kesilenWrap.style.display = 'none';
+    }
   } else {
     detayWrap.style.display = 'none';
+    document.getElementById('kesilen-wrap').style.display = 'none';
   }
 
   document.getElementById('kartlar').innerHTML = `

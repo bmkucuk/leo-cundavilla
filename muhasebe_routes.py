@@ -573,7 +573,9 @@ def api_acente_detay():
     import re as _re
     foyler = {}
     faturalanan = set()
+    kesilen_faturalar = []
     fatura_disi_bakiye = 0.0  # genel (föy'e bağlı olmayan) fatura tahsilatları
+    BANKA_AD = {'102-1': 'İş Bankası', '102-2': 'Ziraat Bankası', '102-3': 'Denizbank'}
     for r in rows:
         m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-OTO\]', r['aciklama'] or '')
         if m:
@@ -585,13 +587,19 @@ def api_acente_detay():
             else:
                 f['komisyon'] += r['tutar']
             continue
-        mf = _re.search(r'Föy#(\d+)\s+.*?\[JLY-FATURA\]', r['aciklama'] or '')
+        mf = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[JLY-FATURA\]', r['aciklama'] or '')
         if mf:
             faturalanan.add(mf.group(1))
+            banka_kodu = r['borc_hesap'] if r['borc_hesap'] != hesap else r['alacak_hesap']
+            kesilen_faturalar.append({
+                'tarih': r['tarih'], 'foy_no': mf.group(1), 'misafir': mf.group(2),
+                'tutar': r['tutar'], 'banka': BANKA_AD.get(banka_kodu, banka_kodu)
+            })
             continue
         # föy'e bağlı olmayan (genel fatura tahsilatı) hareket
         tutar = r['tutar'] if r['borc_hesap'] == hesap else -r['tutar']
         fatura_disi_bakiye += tutar
+    kesilen_faturalar.sort(key=lambda x: x['tarih'], reverse=True)
 
     sonuc = []
     for f in foyler.values():
@@ -599,7 +607,8 @@ def api_acente_detay():
         f['fatura_edildi'] = f['foy_no'] in faturalanan
         sonuc.append(f)
     sonuc.sort(key=lambda x: x['tarih'])
-    return jsonify({'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2)})
+    return jsonify({'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2),
+                    'kesilen_faturalar': kesilen_faturalar})
 
 @muh.route('/api/muhasebe/acente-fatura-kes', methods=['POST'])
 def api_acente_fatura_kes():
