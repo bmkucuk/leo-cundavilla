@@ -8,6 +8,8 @@
   <label style="color:var(--text2);font-size:12px">Yıl:</label>
   <select class="filter" id="yil-sel" onchange="load()"></select>
   <select class="filter" id="acente-sel" onchange="load()"><option value="">Tüm Acenteler</option></select>
+  <input type="text" id="arama" placeholder="🔍 Föy no, misafir, fatura no, banka ara..." oninput="aramaDegisti()"
+    style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-size:12px;min-width:240px">
   <div style="flex:1"></div>
   <button class="btn btn-primary" onclick="openModal()">＋ Fatura Tahsilatı Ekle</button>
 </div>
@@ -28,8 +30,8 @@
   <table>
     <thead><tr>
   <th style="width:34px"><input type="checkbox" id="detay-hepsi" onchange="toggleHepsi(this)" style="pointer-events:auto;cursor:pointer"></th>
-  <th style="width:95px">Tarih</th>
-  <th style="width:70px">Föy</th>
+  <th style="width:95px;cursor:pointer;pointer-events:auto" onclick="sirala('detay','tarih')">Tarih <span id="sort-detay-tarih"></span></th>
+  <th style="width:70px;cursor:pointer;pointer-events:auto" onclick="sirala('detay','foy_no')">Föy <span id="sort-detay-foy_no"></span></th>
   <th>Misafir</th>
   <th style="text-align:right">Rez. Bedeli</th>
   <th style="text-align:right">Komisyon (%15)</th>
@@ -44,9 +46,9 @@
   <div class="section-title" style="margin:0 0 8px;border:0;font-size:13px">🧾 Kesilen Faturalar (Geçmiş)</div>
   <table>
     <thead><tr>
-  <th style="width:95px">Tarih</th>
+  <th style="width:95px;cursor:pointer;pointer-events:auto" onclick="sirala('kesilen','tarih')">Tarih <span id="sort-kesilen-tarih"></span></th>
   <th style="width:120px">Fatura No</th>
-  <th style="width:70px">Föy</th>
+  <th style="width:70px;cursor:pointer;pointer-events:auto" onclick="sirala('kesilen','foy_no')">Föy <span id="sort-kesilen-foy_no"></span></th>
   <th>Misafir</th>
   <th style="width:140px">Banka</th>
   <th style="text-align:right">Tutar</th>
@@ -171,9 +173,75 @@ for (let y = thisYear-2; y <= thisYear+1; y++) {
 let acenteler = [];
 let editId = null;
 let allData = [];
+let allDataRaw = [];
 let detayFoyler = [];
-let secilenFoylar = new Set();
+let detayFoylerRaw = [];
 let kesilenListesi = [];
+let kesilenListesiRaw = [];
+let secilenFoylar = new Set();
+let aramaTerimi = '';
+let sortDurum = {
+  detay:   { alan: 'tarih', yon: 'desc' },
+  kesilen: { alan: 'tarih', yon: 'desc' },
+};
+
+function aramaDegisti() {
+  aramaTerimi = document.getElementById('arama').value.trim().toLowerCase();
+  uygulaFiltreVeSirala();
+}
+
+function metinEslesir(...alanlar) {
+  if (!aramaTerimi) return true;
+  return alanlar.some(a => (a||'').toString().toLowerCase().includes(aramaTerimi));
+}
+
+function sirala(tablo, alan) {
+  const s = sortDurum[tablo];
+  if (s.alan === alan) { s.yon = s.yon === 'asc' ? 'desc' : 'asc'; }
+  else { s.alan = alan; s.yon = 'desc'; }
+  uygulaFiltreVeSirala();
+}
+
+function sortOklariniGuncelle() {
+  ['detay','kesilen'].forEach(tablo => {
+    ['tarih','foy_no'].forEach(alan => {
+      const el = document.getElementById(`sort-${tablo}-${alan}`);
+      if (!el) return;
+      const s = sortDurum[tablo];
+      el.textContent = (s.alan === alan) ? (s.yon === 'asc' ? '▲' : '▼') : '';
+    });
+  });
+}
+
+function sirala2(liste, alan, yon) {
+  const kopya = [...liste];
+  kopya.sort((a, b) => {
+    let av = a[alan], bv = b[alan];
+    if (alan === 'foy_no') { av = parseInt(av)||0; bv = parseInt(bv)||0; }
+    if (av < bv) return yon === 'asc' ? -1 : 1;
+    if (av > bv) return yon === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return kopya;
+}
+
+function uygulaFiltreVeSirala() {
+  // Föy bazlı borç dökümü
+  let filtreliDetay = detayFoylerRaw.filter(f => metinEslesir(f.foy_no, f.misafir));
+  detayFoyler = sirala2(filtreliDetay, sortDurum.detay.alan, sortDurum.detay.yon);
+  renderDetayTablosu();
+
+  // Kesilen faturalar
+  let filtreliKesilen = kesilenListesiRaw.filter(k => metinEslesir(k.foy_no, k.misafir, k.fatura_no, k.banka));
+  kesilenListesi = sirala2(filtreliKesilen, sortDurum.kesilen.alan, sortDurum.kesilen.yon);
+  renderKesilenTablosu();
+
+  // Alt "Fatura Tahsilatı" tablosu (sadece arama, en yeni en üstte sabit)
+  allData = allDataRaw.filter(r => metinEslesir(r.acente_kod, r.fatura_no, r.otel));
+  renderAltTablo();
+
+  sortOklariniGuncelle();
+}
 
 async function load() {
   const yil = yilSel.value;
@@ -193,45 +261,29 @@ async function load() {
   const rows = d.rows;
   let toplamGelen = 0;
   rows.forEach(r => { toplamGelen += r.gelen_odeme||0; });
+  allDataRaw = rows;
 
   // Gerçek cari bakiye (yevmiyeden) — sadece tek acente seçiliyken anlamlı
   let bakiyeHtml = '';
   const detayWrap = document.getElementById('detay-wrap');
+  const kesilenWrap = document.getElementById('kesilen-wrap');
+  detayFoylerRaw = [];
+  kesilenListesiRaw = [];
+  secilenFoylar.clear();
+
   if (acenteSecili) {
     const b = await api(`/api/muhasebe/acente-bakiye?kod=${acenteSecili}`);
     bakiyeHtml = `<div class="stat-card"><div class="label">${acenteSecili} Bakiye (bize borçlu)</div>
       <div class="value ${b.bakiye>0?'red':'green'}">${fmt(b.bakiye)}</div></div>`;
 
     const det = await api(`/api/muhasebe/acente-detay?kod=${acenteSecili}&yil=${yil}`);
-    detayFoyler = det.foyler || [];
-    secilenFoylar.clear();
-    if (detayFoyler.length) {
-      detayWrap.style.display = '';
-      renderDetayTablosu();
-    } else {
-      detayWrap.style.display = 'none';
-    }
-
-    const kesilenWrap = document.getElementById('kesilen-wrap');
-    const kesilenler = det.kesilen_faturalar || [];
-    kesilenListesi = kesilenler;
-    if (kesilenler.length) {
-      kesilenWrap.style.display = '';
-      document.getElementById('kesilen-tbody').innerHTML = kesilenler.map(k => `<tr>
-          <td>${fmtDate(k.tarih)}</td>
-          <td>${k.fatura_no||'—'}</td>
-          <td>${k.foy_no ? '<a href="/rezervasyonlar?q='+k.foy_no+'" style="color:var(--accent)">'+k.foy_no+'</a>' : '—'}</td>
-          <td>${k.misafir||'—'}</td>
-          <td>${k.banka||'—'}</td>
-          <td class="green" style="text-align:right;font-weight:600">${fmt(k.tutar)}</td>
-          <td><button class="btn" style="padding:3px 8px;font-size:11px;background:var(--accent4);color:#000" onclick="openFaturaDuzenleModal('${k.foy_no}')">Düzenle</button></td>
-        </tr>`).join('');
-    } else {
-      kesilenWrap.style.display = 'none';
-    }
+    detayFoylerRaw = det.foyler || [];
+    kesilenListesiRaw = det.kesilen_faturalar || [];
+    detayWrap.style.display = detayFoylerRaw.length ? '' : 'none';
+    kesilenWrap.style.display = kesilenListesiRaw.length ? '' : 'none';
   } else {
     detayWrap.style.display = 'none';
-    document.getElementById('kesilen-wrap').style.display = 'none';
+    kesilenWrap.style.display = 'none';
   }
 
   document.getElementById('kartlar').innerHTML = `
@@ -239,15 +291,30 @@ async function load() {
     ${bakiyeHtml}
   `;
 
-  allData = rows;
-  document.getElementById('tbody').innerHTML = rows.map(r => `<tr>
+  uygulaFiltreVeSirala();
+}
+
+function renderKesilenTablosu() {
+  document.getElementById('kesilen-tbody').innerHTML = kesilenListesi.map(k => `<tr>
+      <td>${fmtDate(k.tarih)}</td>
+      <td>${k.fatura_no||'—'}</td>
+      <td>${k.foy_no ? '<a href="/rezervasyonlar?q='+k.foy_no+'" style="color:var(--accent)">'+k.foy_no+'</a>' : '—'}</td>
+      <td>${k.misafir||'—'}</td>
+      <td>${k.banka||'—'}</td>
+      <td class="green" style="text-align:right;font-weight:600">${fmt(k.tutar)}</td>
+      <td><button class="btn" style="padding:3px 8px;font-size:11px;background:var(--accent4);color:#000" onclick="openFaturaDuzenleModal('${k.foy_no}')">Düzenle</button></td>
+    </tr>`).join('') || (aramaTerimi ? '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:16px">Aramayla eşleşen kayıt yok</td></tr>' : '');
+}
+
+function renderAltTablo() {
+  document.getElementById('tbody').innerHTML = allData.map(r => `<tr>
       <td>${fmtDate(r.tarih)}</td>
       <td>${r.acente_kod}</td>
       <td>${r.fatura_no||'—'}</td>
       <td class="green" style="text-align:right">${fmt(r.gelen_odeme)}</td>
       <td style="text-align:center">${r.otel||''}</td>
       <td style="white-space:nowrap"><button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button><button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="sil(${r.id})">Sil</button></td>
-    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">Kayıt yok</td></tr>';
+    </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:24px">${aramaTerimi ? 'Aramayla eşleşen kayıt yok' : 'Kayıt yok'}</td></tr>`;
 }
 
 function renderDetayTablosu() {
@@ -276,7 +343,7 @@ function renderDetayTablosu() {
       <td class="green" style="text-align:right;font-weight:600">${fmt(f.net)}</td>
       <td style="text-align:center"><span style="font-size:10px;color:var(--text2)">Bekliyor</span></td>
     </tr>`;
-  }).join('');
+  }).join('') || (aramaTerimi ? '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:16px">Aramayla eşleşen kayıt yok</td></tr>' : '');
   guncelleSecimOzeti();
 }
 
