@@ -103,6 +103,24 @@
   font-size:12.5px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);cursor:pointer;margin-bottom:8px}
 .kf-pkisi-add:hover{color:var(--text)}
 
+/* ── TAB ile gezinirken odaklanilan hucreyi belirgin "aydinlatma" ile gosterir ── */
+.kf-pcell input:focus,.kf-pcell select:focus,
+.kf-pbig-cell input:focus,.kf-pbig-cell select:focus,
+.kf-ptable td input:focus,
+.kf-palacak:focus,
+#kf-cagir-no:focus{
+  outline:none;
+  box-shadow:0 0 0 2px var(--accent),0 0 14px 3px rgba(255,194,77,.55);
+  background:rgba(255,194,77,.08);
+  border-radius:5px;
+  position:relative;
+  z-index:2;
+}
+.kf-pbig-cell:has(input:focus),.kf-pbig-cell:has(select:focus){
+  box-shadow:0 0 0 2px var(--accent),0 0 16px 4px rgba(255,194,77,.5);
+  border-radius:10px;
+}
+
 .kf-hareket-tablo{border:1px solid var(--border);border-radius:10px;overflow:hidden;width:max-content;max-width:100%}
 .kf-hareket-head{display:grid;grid-template-columns:150px 230px 110px 140px 120px 34px;background:var(--card2)}
 .kf-hareket-head div{padding:9px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;border-right:1px solid var(--border)}
@@ -201,7 +219,7 @@
     <div class="kf-pbig-row">
       <div class="kf-pbig-cell">
         <b>Föy No</b>
-        <input id="kf-foy" readonly>
+        <input id="kf-foy" readonly tabindex="-1">
       </div>
       <div class="kf-pbig-cell">
         <b>Oda No</b>
@@ -226,7 +244,7 @@
       </div>
       <div class="kf-pcell">
         <b>Otel</b>
-        <input id="kf-otel-readout" readonly class="ro">
+        <input id="kf-otel-readout" readonly tabindex="-1" class="ro">
         <input type="hidden" id="kf-otel">
       </div>
     </div>
@@ -503,12 +521,13 @@ function recomputeBakiye() {
 
 function alacakCellHtml(h) {
   const tutar = parseFloat(h.alacak) || 0;
+  const kbd = `tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAlacakModal(${h.id})}"`;
   if (tutar > 0) {
-    return `<div class="kf-palacak filled" onclick="openAlacakModal(${h.id})">
+    return `<div class="kf-palacak filled" ${kbd} onclick="openAlacakModal(${h.id})">
         ${fmt(tutar)}<span class="rozet">${h.odeme_sekli || ''}</span>
       </div>`;
   }
-  return `<div class="kf-palacak" onclick="openAlacakModal(${h.id})">+ Ödeme Şekli</div>`;
+  return `<div class="kf-palacak" ${kbd} onclick="openAlacakModal(${h.id})">+ Ödeme Şekli</div>`;
 }
 
 function renderHareketler() {
