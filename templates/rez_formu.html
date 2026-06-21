@@ -44,6 +44,55 @@
 .kf-mod-rozet{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:9px;font-size:12.5px;font-weight:600}
 .kf-mod-rozet.duzenle{background:rgba(67,198,255,.14);color:var(--accent2);border:1px solid rgba(67,198,255,.4)}
 
+/* ── Ekran formu = yazdirma goruntusuyle AYNI YERLESIM, mevcut koyu tema renkleriyle ── */
+.kf-paper{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:16px;padding:26px 24px;margin-bottom:18px}
+.kf-phead{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:16px}
+.kf-plogo{width:46px;height:46px;border-radius:8px;background:linear-gradient(150deg,#ffc24d,#f0a52e);color:#1a1206;display:flex;
+  align-items:center;justify-content:center;font-weight:700;font-size:16px;font-family:'Geist Mono',monospace;flex:none}
+.kf-ptitle{font-size:15px;font-weight:700;letter-spacing:.3px;color:var(--text)}
+.kf-psub{font-size:11px;color:var(--text2);margin-top:2px}
+
+.kf-pbig-row{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);margin-bottom:8px;border-radius:10px;overflow:hidden}
+.kf-pbig-cell{border-right:1px solid var(--border);padding:10px 12px;text-align:center;background:var(--card2)}
+.kf-pbig-cell:last-child{border-right:none}
+.kf-pbig-cell b{display:block;font-size:9.5px;text-transform:uppercase;color:var(--text2);margin-bottom:4px;font-weight:600;letter-spacing:.4px}
+.kf-pbig-cell select,.kf-pbig-cell input{border:none;background:transparent;font-size:30px;font-weight:700;
+  font-family:'Geist Mono',monospace;text-align:center;width:100%;color:var(--accent);outline:none;cursor:pointer}
+.kf-pbig-cell input[readonly]{cursor:not-allowed;opacity:.85}
+
+.kf-prow{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.kf-prow.c3{grid-template-columns:1fr 1fr 1fr}
+.kf-pcell{border-right:1px solid var(--border);padding:9px 12px;background:var(--card2)}
+.kf-pcell:last-child{border-right:none}
+.kf-pcell b{display:block;font-size:9.5px;text-transform:uppercase;color:var(--text2);margin-bottom:4px;font-weight:600;letter-spacing:.3px}
+.kf-pcell input,.kf-pcell select{border:none;background:transparent;font-size:13.5px;width:100%;color:var(--text);
+  outline:none;font-family:Geist,sans-serif;padding:0}
+.kf-pcell input[type=date]{font-family:'Geist Mono',monospace;color-scheme:dark}
+.kf-pcell input::placeholder{color:var(--text2)}
+.kf-pcell .ro{font-size:13.5px;color:var(--text)}
+
+.kf-ptaahhut{font-size:11px;line-height:1.6;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;color:var(--text2);background:var(--card2)}
+
+.kf-ptable{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.kf-ptable th{background:var(--card2);font-size:10px;text-transform:uppercase;border:1px solid var(--border);padding:7px 10px;text-align:left;color:var(--text2);letter-spacing:.4px}
+.kf-ptable td{border:1px solid var(--border);padding:0;background:var(--card2)}
+.kf-ptable td input{border:none;background:transparent;width:100%;padding:8px 10px;font-size:12.5px;color:var(--text);outline:none;font-family:Geist,sans-serif}
+.kf-ptable td input[type=date]{font-family:'Geist Mono',monospace;color-scheme:dark}
+.kf-ptable td.borc-in input{color:var(--accent3);font-family:'Geist Mono',monospace;text-align:right}
+.kf-ptable .ptbl-del{text-align:center;cursor:pointer;color:var(--text2);width:32px}
+.kf-ptable .ptbl-del:hover{color:var(--accent3)}
+.kf-ptable .ptbl-bakiye{text-align:right;font-family:'Geist Mono',monospace;font-weight:600;padding:8px 10px}
+.kf-palacak{cursor:pointer;text-align:right;font-family:'Geist Mono',monospace;font-size:12.5px;padding:8px 10px;color:var(--text2)}
+.kf-palacak.filled{color:var(--pos);font-weight:600}
+.kf-palacak .rozet{display:block;font-size:9px;color:var(--accent2);font-weight:600;text-transform:uppercase;font-family:Geist,sans-serif}
+
+.kf-psign{display:flex;justify-content:space-between;margin-top:20px}
+.kf-psign div{width:45%;text-align:center;border-top:1px solid var(--border);padding-top:6px;font-size:11px;color:var(--text2)}
+
+.kf-pkisi-add{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;
+  font-size:12.5px;font-weight:600;color:var(--text2);background:var(--card2);border:1px solid var(--border);cursor:pointer;margin-bottom:8px}
+.kf-pkisi-add:hover{color:var(--text)}
+
 .kf-hareket-tablo{border:1px solid var(--border);border-radius:10px;overflow:hidden;width:max-content;max-width:100%}
 .kf-hareket-head{display:grid;grid-template-columns:150px 230px 110px 140px 120px 34px;background:var(--card2)}
 .kf-hareket-head div{padding:9px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600;border-right:1px solid var(--border)}
@@ -129,72 +178,95 @@
     </div>
   </div>
 
-  <!-- Oda & Föy -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Oda &amp; Föy Bilgisi</span></div>
-    <div class="kf-grid c3">
-      <div class="kf-field">
-        <label>Oda No</label>
+  <div class="kf-paper">
+
+    <div class="kf-phead">
+      <div class="kf-plogo">OL</div>
+      <div>
+        <div class="kf-ptitle">OTEL KONAKLAMA VE KAYIT FORMU / REGISTRATION FORM</div>
+        <div class="kf-psub">Otel Leo &amp; Cunda Villa</div>
+      </div>
+    </div>
+
+    <div class="kf-pbig-row">
+      <div class="kf-pbig-cell">
+        <b>Föy No</b>
+        <input id="kf-foy" readonly>
+      </div>
+      <div class="kf-pbig-cell">
+        <b>Oda No</b>
         <select id="kf-oda" onchange="onOdaChange()"></select>
       </div>
-      <div class="kf-field">
-        <label>Otel</label>
-        <input id="kf-otel-readout" readonly style="opacity:.8;cursor:not-allowed;font-weight:600">
-        <input type="hidden" id="kf-otel">
-      </div>
-      <div class="kf-field">
-        <label>Föy No</label>
-        <input id="kf-foy" readonly style="opacity:.8;cursor:not-allowed;color:var(--accent);font-weight:600;font-family:'Geist Mono',monospace">
-      </div>
     </div>
-    <div class="kf-grid c3" style="margin-top:16px">
-      <div class="kf-field">
-        <label>Giriş Tarihi</label>
+
+    <div class="kf-prow">
+      <div class="kf-pcell">
+        <b>Giriş Tarihi / Check-in</b>
         <input type="date" id="kf-giris" onchange="autoSetCikis();recalc()">
       </div>
-      <div class="kf-field">
-        <label>Çıkış Tarihi</label>
+      <div class="kf-pcell">
+        <b>Çıkış Tarihi / Check-out</b>
         <input type="date" id="kf-cikis" onchange="recalc()">
       </div>
-      <div class="kf-field">
-        <label>Konaklama Gün Sayısı</label>
-        <div class="kf-readout"><span class="v" id="kf-gun">0</span><span class="u">gün</span></div>
+    </div>
+    <div class="kf-prow">
+      <div class="kf-pcell">
+        <b>Konaklama Gün Sayısı</b>
+        <span class="ro"><span id="kf-gun">0</span> gün</span>
+      </div>
+      <div class="kf-pcell">
+        <b>Otel</b>
+        <input id="kf-otel-readout" readonly class="ro">
+        <input type="hidden" id="kf-otel">
       </div>
     </div>
-  </div>
 
-  <!-- Misafir -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Misafir Bilgileri</span></div>
-    <div class="kf-grid c2">
-      <div class="kf-field">
-        <label>Adı Soyadı</label>
+    <div class="kf-ptaahhut">
+      Otelden ayrılış saati 12:00. Yukarıda belirtilen çıkış tarihinde değişiklik yapmam durumunda erken çıkış için para iadesi talep etmeyeceğimi taahhüt ederim. Erken çıkış durumunda yukarıda belirtilen gün sayısı kadar ücreti ödeyeceğimi kabul ederim. Otel dışından temin edilmiş yiyecek ve içeceklerin faturama otel fiyatlarıyla yansıtılacağını kabul ederim. Otelin 22:30–09:00 arası olan sessiz saatlerine riayet edeceğim. Beraberimdeki küçük çocuklara konaklama süresince eşlik edeceğim. Otel havuzunun çocuklar için olmadığı konusunda bilgilendirildim, bu konuda sorumluluk tamamen bendedir. Otel odalarında sigara içmenin yasak olduğu konusunda bilgilendirildim; sigara içilmesi durumunda 2.500,00 TL ekstra temizlik ücretinin faturama yansıtılacağını onaylarım. Otel eşyalarında ve odadaki demirbaş ve mefruşatta tarafımca oluşturulabilecek zararın faturama yansıtılmasını kabul ediyorum. Oda bakımının her gün ve tekstil değişiminin üç günde bir yapılacağı konusunda bilgilendirildim.
+    </div>
+
+    <div class="kf-prow">
+      <div class="kf-pcell">
+        <b>Adı Soyadı</b>
         <input id="kf-ad" placeholder="İbrahim Yalçın">
       </div>
-      <div class="kf-field">
-        <label>T.C. Kimlik No</label>
+      <div class="kf-pcell">
+        <b>T.C. Kimlik No</b>
         <input id="kf-tc" placeholder="11111111111" maxlength="11">
       </div>
-      <div class="kf-field">
-        <label>Araç Marka-Model-Plaka / Şehir</label>
+    </div>
+    <div class="kf-prow">
+      <div class="kf-pcell">
+        <b>Araç Marka-Model-Plaka / Şehir</b>
         <input id="kf-arac" placeholder="Fiat Egea · 10 ABC 123 · Balıkesir">
       </div>
-      <div class="kf-field">
-        <label>Cep Telefonu</label>
+      <div class="kf-pcell">
+        <b>Cep Telefonu</b>
         <input id="kf-tel" placeholder="0532 000 00 00">
       </div>
     </div>
-    <div class="kf-grid c3" style="margin-top:16px">
-      <div class="kf-field">
-        <label>Kişi Sayısı (Yetişkin)</label>
-        <input type="number" id="kf-yetiskin" value="2" min="1">
+
+    <table class="kf-ptable">
+      <thead><tr><th colspan="3">Beraberinde Konaklayacak Kişiler</th></tr></thead>
+      <tbody id="kf-kisiler"></tbody>
+    </table>
+    <div class="kf-pkisi-add" onclick="addKisi()">+ Kişi Ekle</div>
+
+    <div class="kf-prow c3">
+      <div class="kf-pcell">
+        <b>Gün Fiyatı (₺)</b>
+        <input type="number" id="kf-gunfiyat" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
       </div>
-      <div class="kf-field">
-        <label>Çocuk</label>
-        <input type="number" id="kf-cocuk" value="0" min="0">
+      <div class="kf-pcell">
+        <b>Kişi Sayısı (Yetişkin / Çocuk)</b>
+        <span class="ro" style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="kf-yetiskin" value="2" min="1" style="width:40px">
+          /
+          <input type="number" id="kf-cocuk" value="0" min="0" style="width:40px">
+        </span>
       </div>
-      <div class="kf-field">
-        <label>Kanal / Acente</label>
+      <div class="kf-pcell">
+        <b>Kanal / Acente</b>
         <select id="kf-kanal">
           <option value="">— Seçin —</option>
           <option value="Telefon">Telefon</option>
@@ -206,80 +278,60 @@
         </select>
       </div>
     </div>
-  </div>
-
-  <!-- Beraberindekiler -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Beraberinde Konaklayacak Kişiler</span></div>
-    <div id="kf-kisiler"></div>
-    <div class="kf-add-btn" onclick="addKisi()">+ Kişi Ekle</div>
-  </div>
-
-  <!-- Fiyat -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Fiyat &amp; Kapora</span></div>
-    <div class="kf-grid c3">
-      <div class="kf-field">
-        <label>Gün Fiyatı (₺)</label>
-        <input type="number" id="kf-gunfiyat" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
+    <div class="kf-prow c3">
+      <div class="kf-pcell">
+        <b>Toplam Tutar</b>
+        <span class="ro" id="kf-toplam" style="color:var(--accent);font-weight:700">0 ₺</span>
       </div>
-      <div class="kf-field">
-        <label>Toplam Tutar</label>
-        <div class="kf-readout"><span class="v" id="kf-toplam" style="color:var(--accent)">0 ₺</span></div>
-      </div>
-      <div class="kf-field">
-        <label>Kahvaltı</label>
+      <div class="kf-pcell">
+        <b>Kahvaltı</b>
         <select id="kf-kahvalti"><option>Kahvaltılı</option><option>Kahvaltısız</option></select>
       </div>
-    </div>
-    <div class="kf-grid c3" style="margin-top:16px">
-      <div class="kf-field">
-        <label>Kapora (₺)</label>
-        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
-      </div>
-      <div class="kf-field">
-        <label>Kapora Tarihi</label>
-        <input type="date" id="kf-kapora-tarihi">
-      </div>
-      <div class="kf-field">
-        <label>Ek Yatak</label>
+      <div class="kf-pcell">
+        <b>Ek Yatak</b>
         <select id="kf-ek"><option>Yok</option><option>Var</option></select>
       </div>
     </div>
-  </div>
-
-  <!-- Cari Hareketler -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Cari Hareketler</span></div>
-    <div class="kf-hareket-tablo">
-      <div class="kf-hareket-head">
-        <div>Tarih</div>
-        <div>Açıklama</div>
-        <div style="text-align:right">Borç</div>
-        <div style="text-align:right">Alacak</div>
-        <div style="text-align:right">Bakiye +/-</div>
-        <div></div>
+    <div class="kf-prow">
+      <div class="kf-pcell">
+        <b>Kapora (₺)</b>
+        <input type="number" id="kf-kapora" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0';recalc()" oninput="recalc()">
       </div>
-      <div id="kf-hareketler"></div>
-      <div class="kf-hareket-toplam">
-        <div style="grid-column:1/3">Genel Bakiye</div>
-        <div style="text-align:right" id="kf-h-borc">0 ₺</div>
-        <div style="text-align:right" id="kf-h-alacak">0 ₺</div>
-        <div style="text-align:right;font-weight:700" id="kf-h-net">0 ₺</div>
-        <div></div>
+      <div class="kf-pcell">
+        <b>Kapora Tarihi</b>
+        <input type="date" id="kf-kapora-tarihi">
       </div>
     </div>
-    <div class="kf-add-btn" onclick="addHareket()">+ Satır Ekle</div>
-    <div style="font-size:11px;color:var(--text2);margin-top:8px">
-      Not: Bu bölüm yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.
-    </div>
-  </div>
 
-  <!-- Taahhüt metni (bilgi amaçlı, fiziki çıktıda yer alır) -->
-  <div class="kf-section">
-    <div class="kf-section-head"><span class="dot"></span><span class="lbl">Taahhüt Metni (Yazdırılan Forma Eklenir)</span></div>
-    <div class="kf-taahhut">
-      Otelden ayrılış saati 12:00. Yukarıda belirtilen çıkış tarihinde değişiklik yapmam durumunda erken çıkış için para iadesi talep etmeyeceğimi taahhüt ederim. Erken çıkış durumunda yukarıda belirtilen gün sayısı kadar ücreti ödeyeceğimi kabul ederim. Otel dışından temin edilmiş yiyecek ve içeceklerin faturama otel fiyatlarıyla yansıtılacağını kabul ederim. Otelin 22:30–09:00 arası olan sessiz saatlerine riayet edeceğim. Beraberimdeki küçük çocuklara konaklama süresince eşlik edeceğim. Otel havuzunun çocuklar için olmadığı konusunda bilgilendirildim, bu konuda sorumluluk tamamen bendedir. Otel odalarında sigara içmenin yasak olduğu konusunda bilgilendirildim; sigara içilmesi durumunda 2.500,00 TL ekstra temizlik ücretinin faturama yansıtılacağını onaylarım. Otel eşyalarında ve odadaki demirbaş ve mefruşatta tarafımca oluşturulabilecek zararın faturama yansıtılmasını kabul ediyorum. Oda bakımının her gün ve tekstil değişiminin üç günde bir yapılacağı konusunda bilgilendirildim.
+    <table class="kf-ptable">
+      <thead>
+        <tr>
+          <th style="width:120px">Tarih</th><th>Açıklama</th>
+          <th style="width:110px;text-align:right">Borç</th>
+          <th style="width:140px;text-align:right">Alacak</th>
+          <th style="width:120px;text-align:right">Bakiye +/-</th>
+          <th style="width:30px"></th>
+        </tr>
+      </thead>
+      <tbody id="kf-hareketler"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="font-weight:600;padding:8px 10px">Genel Bakiye</td>
+          <td class="ptbl-bakiye" id="kf-h-borc">0 ₺</td>
+          <td class="ptbl-bakiye" id="kf-h-alacak">0 ₺</td>
+          <td class="ptbl-bakiye" id="kf-h-net" style="font-weight:700">0 ₺</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="kf-pkisi-add" onclick="addHareket()">+ Satır Ekle</div>
+    <div style="font-size:11px;color:var(--text2);margin:6px 0 16px">
+      Not: Cari Hareketler bölümü yalnızca bilgi/yazdırma amaçlıdır — Adisyon ve Yevmiye'ye otomatik işlenmez.
+    </div>
+
+    <div class="kf-psign">
+      <div>Misafir İmza</div>
+      <div>Resepsiyon</div>
     </div>
   </div>
 
@@ -397,15 +449,15 @@ let kisiler = [];
 function renderKisiler() {
   const wrap = document.getElementById('kf-kisiler');
   if (kisiler.length === 0) {
-    wrap.innerHTML = '<div style="font-size:12.5px;color:var(--text2);padding:6px 0">Beraberinde misafir yok.</div>';
+    wrap.innerHTML = '<tr><td colspan="3" style="font-size:12px;color:var(--text2);padding:8px 10px">Beraberinde misafir yok.</td></tr>';
     return;
   }
   wrap.innerHTML = kisiler.map(k => `
-    <div class="kf-kisi-row" data-id="${k.id}">
-      <input placeholder="Adı Soyadı" value="${k.ad||''}" oninput="updKisi(${k.id},'ad',this.value)">
-      <input placeholder="T.C. Kimlik No" maxlength="11" value="${k.tc||''}" oninput="updKisi(${k.id},'tc',this.value)">
-      <div class="kf-kisi-del" onclick="delKisi(${k.id})">×</div>
-    </div>
+    <tr data-id="${k.id}">
+      <td><input placeholder="Adı Soyadı" value="${k.ad||''}" oninput="updKisi(${k.id},'ad',this.value)"></td>
+      <td><input placeholder="T.C. Kimlik No" maxlength="11" value="${k.tc||''}" oninput="updKisi(${k.id},'tc',this.value)"></td>
+      <td class="ptbl-del" onclick="delKisi(${k.id})">×</td>
+    </tr>
   `).join('');
 }
 function addKisi() { kisiler.push({id: kisiId++, ad:'', tc:''}); renderKisiler(); }
@@ -424,7 +476,7 @@ function recomputeBakiye() {
     const alacak = parseFloat(h.alacak) || 0;
     run += borc - alacak;
     totBorc += borc; totAlacak += alacak;
-    const el = document.querySelector(`.kf-hareket-row[data-id="${h.id}"] .bakiye-out`);
+    const el = document.querySelector(`tr[data-hid="${h.id}"] .ptbl-bakiye`);
     if (el) {
       el.textContent = fmtSign(run);
       el.style.color = run > 0 ? 'var(--accent3)' : (run < 0 ? 'var(--pos)' : 'var(--text2)');
@@ -441,25 +493,24 @@ function recomputeBakiye() {
 function alacakCellHtml(h) {
   const tutar = parseFloat(h.alacak) || 0;
   if (tutar > 0) {
-    return `<div class="kf-alacak-cell filled" onclick="openAlacakModal(${h.id})">
-        <span class="tutar">${fmt(tutar)}</span>
-        <span class="odeme-rozet">${h.odeme_sekli || ''}</span>
+    return `<div class="kf-palacak filled" onclick="openAlacakModal(${h.id})">
+        ${fmt(tutar)}<span class="rozet">${h.odeme_sekli || ''}</span>
       </div>`;
   }
-  return `<div class="kf-alacak-cell" onclick="openAlacakModal(${h.id})">+ Tahsilat</div>`;
+  return `<div class="kf-palacak" onclick="openAlacakModal(${h.id})">+ Tahsilat</div>`;
 }
 
 function renderHareketler() {
   const wrap = document.getElementById('kf-hareketler');
   wrap.innerHTML = hareketler.map(h => `
-      <div class="kf-hareket-row" data-id="${h.id}">
-        <input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)">
-        <input placeholder="Açıklama girin…" value="${h.aciklama||''}" oninput="updHareket(${h.id},'aciklama',this.value)">
-        <input class="borc-in" placeholder="0" value="${h.borc||''}" oninput="updHareket(${h.id},'borc',this.value)">
-        ${alacakCellHtml(h)}
-        <div class="bakiye-out">0 ₺</div>
-        <div class="kf-hareket-del" onclick="delHareket(${h.id})">×</div>
-      </div>`).join('');
+      <tr data-hid="${h.id}">
+        <td><input type="date" value="${h.tarih||''}" oninput="updHareket(${h.id},'tarih',this.value)"></td>
+        <td><input placeholder="Açıklama girin…" value="${h.aciklama||''}" oninput="updHareket(${h.id},'aciklama',this.value)"></td>
+        <td class="borc-in"><input placeholder="0" value="${h.borc||''}" oninput="updHareket(${h.id},'borc',this.value)"></td>
+        <td style="padding:0">${alacakCellHtml(h)}</td>
+        <td class="ptbl-bakiye">0 ₺</td>
+        <td class="ptbl-del" onclick="delHareket(${h.id})">×</td>
+      </tr>`).join('');
   recomputeBakiye();
 }
 function addHareket(prefill) {
