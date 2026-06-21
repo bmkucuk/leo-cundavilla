@@ -886,10 +886,11 @@ def api_adisyon_guncelle():
             )
             conn_muh.commit(); conn_muh.close()
 
-        # Adisyonu güncelle (tarih ve oda da değişebilir)
+        # Adisyonu güncelle (tarih, oda ve açıklama da değişebilir)
         yeni_tarih = d.get('tarih')
         yeni_foy   = int(d['foy_no']) if d.get('foy_no') else None
-        db.update_adisyon(adisyon_no, yeni_tutar, odeme, tarih=yeni_tarih, foy_no=yeni_foy)
+        yeni_aciklama = d.get('aciklama')
+        db.update_adisyon(adisyon_no, yeni_tutar, odeme, tarih=yeni_tarih, foy_no=yeni_foy, aciklama=yeni_aciklama)
 
         # Rezervasyon adisyon toplamını yeniden hesapla (fark yerine toplam)
         if a:
