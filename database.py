@@ -190,6 +190,13 @@ def log_yaz(kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum):
     conn.commit()
     conn.close()
 
+def _tr_normalize(s):
+    """Türkçe karakterleri ASCII karşılığına çevirir, küçük harfe indirir."""
+    if not s:
+        return ''
+    tr_map = str.maketrans('çÇğĞıİöÖşŞüÜ', 'ccggiiooossuuu')  # noqa: RUF001
+    return s.translate(tr_map).lower()
+
 def log_listele(limit=300, kullanici=None, baslangic=None, bitis=None, arama=None):
     conn = get_conn()
     q = "SELECT * FROM islem_loglari WHERE 1=1"
@@ -203,15 +210,19 @@ def log_listele(limit=300, kullanici=None, baslangic=None, bitis=None, arama=Non
     if bitis:
         q += " AND zaman<=?"
         params.append(bitis + ' 23:59:59')
-    if arama:
-        q += " AND (ozet LIKE ? OR modul LIKE ? OR yol LIKE ?)"
-        like = f"%{arama}%"
-        params += [like, like, like]
     q += " ORDER BY id DESC LIMIT ?"
-    params.append(limit)
+    params.append(limit * 5 if arama else limit)  # arama varsa daha fazla çek, sonra filtrele
     rows = conn.execute(q, params).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    if arama:
+        aranan = _tr_normalize(arama)
+        def esles(r):
+            return any(aranan in _tr_normalize(str(r.get(alan) or ''))
+                       for alan in ('ozet', 'modul', 'yol', 'islem_tipi', 'kullanici'))
+        result = [r for r in result if esles(r)][:limit]
+    return result
+
 
 
 # ── Rezervasyon CRUD ──────────────────────────────────────────────────────────
