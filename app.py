@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 """Otel Leo & Cunda Villa — Web Yönetim (SQLite sürümü)"""
 import os
+import smtplib
+import tempfile
 from datetime import date, datetime
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file
 import hashlib
@@ -10,6 +15,7 @@ from functools import wraps
 import database as db
 from muhasebe_routes import muh
 import muhasebe_db as mdb
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'otelleo2026x!9k')
@@ -1189,12 +1195,8 @@ def yedek_db():
     return send_file(tmp_zip.name, as_attachment=True, download_name=dosya_adi,
                      mimetype='application/zip')
 
-@app.route('/yedek/excel')
-@login_required
-def yedek_excel():
-    """Tüm otel ve muhasebe verilerini Excel olarak indir — Power Query uyumlu."""
-    import tempfile
-    from datetime import date
+def excel_yedek_olustur():
+    """Tüm DB'yi Excel olarak üretir, geçici dosya yolunu döner."""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
@@ -1212,13 +1214,13 @@ def yedek_excel():
             ml = max((len(str(c.value or '')) for c in col), default=10)
             ws.column_dimensions[col[0].column_letter].width = min(ml+4, 35)
 
-    # ── 1. Rezervasyon Girişleri (Otel_Oda_Durumu ile uyumlu) ────────────────
+    # 1. Rezervasyon Girişleri
     ws1 = wb.active
-    ws1.title = 'Rezervasyon Girişleri'
-    h1 = ['Oda No','Otel','Föy No','Acente','Müşteri Adı','Yetişkin','Çocuk',
-          'Ek Yatak','Gün Fiyat','Giriş Tarihi','Çıkış Tarihi','Toplam Gün',
-          'Toplam Fiyat','Kapora','Kapora Tarihi','Tahsilat','Ödeme Türü',
-          'REZ. Bakiye','Adisyon','Adisyon Tahsilat','Ödeme Türü2','ADS Bakiye','Açıklama']
+    ws1.title = 'Rezervasyon Girisleri'
+    h1 = ['Oda No','Otel','Foy No','Acente','Musteri Adi','Yetiskin','Cocuk',
+          'Ek Yatak','Gun Fiyat','Giris Tarihi','Cikis Tarihi','Toplam Gun',
+          'Toplam Fiyat','Kapora','Kapora Tarihi','Tahsilat','Odeme Turu',
+          'REZ Bakiye','Adisyon','Adisyon Tahsilat','Odeme Turu2','ADS Bakiye','Aciklama']
     make_header(ws1, h1)
     for i, r in enumerate(db.get_rezervasyonlar(), 2):
         vals = [r.get('oda_no'), r.get('otel'), r.get('foy_no'), r.get('kanal'),
@@ -1231,9 +1233,9 @@ def yedek_excel():
         for col, v in enumerate(vals, 1):
             ws1.cell(row=i, column=col, value=v)
 
-    # ── 2. Adisyonlar ─────────────────────────────────────────────────────────
+    # 2. Adisyonlar
     ws2 = wb.create_sheet('Adisyonlar')
-    h2 = ['Adisyon No','Föy No','Oda No','Tarih','Tutar','Ödeme','Otel','Açıklama']
+    h2 = ['Adisyon No','Foy No','Oda No','Tarih','Tutar','Odeme','Otel','Aciklama']
     make_header(ws2, h2)
     for i, a in enumerate(db.get_adisyonlar(), 2):
         vals = [a.get('adisyon_no'), a.get('foy_no'), a.get('oda_no'),
@@ -1242,69 +1244,84 @@ def yedek_excel():
         for col, v in enumerate(vals, 1):
             ws2.cell(row=i, column=col, value=v)
 
-    # ── 3. YEVMİYE (Muhasebe_Sablonu ile uyumlu) ─────────────────────────────
-    ws3 = wb.create_sheet('YEVMİYE')
-    h3 = ['BELGE NO','TARİH','İŞLEM TİPİ','BORÇ HESABI','ALACAK HESABI',
-          'TUTAR (TL)','AÇIKLAMA','OTEL','FATURA NO']
-    make_header(ws3, h3, HEADER2_FILL)
     conn = mdb.get_conn()
-    yevmiye = [dict(r) for r in conn.execute(
-        "SELECT * FROM yevmiye ORDER BY tarih, id").fetchall()]
+
+    # 3. Yevmiye
+    ws3 = wb.create_sheet('YEVMIYE')
+    h3 = ['BELGE NO','TARIH','ISLEM TIPI','BORC HESABI','ALACAK HESABI','TUTAR','ACIKLAMA','FATURA NO']
+    make_header(ws3, h3, HEADER2_FILL)
+    yevmiye = [dict(r) for r in conn.execute("SELECT * FROM yevmiye ORDER BY tarih, id").fetchall()]
     for i, r in enumerate(yevmiye, 2):
-        # Hesap adını da ekle
-        borc_ad = conn.execute("SELECT ad FROM hesaplar WHERE kod=?", (r.get('borc_hesap',''),)).fetchone()
-        alacak_ad = conn.execute("SELECT ad FROM hesaplar WHERE kod=?", (r.get('alacak_hesap',''),)).fetchone()
         vals = [r.get('belge_no'), r.get('tarih'), r.get('islem_tipi'),
-                f"{r.get('borc_hesap','')} — {borc_ad['ad'] if borc_ad else ''}",
-                f"{r.get('alacak_hesap','')} — {alacak_ad['ad'] if alacak_ad else ''}",
-                r.get('tutar'), r.get('aciklama'), r.get('otel'), r.get('fatura_no')]
+                r.get('borc_hesap'), r.get('alacak_hesap'),
+                r.get('tutar'), r.get('aciklama'), r.get('fatura_no')]
         for col, v in enumerate(vals, 1):
             ws3.cell(row=i, column=col, value=v)
 
-    # ── 4. PERSONEL ───────────────────────────────────────────────────────────
+    # 4. Personel
     ws4 = wb.create_sheet('PERSONEL')
-    h4 = ['Ad Soyad','İşe Giriş','Görev','Net Maaş','Banka IBAN',
-          'TARİH','DÖNEM YIL','DÖNEM AY','NET ÖDEME','ÖDEME BANKASI','AÇIKLAMA','OTEL']
+    h4 = ['Ad Soyad','Ise Giris','Gorev','Net Maas','Banka IBAN','TC Kimlik','Telefon','Aktif']
     make_header(ws4, h4, HEADER2_FILL)
     personel = mdb.get_personel()
-    maaslar = [dict(r) for r in conn.execute("""
-        SELECT pm.*, p.ad_soyad FROM personel_maas pm
-        JOIN personel p ON pm.personel_id=p.id ORDER BY pm.tarih
-    """).fetchall()]
-    max_rows = max(len(personel), len(maaslar), 1)
-    for i in range(max_rows):
-        row_idx = i + 2
-        if i < len(personel):
-            p = personel[i]
-            ws4.cell(row=row_idx, column=1, value=p.get('ad_soyad'))
-            ws4.cell(row=row_idx, column=2, value=p.get('ise_giris'))
-            ws4.cell(row=row_idx, column=3, value=p.get('gorev'))
-            ws4.cell(row=row_idx, column=4, value=p.get('net_maas'))
-            ws4.cell(row=row_idx, column=5, value=p.get('banka_iban'))
-        if i < len(maaslar):
-            m = maaslar[i]
-            ws4.cell(row=row_idx, column=6,  value=m.get('tarih'))
-            ws4.cell(row=row_idx, column=7,  value=m.get('donem_yil'))
-            ws4.cell(row=row_idx, column=8,  value=m.get('donem_ay'))
-            ws4.cell(row=row_idx, column=9,  value=m.get('net_odeme'))
-            ws4.cell(row=row_idx, column=10, value=m.get('odeme_banka'))
-            ws4.cell(row=row_idx, column=11, value=m.get('aciklama'))
-            ws4.cell(row=row_idx, column=12, value=m.get('otel'))
+    for i, p in enumerate(personel, 2):
+        vals = [p.get('ad_soyad'), p.get('ise_giris'), p.get('gorev'),
+                p.get('net_maas'), p.get('banka_iban'), p.get('tc_kimlik'),
+                p.get('telefon'), p.get('aktif')]
+        for col, v in enumerate(vals, 1):
+            ws4.cell(row=i, column=col, value=v)
 
-    # ── 5. STOK ───────────────────────────────────────────────────────────────
+    # 4b. Maaş ödemeleri
+    ws4b = wb.create_sheet('PERSONEL MAAS')
+    h4b = ['Personel','Tarih','Donem Yil','Donem Ay','Net Odeme','Yol','Mesai','Izin','Avans Dusum','Odeme Banka','Aciklama']
+    make_header(ws4b, h4b, HEADER2_FILL)
+    maaslar = [dict(r) for r in conn.execute(
+        "SELECT pm.*, p.ad_soyad FROM personel_maas pm JOIN personel p ON pm.personel_id=p.id ORDER BY pm.tarih"
+    ).fetchall()]
+    for i, m in enumerate(maaslar, 2):
+        vals = [m.get('ad_soyad'), m.get('tarih'), m.get('donem_yil'), m.get('donem_ay'),
+                m.get('net_odeme'), m.get('yol_parasi'), m.get('fazla_mesai'),
+                m.get('izin_parasi'), m.get('avans_dusum'), m.get('odeme_banka'), m.get('aciklama')]
+        for col, v in enumerate(vals, 1):
+            ws4b.cell(row=i, column=col, value=v)
+
+    # 4c. Avans ödemeleri
+    ws4c = wb.create_sheet('PERSONEL AVANS')
+    h4c = ['Personel','Tarih','Tutar','Odeme Sekli','Aciklama']
+    make_header(ws4c, h4c, HEADER2_FILL)
+    avanslar = [dict(r) for r in conn.execute(
+        "SELECT a.*, p.ad_soyad FROM personel_avans a JOIN personel p ON p.id=a.personel_id ORDER BY a.tarih"
+    ).fetchall()]
+    for i, a in enumerate(avanslar, 2):
+        vals = [a.get('ad_soyad'), a.get('tarih'), a.get('tutar'),
+                a.get('odeme_sekli'), a.get('aciklama')]
+        for col, v in enumerate(vals, 1):
+            ws4c.cell(row=i, column=col, value=v)
+
+    # 5. Stok
     ws5 = wb.create_sheet('STOK')
-    h5 = ['TARİH','BELGE NO','AÇIKLAMA','KATEGORİ','TUTAR','ÖDEME HESABI','FATURA','OTEL','NOT']
+    h5 = ['TARIH','BELGE NO','ACIKLAMA','KATEGORI','TUTAR','ODEME HESABI','FATURA','NOT']
     make_header(ws5, h5, HEADER2_FILL)
     stok = [dict(r) for r in conn.execute("SELECT * FROM stok ORDER BY tarih").fetchall()]
     for i, r in enumerate(stok, 2):
         vals = [r.get('tarih'), r.get('belge_no'), r.get('aciklama'), r.get('kategori'),
-                r.get('tutar'), r.get('odeme_hesap'), r.get('fatura_var'), r.get('otel'), r.get('not_')]
+                r.get('tutar'), r.get('odeme_hesap'), r.get('fatura_var'), r.get('not_')]
         for col, v in enumerate(vals, 1):
             ws5.cell(row=i, column=col, value=v)
 
-    # ── 6. VERGİ ─────────────────────────────────────────────────────────────
-    ws6 = wb.create_sheet('VERGİ')
-    h6 = ['TARİH','DÖNEM YIL','DÖNEM AY','VERGİ TÜRÜ','MATRAH','TUTAR','ÖDEME BANKASI','DURUM','AÇIKLAMA']
+    # 5b. Demirbaş
+    ws5b = wb.create_sheet('DEMIRBAS')
+    h5b = ['TARIH','ACIKLAMA','MIKTAR','BIRIM FIYAT','TOPLAM','ODEME HESABI','FATURA NO','NOT']
+    make_header(ws5b, h5b, HEADER2_FILL)
+    demirbas = [dict(r) for r in conn.execute("SELECT * FROM \"demirbaş\" ORDER BY tarih").fetchall()]
+    for i, r in enumerate(demirbas, 2):
+        vals = [r.get('tarih'), r.get('aciklama'), r.get('miktar'), r.get('birim_fiyat'),
+                r.get('toplam'), r.get('odeme_hesap'), r.get('fatura_no'), r.get('not_')]
+        for col, v in enumerate(vals, 1):
+            ws5b.cell(row=i, column=col, value=v)
+
+    # 6. Vergi
+    ws6 = wb.create_sheet('VERGI')
+    h6 = ['TARIH','DONEM YIL','DONEM AY','VERGI TURU','MATRAH','TUTAR','ODEME BANKASI','DURUM','ACIKLAMA']
     make_header(ws6, h6, HEADER2_FILL)
     vergi = [dict(r) for r in conn.execute("SELECT * FROM vergi ORDER BY donem_yil, donem_ay").fetchall()]
     for i, r in enumerate(vergi, 2):
@@ -1313,10 +1330,9 @@ def yedek_excel():
         for col, v in enumerate(vals, 1):
             ws6.cell(row=i, column=col, value=v)
 
-    # ── 7. ACENTE CARİ ────────────────────────────────────────────────────────
-    ws7 = wb.create_sheet('ACENTE CARİ')
-    h7 = ['TARİH','ACENTE','FÖY NO','REZ NO','MİSAFİR','REZ TUTARI',
-          'KOM ORAN','KOMİSYON TL','GELEN ÖDEME','OTEL']
+    # 7. Acente Cari
+    ws7 = wb.create_sheet('ACENTE CARI')
+    h7 = ['TARIH','ACENTE','FOY NO','REZ NO','MISAFIR','REZ TUTARI','KOM ORAN','KOMISYON TL','GELEN ODEME','OTEL']
     make_header(ws7, h7, HEADER2_FILL)
     acente = [dict(r) for r in conn.execute("SELECT * FROM acente_cari ORDER BY tarih").fetchall()]
     for i, r in enumerate(acente, 2):
@@ -1326,9 +1342,9 @@ def yedek_excel():
         for col, v in enumerate(vals, 1):
             ws7.cell(row=i, column=col, value=v)
 
-    # ── 8. ORTAK CARİ ─────────────────────────────────────────────────────────
-    ws8 = wb.create_sheet('ORTAK CARİ')
-    h8 = ['TARİH','ORTAK','BELGE NO','AÇIKLAMA','KATEGORİ','TUTAR','ÖDEME','İADE','NET','OTEL']
+    # 8. Ortak Cari
+    ws8 = wb.create_sheet('ORTAK CARI')
+    h8 = ['TARIH','ORTAK','BELGE NO','ACIKLAMA','KATEGORI','TUTAR','ODEME','IADE','NET','OTEL']
     make_header(ws8, h8, HEADER2_FILL)
     ortak = [dict(r) for r in conn.execute("SELECT * FROM ortak_cari ORDER BY tarih").fetchall()]
     for i, r in enumerate(ortak, 2):
@@ -1339,30 +1355,10 @@ def yedek_excel():
         for col, v in enumerate(vals, 1):
             ws8.cell(row=i, column=col, value=v)
 
-    # ── 9. MİZAN ─────────────────────────────────────────────────────────────
-    ws9 = wb.create_sheet('MİZAN')
-    h9 = ['KOD','HESAP ADI','TİP','GRUP','BORÇ','ALACAK','BAKİYE']
-    make_header(ws9, h9, HEADER2_FILL)
-    hesaplar = [dict(r) for r in conn.execute("SELECT * FROM hesaplar WHERE aktif=1 ORDER BY kod").fetchall()]
-    yil = bugun().year
-    row_idx = 2
-    for h in hesaplar:
-        borc = conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?",
-                           (yil, h['kod'])).fetchone()[0] or 0
-        alacak = conn.execute("SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?",
-                             (yil, h['kod'])).fetchone()[0] or 0
-        if borc == 0 and alacak == 0:
-            continue
-        bakiye = alacak - borc if h['tip'] in ('Gelir','Pasif','Ozkaynak') else borc - alacak
-        vals = [h['kod'], h['ad'], h['tip'], h['grup'], borc, alacak, bakiye]
-        for col, v in enumerate(vals, 1):
-            ws9.cell(row=row_idx, column=col, value=v)
-        row_idx += 1
-
     conn.close()
 
-    # Sütun genişliklerini ayarla
-    for ws in [ws1,ws2,ws3,ws4,ws5,ws6,ws7,ws8,ws9]:
+    # Sütun genişlikleri
+    for ws in wb.worksheets:
         for col in ws.columns:
             ml = max((len(str(c.value or '')) for c in col), default=8)
             ws.column_dimensions[col[0].column_letter].width = min(ml+4, 40)
@@ -1370,27 +1366,186 @@ def yedek_excel():
     tmp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
     tmp.close()
     wb.save(tmp.name)
+    return tmp.name
 
-    dosya_adi = f"otel_yedek_{bugun().isoformat()}.xlsx"
-    return send_file(tmp.name, as_attachment=True, download_name=dosya_adi,
+
+def yedek_mail_gonder():
+    """Excel yedeğini oluşturup cundavilla@gmail.com'a gönderir."""
+    gmail_user = os.environ.get('GMAIL_USER', 'cundavilla@gmail.com')
+    gmail_pass = os.environ.get('GMAIL_APP_PASSWORD', '')
+    if not gmail_pass:
+        print('[YEDEK] GMAIL_APP_PASSWORD tanımlı değil, mail atlanıyor.')
+        return
+    try:
+        dosya_yolu = excel_yedek_olustur()
+        dosya_adi  = f"otel_yedek_{bugun().isoformat()}.xlsx"
+
+        msg = MIMEMultipart()
+        msg['From']    = gmail_user
+        msg['To']      = gmail_user
+        msg['Subject'] = f"🏨 Otel Yönetim Günlük Yedek — {bugun().strftime('%d.%m.%Y')}"
+        msg.attach(MIMEText(
+            f"Merhaba,\n\nOtel Leo & Cunda Villa yönetim sistemi günlük yedeği ektedir.\n"
+            f"Tarih: {bugun().strftime('%d.%m.%Y')}\n\n"
+            f"Bu mail otomatik olarak gönderilmiştir.", 'plain', 'utf-8'))
+
+        with open(dosya_yolu, 'rb') as f:
+            ek = MIMEApplication(f.read(), Name=dosya_adi)
+            ek['Content-Disposition'] = f'attachment; filename="{dosya_adi}"'
+            msg.attach(ek)
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(gmail_user, gmail_pass)
+            smtp.send_message(msg)
+
+        os.unlink(dosya_yolu)
+        print(f'[YEDEK] Mail başarıyla gönderildi: {dosya_adi}')
+    except Exception as e:
+        print(f'[YEDEK] Mail gönderilemedi: {e}')
+
+
+@app.route('/yedek/excel')
+@login_required
+def yedek_excel():
+    dosya_yolu = excel_yedek_olustur()
+    dosya_adi  = f"otel_yedek_{bugun().isoformat()}.xlsx"
+    return send_file(dosya_yolu, as_attachment=True, download_name=dosya_adi,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
-@app.route('/api/import', methods=['POST'])
-def api_import():
-    """Excel dosyasını upload edip SQLite'a aktar."""
+
+@app.route('/geri-yukle', methods=['GET'])
+@admin_required
+def geri_yukle_sayfa():
+    return render_template('geri_yukle.html')
+
+
+@app.route('/api/geri-yukle', methods=['POST'])
+@admin_required
+def api_geri_yukle():
+    """Yedek Excel'den tüm tabloları geri yükler."""
     try:
+        from openpyxl import load_workbook
         f = request.files.get('excel')
         if not f:
             return jsonify({'ok': False, 'error': 'Dosya seçilmedi'}), 400
-        import tempfile, os
+
         with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
             f.save(tmp.name)
             tmp_path = tmp.name
-        rez_count, adis_count = db.import_from_excel(tmp_path)
+
+        wb = load_workbook(tmp_path, data_only=True)
         os.unlink(tmp_path)
-        return jsonify({'ok': True, 'rezervasyon': rez_count, 'adisyon': adis_count})
+        ozet = {}
+
+        conn_m = mdb.get_conn()
+        conn_o = db.get_conn()
+
+        def col(row, idx):
+            v = row[idx]
+            return v if v is not None else None
+
+        # STOK
+        if 'STOK' in wb.sheetnames:
+            ws = wb['STOK']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute("DELETE FROM stok")
+            for r in rows:
+                conn_m.execute(
+                    "INSERT INTO stok(tarih,belge_no,aciklama,kategori,tutar,odeme_hesap,fatura_var,not_) VALUES(?,?,?,?,?,?,?,?)",
+                    (col(r,0), col(r,1), col(r,2) or '', col(r,3), col(r,4) or 0, col(r,5), col(r,6), col(r,7)))
+            ozet['stok'] = len(rows)
+
+        # DEMİRBAŞ
+        if 'DEMIRBAS' in wb.sheetnames:
+            ws = wb['DEMIRBAS']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute('DELETE FROM "demirbaş"')
+            for r in rows:
+                conn_m.execute(
+                    'INSERT INTO "demirbaş"(tarih,aciklama,miktar,birim_fiyat,toplam,odeme_hesap,fatura_no,not_) VALUES(?,?,?,?,?,?,?,?)',
+                    (col(r,0), col(r,1) or '', col(r,2) or 1, col(r,3) or 0, col(r,4), col(r,5), col(r,6), col(r,7)))
+            ozet['demirbas'] = len(rows)
+
+        # YEVMİYE
+        if 'YEVMIYE' in wb.sheetnames:
+            ws = wb['YEVMIYE']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute("DELETE FROM yevmiye")
+            for r in rows:
+                tarih = str(col(r,1) or '')
+                yil = int(tarih[:4]) if len(tarih) >= 4 else None
+                ay  = int(tarih[5:7]) if len(tarih) >= 7 else None
+                conn_m.execute(
+                    "INSERT INTO yevmiye(belge_no,tarih,islem_tipi,borc_hesap,alacak_hesap,tutar,aciklama,fatura_no,yil,ay,otel) VALUES(?,?,?,?,?,?,?,?,?,?,'GENEL')",
+                    (col(r,0), tarih, col(r,2) or '', col(r,3) or '', col(r,4) or '', col(r,5) or 0, col(r,6), col(r,7), yil, ay))
+            ozet['yevmiye'] = len(rows)
+
+        # PERSONEL MAAS
+        if 'PERSONEL MAAS' in wb.sheetnames:
+            ws = wb['PERSONEL MAAS']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute("DELETE FROM personel_maas")
+            personel_liste = {p['ad_soyad']: p['id'] for p in mdb.get_personel()}
+            for r in rows:
+                pid = personel_liste.get(col(r,0))
+                if not pid:
+                    continue
+                conn_m.execute(
+                    "INSERT INTO personel_maas(personel_id,tarih,donem_yil,donem_ay,net_odeme,yol_parasi,fazla_mesai,izin_parasi,avans_dusum,odeme_banka,aciklama) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                    (pid, col(r,1), col(r,2), col(r,3), col(r,4) or 0, col(r,5) or 0, col(r,6) or 0, col(r,7) or 0, col(r,8) or 0, col(r,9), col(r,10)))
+            ozet['personel_maas'] = len(rows)
+
+        # PERSONEL AVANS
+        if 'PERSONEL AVANS' in wb.sheetnames:
+            ws = wb['PERSONEL AVANS']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute("DELETE FROM personel_avans")
+            personel_liste = {p['ad_soyad']: p['id'] for p in mdb.get_personel()}
+            for r in rows:
+                pid = personel_liste.get(col(r,0))
+                if not pid:
+                    continue
+                conn_m.execute(
+                    "INSERT INTO personel_avans(personel_id,tarih,tutar,odeme_sekli,aciklama) VALUES(?,?,?,?,?)",
+                    (pid, col(r,1), col(r,2) or 0, col(r,3), col(r,4)))
+            ozet['personel_avans'] = len(rows)
+
+        # REZERVASYONlar
+        if 'Rezervasyon Girisleri' in wb.sheetnames:
+            rez_count, adis_count = 0, 0
+            # Mevcut import fonksiyonunu kullan
+            with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp2:
+                wb.save(tmp2.name)
+                tmp2_path = tmp2.name
+            try:
+                rez_count, adis_count = db.import_from_excel(tmp2_path)
+            finally:
+                os.unlink(tmp2_path)
+            ozet['rezervasyon'] = rez_count
+            ozet['adisyon'] = adis_count
+
+        conn_m.commit()
+        conn_m.close()
+        conn_o.close()
+
+        return jsonify({'ok': True, 'ozet': ozet})
     except Exception as e:
-        return jsonify({'ok': False, 'error': str(e)}), 400
+        import traceback
+        return jsonify({'ok': False, 'error': str(e), 'detail': traceback.format_exc()}), 400
+
+
+
+
+# ── Scheduler: Her gece 02:00 otomatik yedek maili ───────────────────────────
+_scheduler = BackgroundScheduler(timezone=TR_TZ)
+_scheduler.add_job(yedek_mail_gonder, 'cron', hour=2, minute=0)
+_scheduler.start()
+
 
 
 # Tek seferlik migration — fonksiyon tanımlarının hepsi yüklendikten sonra çalışır
