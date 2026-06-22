@@ -447,7 +447,7 @@ def api_personel_odemeler():
     result.sort(key=lambda x: x['tarih'])
     return jsonify(result)
 
-
+@muh.route("/api/muhasebe/maas/ekle", methods=["POST"])
 @admin_required
 def api_maas_ekle():
     try:
