@@ -26,6 +26,16 @@
     <div class="section-title" style="margin:0;border:0">💰 Personel Ödemeleri</div>
     <label style="color:var(--text2);font-size:12px">Yıl:</label>
     <select class="filter" id="yil-sel" onchange="loadOdemeler()"></select>
+    <select class="filter" id="ay-sel" onchange="filterOdemeler()" style="min-width:90px">
+      <option value="">Hepsi</option>
+      <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
+      <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
+      <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
+      <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
+    </select>
+    <select class="filter" id="pers-fil" onchange="filterOdemeler()" style="min-width:120px">
+      <option value="">Tüm Personel</option>
+    </select>
     <div style="flex:1"></div>
     <button class="btn" style="font-size:12px;padding:6px 12px;background:var(--accent2);color:#000;margin-right:6px" onclick="openAvansModalDirect()">💰 Avans Ödemesi</button>
     <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMaasModal()">＋ Maaş Ödemesi</button>
@@ -309,45 +319,76 @@ async function loadOdemeler() {
   const yil = yilSel.value;
   const data = await api(`/api/muhasebe/personel/odemeler?yil=${yil}`);
   allData = data;
-  let toplamMaas = 0, toplamAvans = 0;
-  document.getElementById('odeme-tbody').innerHTML = data.length ? data.map(r => {
-    const isMaas = r.kaynak === 'maas';
-    if (isMaas) toplamMaas += (r.tutar || 0);
-    else toplamAvans += (r.tutar || 0);
-    // Detay satırı
-    let detay = r.aciklama || '';
-    if (isMaas && r.detay) {
-      const d = r.detay;
-      const parcalar = [];
-      if (d.net) parcalar.push(`Net: ${fmt(d.net)}`);
-      if (d.yol) parcalar.push(`Yol: ${fmt(d.yol)}`);
-      if (d.mesai) parcalar.push(`Mesai: ${fmt(d.mesai)}`);
-      if (d.izin) parcalar.push(`İzin: ${fmt(d.izin)}`);
-      if (d.avans_dusum) parcalar.push(`Avans -${fmt(d.avans_dusum)}`);
-      detay = parcalar.join(' · ') + (r.aciklama ? ` (${r.aciklama})` : '');
-    }
-    const turBadge = isMaas
-      ? `<span style="background:var(--accent2);color:#000;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Maaş</span>`
-      : `<span style="background:var(--accent3);color:#fff;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Avans</span>`;
-    const silFn = isMaas ? `silMaas(${r.id})` : `silAvansById(${r.id})`;
-    const duzFn = isMaas ? `duzenle(${r.id})` : ``;
-    return `<tr>
-      <td>${fmtDate(r.tarih)}</td>
-      <td>${r.ad_soyad || '—'}</td>
-      <td>${turBadge}</td>
-      <td style="font-size:11px;color:var(--text2)">${r.donem}</td>
-      <td style="text-align:right" class="${isMaas ? 'green' : 'yellow'}"><strong>${fmt(r.tutar)}</strong></td>
-      <td style="font-size:11px">${r.odeme_sekli || '—'}</td>
-      <td style="font-size:11px;color:var(--text2);max-width:220px;white-space:normal">${detay || '—'}</td>
-      <td style="white-space:nowrap">
-        ${isMaas ? `<button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button>` : ''}
-        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="${silFn}">Sil</button>
-      </td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt yok</td></tr>`;
-  document.getElementById('maas-toplam').innerHTML =
-    `${yil} — Maaş Toplamı: <span class="green">${fmt(toplamMaas)}</span> &nbsp;|&nbsp; Avans Toplamı: <span style="color:var(--accent3)">${fmt(toplamAvans)}</span>`;
+  // Personel filtre dropdown'unu güncelle
+  const persFil = document.getElementById('pers-fil');
+  const mevcutVal = persFil.value;
+  const persIsimler = [...new Set(data.map(r => r.ad_soyad))].sort();
+  persFil.innerHTML = '<option value="">Tüm Personel</option>' +
+    persIsimler.map(ad => `<option value="${ad}"${ad === mevcutVal ? ' selected' : ''}>${ad}</option>`).join('');
+  filterOdemeler();
 }
+
+function renderOdemeSatiri(r) {
+  const isMaas = r.kaynak === 'maas';
+  let detay = r.aciklama || '';
+  if (isMaas && r.detay) {
+    const d = r.detay;
+    const parcalar = [];
+    if (d.net) parcalar.push(`Net: ${fmt(d.net)}`);
+    if (d.yol) parcalar.push(`Yol: ${fmt(d.yol)}`);
+    if (d.mesai) parcalar.push(`Mesai: ${fmt(d.mesai)}`);
+    if (d.izin) parcalar.push(`İzin: ${fmt(d.izin)}`);
+    if (d.avans_dusum) parcalar.push(`Avans -${fmt(d.avans_dusum)}`);
+    detay = parcalar.join(' · ') + (r.aciklama ? ` (${r.aciklama})` : '');
+  }
+  const turBadge = isMaas
+    ? `<span style="background:var(--accent2);color:#000;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Maaş</span>`
+    : `<span style="background:var(--accent3);color:#fff;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Avans</span>`;
+  const silFn = isMaas ? `silMaas(${r.id})` : `silAvansById(${r.id})`;
+  return `<tr>
+    <td>${fmtDate(r.tarih)}</td>
+    <td>${r.ad_soyad || '—'}</td>
+    <td>${turBadge}</td>
+    <td style="font-size:11px;color:var(--text2)">${r.donem}</td>
+    <td style="text-align:right" class="${isMaas ? 'green' : 'yellow'}"><strong>${fmt(r.tutar)}</strong></td>
+    <td style="font-size:11px">${r.odeme_sekli || '—'}</td>
+    <td style="font-size:11px;color:var(--text2);max-width:220px;white-space:normal">${detay || '—'}</td>
+    <td style="white-space:nowrap">
+      ${isMaas ? `<button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button>` : ''}
+      <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="${silFn}">Sil</button>
+    </td>
+  </tr>`;
+}
+
+function filterOdemeler() {
+  const secilenAy  = document.getElementById('ay-sel').value;   // '' = hepsi
+  const secilenAd  = document.getElementById('pers-fil').value; // '' = hepsi
+  const yil        = yilSel.value;
+  const AYLAR = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+                 'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+  let filtered = allData;
+  if (secilenAy)  filtered = filtered.filter(r => new Date(r.tarih).getMonth() + 1 === parseInt(secilenAy));
+  if (secilenAd)  filtered = filtered.filter(r => r.ad_soyad === secilenAd);
+
+  let toplamMaas = 0, toplamAvans = 0;
+  filtered.forEach(r => {
+    if (r.kaynak === 'maas') toplamMaas += (r.tutar || 0);
+    else toplamAvans += (r.tutar || 0);
+  });
+
+  document.getElementById('odeme-tbody').innerHTML = filtered.length
+    ? filtered.map(renderOdemeSatiri).join('')
+    : `<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt yok</td></tr>`;
+
+  const donemEtiketi = secilenAy
+    ? `${AYLAR[parseInt(secilenAy)]} ${yil}${secilenAd ? ' · ' + secilenAd : ''}`
+    : `${yil} Tüm Yıl${secilenAd ? ' · ' + secilenAd : ''}`;
+
+  document.getElementById('maas-toplam').innerHTML =
+    `${donemEtiketi} — Maaş: <span class="green">${fmt(toplamMaas)}</span> &nbsp;|&nbsp; Avans: <span style="color:var(--accent3)">${fmt(toplamAvans)}</span> &nbsp;|&nbsp; Toplam: <span class="yellow">${fmt(toplamMaas + toplamAvans)}</span>`;
+}
+
 
 async function loadMaaslar() { return loadOdemeler(); }
 
