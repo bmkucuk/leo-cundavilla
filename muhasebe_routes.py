@@ -389,7 +389,65 @@ def api_maaslar():
         })
     return jsonify(result)
 
-@muh.route('/api/muhasebe/maas/ekle', methods=['POST'])
+@muh.route('/api/muhasebe/personel/odemeler')
+@admin_required
+def api_personel_odemeler():
+    """Maaş ve avans ödemelerini birleşik liste olarak döner."""
+    yil = request.args.get('yil', date.today().year, type=int)
+    conn = mdb.get_conn()
+    # Maaş ödemeleri
+    maas_rows = conn.execute("""
+        SELECT pm.id, pm.tarih, p.ad_soyad, pm.donem_ay, pm.donem_yil,
+               pm.net_odeme, COALESCE(pm.yol_parasi,0), COALESCE(pm.fazla_mesai,0),
+               COALESCE(pm.avans_dusum,0), COALESCE(pm.izin_parasi,0),
+               pm.odeme_banka, pm.aciklama, pm.personel_id
+        FROM personel_maas pm JOIN personel p ON pm.personel_id=p.id
+        WHERE pm.donem_yil=? ORDER BY pm.tarih ASC
+    """, (yil,)).fetchall()
+    # Avans ödemeleri
+    avans_rows = conn.execute("""
+        SELECT a.id, a.tarih, p.ad_soyad, a.tutar, a.odeme_sekli, a.aciklama, a.personel_id
+        FROM personel_avans a JOIN personel p ON p.id=a.personel_id
+        WHERE strftime('%Y', a.tarih)=? ORDER BY a.tarih ASC
+    """, (str(yil),)).fetchall()
+    conn.close()
+
+    AYLAR = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran',
+             'Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık']
+    ODEME = {'100':'Nakit','101':'Kasa 2','102':'Banka 1','103':'Banka 2',
+             '104':'Banka 3','105':'Banka 4','POS':'POS'}
+
+    result = []
+    for r in maas_rows:
+        net = r[5]; yol = r[6]; mesai = r[7]; avans_d = r[8]; izin = r[9]
+        toplam = net + yol + mesai + izin - avans_d
+        donem = f"{AYLAR[r[3]]} {r[4]}" if 1 <= r[3] <= 12 else f"{r[3]}/{r[4]}"
+        result.append({
+            'id': r[0], 'tarih': r[1], 'ad_soyad': r[2],
+            'tur': 'Maaş', 'donem': donem,
+            'tutar': toplam,
+            'detay': {'net': net, 'yol': yol, 'mesai': mesai, 'izin': izin, 'avans_dusum': avans_d},
+            'odeme_sekli': ODEME.get(r[10], r[10] or '—'),
+            'aciklama': r[11] or '',
+            'personel_id': r[12],
+            'kaynak': 'maas'
+        })
+    for r in avans_rows:
+        result.append({
+            'id': r[0], 'tarih': r[1], 'ad_soyad': r[2],
+            'tur': 'Avans', 'donem': '—',
+            'tutar': r[3],
+            'detay': {},
+            'odeme_sekli': ODEME.get(str(r[4]), str(r[4]) if r[4] else '—'),
+            'aciklama': r[5] or '',
+            'personel_id': r[6],
+            'kaynak': 'avans'
+        })
+
+    result.sort(key=lambda x: x['tarih'])
+    return jsonify(result)
+
+
 @admin_required
 def api_maas_ekle():
     try:
