@@ -582,6 +582,7 @@ async function saveAvans() {
   if (r.ok) {
     toast(editAvansId ? 'Avans güncellendi ✓' : 'Avans kaydedildi ✓');
     loadPersonel();
+    loadOdemeler();
     closeAvansModal();
   }
   else toast(r.error, 'error');
