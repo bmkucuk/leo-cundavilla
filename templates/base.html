@@ -330,7 +330,9 @@ async function loadAktifKullanicilarBadge() {
     const text = document.getElementById('aktif-badge-text');
     const dd = document.getElementById('aktif-kullanici-dropdown');
     if (!text) return;
-    text.textContent = liste.length ? liste.length + ' aktif' : 'Yalnız sensin';
+    text.textContent = liste.length
+      ? (liste.length <= 2 ? liste.map(u => u.kullanici).join(', ') : liste.length + ' aktif')
+      : 'Yalnız sensin';
     nokta.style.background = liste.length ? 'var(--pos)' : 'var(--text2)';
     dd.innerHTML = liste.length
       ? liste.map(u => `
