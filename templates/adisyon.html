@@ -25,7 +25,13 @@
     <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:16px">＋ Yeni Adisyon</div>
     <div class="form-group" style="margin-bottom:14px">
       <label>Föy / Misafir</label>
-      <select id="a-foy" onchange="onFoyChange()"></select>
+      <div id="a-foy-combo" style="position:relative">
+        <input type="text" id="a-foy-search" autocomplete="off" placeholder="Föy no veya misafir adı yazın…"
+          onfocus="openFoyList()" oninput="filterFoyList()" onkeydown="foyKeydown(event)"
+          style="width:100%;cursor:pointer">
+        <input type="hidden" id="a-foy">
+        <div id="a-foy-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:260px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:40"></div>
+      </div>
       <div id="a-misafir-info" style="color:var(--text2);font-size:11.5px;margin-top:6px;min-height:16px"></div>
     </div>
     <div class="form-row" style="display:grid;grid-template-columns:90px 1fr;gap:10px;margin-bottom:14px">
@@ -141,17 +147,22 @@ function initials(name){
 }
 
 async function load() {
+  const oncekiFoy = document.getElementById('a-foy').value;  // kayıt sonrası seçimi koru
   const d = await api('/api/adisyonlar');
   allAdisyonlar = d.adisyonlar;
   foyListesi = d.foy_listesi.slice().sort((a,b) => b.foy_no - a.foy_no);
 
-  // Föy select
-  const foySelect = document.getElementById('a-foy');
-  foySelect.innerHTML = foyListesi.map(f =>
-    `<option value="${f.foy_no}">#${f.foy_no} — ${f.musteri} (Oda ${f.oda_no})</option>`
-  ).join('');
+  // Aranabilir föy listesini doldur
+  renderFoyList('');
 
-  // Föy filter
+  // Önceki föy seçimini geri yükle (yoksa ilk föy)
+  if (oncekiFoy && foyListesi.some(f => f.foy_no == oncekiFoy)) {
+    selectFoy(parseInt(oncekiFoy), false);
+  } else if (foyListesi.length) {
+    selectFoy(foyListesi[0].foy_no, false);
+  }
+
+  // Föy filter (tablo üstü)
   const foyFilter = document.getElementById('foy-filter');
   const curFilter = foyFilter.value;
   foyFilter.innerHTML = '<option value="">Tüm Föyler</option>' +
@@ -162,10 +173,74 @@ async function load() {
   const maxNo = allAdisyonlar.reduce((m, a) => Math.max(m, a.adisyon_no||0), 0);
   document.getElementById('a-no').value = maxNo + 1;
 
-  onFoyChange();
   renderStats();
   filterTable();
 }
+
+// ── Aranabilir Föy seçici ───────────────────────────────────────────────────
+let foyAktifIndex = -1;
+
+function renderFoyList(q) {
+  const liste = document.getElementById('a-foy-list');
+  const ql = (q || '').toLowerCase().trim();
+  const filtreli = ql
+    ? foyListesi.filter(f => (`${f.foy_no} ${f.musteri} ${f.oda_no}`).toLowerCase().includes(ql))
+    : foyListesi;
+  foyAktifIndex = -1;
+  if (!filtreli.length) {
+    liste.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--text2)">Eşleşen föy yok</div>';
+    return;
+  }
+  liste.innerHTML = filtreli.map((f, i) => `
+    <div class="foy-opt" data-foy="${f.foy_no}" onmousedown="event.preventDefault();selectFoy(${f.foy_no},true)"
+      style="padding:8px 12px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--border)">
+      <span style="font-family:'Geist Mono',monospace;color:var(--accent2)">#${f.foy_no}</span>
+      — ${f.musteri} <span style="color:var(--text2)">(Oda ${f.oda_no})</span>
+    </div>`).join('');
+}
+
+function openFoyList() {
+  const inp = document.getElementById('a-foy-search');
+  inp.value = '';
+  renderFoyList('');
+  document.getElementById('a-foy-list').style.display = 'block';
+}
+
+function filterFoyList() {
+  renderFoyList(document.getElementById('a-foy-search').value);
+  document.getElementById('a-foy-list').style.display = 'block';
+}
+
+function selectFoy(foyNo, kapat) {
+  const f = foyListesi.find(x => x.foy_no === foyNo);
+  if (!f) return;
+  document.getElementById('a-foy').value = foyNo;
+  document.getElementById('a-foy-search').value = `#${f.foy_no} — ${f.musteri} (Oda ${f.oda_no})`;
+  document.getElementById('a-misafir-info').textContent = `Misafir: ${f.musteri} · Oda ${f.oda_no}`;
+  if (kapat) document.getElementById('a-foy-list').style.display = 'none';
+}
+
+function foyKeydown(e) {
+  const liste = document.getElementById('a-foy-list');
+  const opts = [...liste.querySelectorAll('.foy-opt')];
+  if (e.key === 'ArrowDown') { e.preventDefault(); foyAktifIndex = Math.min(foyAktifIndex+1, opts.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); foyAktifIndex = Math.max(foyAktifIndex-1, 0); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (opts[foyAktifIndex]) selectFoy(parseInt(opts[foyAktifIndex].dataset.foy), true);
+    return;
+  } else if (e.key === 'Escape') { liste.style.display = 'none'; return; }
+  else return;
+  opts.forEach((o,i) => o.style.background = i===foyAktifIndex ? 'var(--card2)' : '');
+  if (opts[foyAktifIndex]) opts[foyAktifIndex].scrollIntoView({block:'nearest'});
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#a-foy-combo')) {
+    const l = document.getElementById('a-foy-list');
+    if (l) l.style.display = 'none';
+  }
+});
 
 function renderStats(){
   const toplam = allAdisyonlar.reduce((s,a)=>s+(a.tutar||0),0);
@@ -175,15 +250,6 @@ function renderStats(){
   document.getElementById('st-toplam').textContent = fmt(toplam);
   document.getElementById('st-acik').textContent   = fmt(acik);
   document.getElementById('st-bugun').textContent  = fmt(bugun);
-}
-
-function onFoyChange() {
-  const foy = parseInt(document.getElementById('a-foy').value);
-  const r = foyListesi.find(f => f.foy_no === foy);
-  if (r) {
-    document.getElementById('a-misafir-info').textContent =
-      `Misafir: ${r.musteri} · Oda ${r.oda_no}`;
-  }
 }
 
 function filterTable() {
@@ -248,7 +314,7 @@ async function addAdisyon() {
   const no  = parseInt(document.getElementById('a-no').value);
   const tutar = parseFloat(document.getElementById('a-tutar').value);
   if (!validateForm([
-    {id:'a-foy',   label:'Föy No'},
+    {id:'a-foy-search', label:'Föy No'},
     {id:'a-tarih', label:'Tarih'},
     {id:'a-tutar', label:'Tutar'},
   ])) return;
