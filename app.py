@@ -193,9 +193,6 @@ def _islem_logla(response):
             kaynak = request.get_json(silent=True) or request.form
             if kaynak:
                 for k, v in list(kaynak.items())[:8]:
-                    kl = k.lower()
-                    if 'sifre' in kl or 'password' in kl or 'hash' in kl:
-                        continue
                     deger = str(v)
                     if len(deger) > 60:
                         deger = deger[:60] + '…'
