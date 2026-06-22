@@ -1371,8 +1371,9 @@ def excel_yedek_olustur():
 
 def yedek_mail_gonder():
     """Excel yedeğini oluşturup cundavilla@gmail.com'a gönderir."""
-    gmail_user = os.environ.get('GMAIL_USER', 'cundavilla@gmail.com')
+    gmail_user = os.environ.get('GMAIL_USER', 'bmkucuk@gmail.com')
     gmail_pass = os.environ.get('GMAIL_APP_PASSWORD', '')
+    alici      = 'cundavilla@gmail.com'
     if not gmail_pass:
         print('[YEDEK] GMAIL_APP_PASSWORD tanımlı değil, mail atlanıyor.')
         return
@@ -1382,7 +1383,7 @@ def yedek_mail_gonder():
 
         msg = MIMEMultipart()
         msg['From']    = gmail_user
-        msg['To']      = gmail_user
+        msg['To']      = alici
         msg['Subject'] = f"🏨 Otel Yönetim Günlük Yedek — {bugun().strftime('%d.%m.%Y')}"
         msg.attach(MIMEText(
             f"Merhaba,\n\nOtel Leo & Cunda Villa yönetim sistemi günlük yedeği ektedir.\n"
