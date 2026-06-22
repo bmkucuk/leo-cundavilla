@@ -8,21 +8,23 @@
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
     <div>
       <label style="display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">Kullanıcı</label>
-      <select id="f-kullanici" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
+      <select id="f-kullanici" onchange="loadLoglar()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
         <option value="">Hepsi</option>
       </select>
     </div>
     <div>
       <label style="display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">Başlangıç</label>
-      <input type="date" id="f-baslangic" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
+      <input type="date" id="f-baslangic" onchange="loadLoglar()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
     </div>
     <div>
       <label style="display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">Bitiş</label>
-      <input type="date" id="f-bitis" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
+      <input type="date" id="f-bitis" onchange="loadLoglar()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
     </div>
     <div style="flex:1;min-width:180px">
       <label style="display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px">Ara</label>
-      <input type="text" id="f-arama" placeholder="işlem, modül veya yol içinde ara…" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
+      <input type="text" id="f-arama" placeholder="işlem, modül veya yol içinde ara…"
+        oninput="aramaDebounce()"
+        style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px">
     </div>
     <button onclick="loadLoglar()" style="background:var(--accent);color:#0d1117;border:none;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">Filtrele</button>
   </div>
@@ -38,17 +40,118 @@
     <tbody id="log-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
+
+<!-- Detay Modal -->
+<div class="modal-overlay" id="detay-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-width:520px">
+    <h2>📋 İşlem Detayı</h2>
+    <div id="detay-meta" style="margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.8"></div>
+    <div style="background:var(--card2);border-radius:8px;padding:14px;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse" id="detay-tablo"></table>
+    </div>
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn btn-default" onclick="document.getElementById('detay-modal').classList.remove('open')">Kapat</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+let _debounceTimer = null;
+function aramaDebounce() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(loadLoglar, 400);
+}
+
+const islemEtiket = {
+  giris: '🟢 Giriş', cikis: '⚪ Çıkış',
+  giris_basarisiz: '🔴 Başarısız Giriş',
+  sifre_degistir: '🔑 Şifre Değişti',
+  islem: '✏️ İşlem'
+};
+
+const yolEtiket = {
+  '/api/muhasebe/maas/ekle':              'Maaş Eklendi',
+  '/api/muhasebe/personel/maas/guncelle': 'Maaş Güncellendi',
+  '/api/muhasebe/personel/maas/sil':      'Maaş Silindi',
+  '/api/muhasebe/avans/ekle':             'Avans Eklendi',
+  '/api/muhasebe/avans/guncelle':         'Avans Güncellendi',
+  '/api/muhasebe/avans/sil':              'Avans Silindi',
+  '/api/muhasebe/personel/ekle':          'Personel Eklendi',
+  '/api/muhasebe/personel/guncelle':      'Personel Güncellendi',
+  '/api/muhasebe/personel/sil':           'Personel Silindi',
+  '/api/muhasebe/kasa/ekle':              'Kasa Hareketi Eklendi',
+  '/api/muhasebe/kasa/sil':               'Kasa Hareketi Silindi',
+  '/api/muhasebe/banka/ekle':             'Banka Hareketi Eklendi',
+  '/api/muhasebe/banka/sil':              'Banka Hareketi Silindi',
+  '/api/rezervasyon/ekle':                'Rezervasyon Eklendi',
+  '/api/rezervasyon/guncelle':            'Rezervasyon Güncellendi',
+  '/api/rezervasyon/sil':                 'Rezervasyon Silindi',
+  '/api/tahsilat/ekle':                   'Tahsilat Eklendi',
+  '/api/tahsilat/sil':                    'Tahsilat Silindi',
+};
+
+const alanEtiket = {
+  tarih: 'Tarih', personel_id: 'Personel ID', donem_yil: 'Dönem Yılı',
+  donem_ay: 'Dönem Ayı', net_odeme: 'Net Ödeme', odeme_banka: 'Ödeme Şekli',
+  yol_parasi: 'Yol Parası', fazla_mesai: 'Fazla Mesai', izin_parasi: 'İzin Parası',
+  gelmedi_gun: 'Gelmediği Gün', avans_dusum: 'Avans Düşüm', tutar: 'Tutar',
+  aciklama: 'Açıklama', id: 'Kayıt ID', oda_no: 'Oda No',
+  musteri_adi: 'Müşteri Adı', giris: 'Giriş Tarihi', cikis: 'Çıkış Tarihi',
+  fiyat: 'Fiyat', odeme: 'Ödeme Şekli', kapora: 'Kapora',
+  ad_soyad: 'Ad Soyad', gorev: 'Görev', net_maas: 'Net Maaş',
+  odeme_sekli: 'Ödeme Şekli', personel_id: 'Personel',
+};
+
+function ozetSatirlar(ozet) {
+  if (!ozet || ozet.trim() === '') return [];
+  // "key=değer, key=değer" formatını parse et
+  const satirlar = [];
+  // virgülle böl ama değer içindeki virgüllere dikkat et
+  const regex = /([a-zA-Z_]+)=([^=]+?)(?=,\s*[a-zA-Z_]+=|$)/g;
+  let m;
+  while ((m = regex.exec(ozet)) !== null) {
+    const key = m[1].trim();
+    const val = m[2].trim();
+    if (key && val) satirlar.push({ key, val });
+  }
+  // parse başarısız olduysa ham göster
+  if (!satirlar.length) satirlar.push({ key: 'Detay', val: ozet });
+  return satirlar;
+}
+
+function detayGoster(log) {
+  const modal = document.getElementById('detay-modal');
+  // Meta bilgiler
+  const islemAdi = yolEtiket[log.yol] || islemEtiket[log.islem_tipi] || log.islem_tipi;
+  document.getElementById('detay-meta').innerHTML = `
+    <div><strong>Zaman:</strong> ${log.zaman}</div>
+    <div><strong>Kullanıcı:</strong> ${log.kullanici} &nbsp;·&nbsp; <strong>Rol:</strong> ${log.rol || '—'}</div>
+    <div><strong>İşlem:</strong> ${islemAdi}</div>
+    <div><strong>Yol:</strong> <code style="font-size:11px;color:var(--accent2)">${log.yol || '—'}</code></div>
+  `;
+  // Özet satırları
+  const satirlar = ozetSatirlar(log.ozet);
+  document.getElementById('detay-tablo').innerHTML = satirlar.map(s => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 10px;font-size:12px;color:var(--text2);white-space:nowrap;width:40%">
+        ${alanEtiket[s.key] || s.key}
+      </td>
+      <td style="padding:7px 10px;font-size:13px;font-weight:600;color:var(--text)">
+        ${s.val}
+      </td>
+    </tr>`).join('');
+  modal.classList.add('open');
+}
+
 async function loadLoglar() {
   const params = new URLSearchParams();
-  const k = document.getElementById('f-kullanici').value;
+  const k  = document.getElementById('f-kullanici').value;
   const b1 = document.getElementById('f-baslangic').value;
   const b2 = document.getElementById('f-bitis').value;
   const ar = document.getElementById('f-arama').value;
-  if (k) params.set('kullanici', k);
+  if (k)  params.set('kullanici', k);
   if (b1) params.set('baslangic', b1);
   if (b2) params.set('bitis', b2);
   if (ar) params.set('arama', ar);
@@ -66,23 +169,24 @@ async function loadLoglar() {
     });
   }
 
-  const islemEtiket = {
-    giris: '🟢 Giriş', cikis: '⚪ Çıkış', giris_basarisiz: '🔴 Başarısız Giriş',
-    sifre_degistir: '🔑 Şifre Değişti', islem: '✏️ İşlem'
-  };
-
   const tbody = document.getElementById('log-tbody');
-  tbody.innerHTML = loglar.length ? loglar.map(l => `
-    <tr>
+  tbody.innerHTML = loglar.length ? loglar.map(l => {
+    const ozKisa = (l.ozet || '').length > 60
+      ? (l.ozet || '').slice(0, 60) + '…'
+      : (l.ozet || '—');
+    const islemAdi = yolEtiket[l.yol] || islemEtiket[l.islem_tipi] || l.islem_tipi;
+    const satirData = encodeURIComponent(JSON.stringify(l));
+    return `<tr style="cursor:pointer" onclick='detayGoster(${JSON.stringify(l)})' title="Detay için tıklayın">
       <td style="white-space:nowrap;font-family:'Geist Mono',monospace;font-size:12px">${l.zaman}</td>
       <td>${l.kullanici}</td>
       <td>${l.rol || '—'}</td>
-      <td>${islemEtiket[l.islem_tipi] || l.islem_tipi}</td>
+      <td>${islemAdi}</td>
       <td style="font-size:12px;color:var(--text2)">${l.modul || '—'}</td>
       <td style="font-size:12px;color:var(--text2);font-family:'Geist Mono',monospace">${l.yol || '—'}</td>
-      <td style="font-size:12px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.ozet||'').replace(/"/g,'&quot;')}">${l.ozet || '—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${ozKisa}</td>
       <td class="${l.durum && l.durum < 400 ? 'green' : 'red'}">${l.durum || '—'}</td>
-    </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt bulunamadı</td></tr>';
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt bulunamadı</td></tr>';
 }
 loadLoglar();
 </script>
