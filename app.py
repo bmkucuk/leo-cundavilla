@@ -1484,6 +1484,19 @@ def api_geri_yukle():
                     (col(r,0), tarih, col(r,2) or '', col(r,3) or '', col(r,4) or '', col(r,5) or 0, col(r,6), col(r,7), yil, ay))
             ozet['yevmiye'] = len(rows)
 
+        # PERSONEL (önce personel yüklenmeli ki maaş/avans ID'leri eşleşsin)
+        if 'PERSONEL' in wb.sheetnames:
+            ws = wb['PERSONEL']
+            rows = list(ws.iter_rows(min_row=2, values_only=True))
+            rows = [r for r in rows if any(v for v in r)]
+            conn_m.execute("DELETE FROM personel")
+            for r in rows:
+                conn_m.execute(
+                    "INSERT INTO personel(ad_soyad,ise_giris,gorev,net_maas,banka_iban,tc_kimlik,telefon,aktif) VALUES(?,?,?,?,?,?,?,?)",
+                    (col(r,0) or '', col(r,1), col(r,2), col(r,3) or 0,
+                     col(r,4), col(r,5), col(r,6), col(r,7) if col(r,7) is not None else 1))
+            ozet['personel'] = len(rows)
+
         # PERSONEL MAAS
         if 'PERSONEL MAAS' in wb.sheetnames:
             ws = wb['PERSONEL MAAS']
