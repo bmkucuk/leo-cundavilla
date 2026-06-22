@@ -46,7 +46,7 @@
   <div class="modal" style="max-width:520px">
     <h2>📋 İşlem Detayı</h2>
     <div id="detay-meta" style="margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.8"></div>
-    <div style="background:var(--card2);border-radius:8px;padding:14px;border:1px solid var(--border)">
+    <div id="detay-kutu" style="background:var(--card2);border-radius:8px;padding:14px;border:1px solid var(--border)">
       <table style="width:100%;border-collapse:collapse" id="detay-tablo"></table>
     </div>
     <div class="modal-footer" style="margin-top:16px">
@@ -105,25 +105,21 @@ const alanEtiket = {
 };
 
 function ozetSatirlar(ozet) {
-  if (!ozet || ozet.trim() === '') return [];
-  // "key=değer, key=değer" formatını parse et
-  const satirlar = [];
-  // virgülle böl ama değer içindeki virgüllere dikkat et
+  if (!ozet || ozet.trim() === '') return null;
+  // key=değer formatında mı? En az bir "kelime=" içermeli
   const regex = /([a-zA-Z_]+)=([^=]+?)(?=,\s*[a-zA-Z_]+=|$)/g;
+  const satirlar = [];
   let m;
   while ((m = regex.exec(ozet)) !== null) {
     const key = m[1].trim();
     const val = m[2].trim();
     if (key && val) satirlar.push({ key, val });
   }
-  // parse başarısız olduysa ham göster
-  if (!satirlar.length) satirlar.push({ key: 'Detay', val: ozet });
-  return satirlar;
+  return satirlar.length >= 2 ? satirlar : null; // 2'den az eşleşme → düz metin say
 }
 
 function detayGoster(log) {
   const modal = document.getElementById('detay-modal');
-  // Meta bilgiler
   const islemAdi = yolEtiket[log.yol] || islemEtiket[log.islem_tipi] || log.islem_tipi;
   document.getElementById('detay-meta').innerHTML = `
     <div><strong>Zaman:</strong> ${log.zaman}</div>
@@ -131,17 +127,34 @@ function detayGoster(log) {
     <div><strong>İşlem:</strong> ${islemAdi}</div>
     <div><strong>Yol:</strong> <code style="font-size:11px;color:var(--accent2)">${log.yol || '—'}</code></div>
   `;
-  // Özet satırları
+
   const satirlar = ozetSatirlar(log.ozet);
-  document.getElementById('detay-tablo').innerHTML = satirlar.map(s => `
-    <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:7px 10px;font-size:12px;color:var(--text2);white-space:nowrap;width:40%">
-        ${alanEtiket[s.key] || s.key}
-      </td>
-      <td style="padding:7px 10px;font-size:13px;font-weight:600;color:var(--text)">
-        ${s.val}
-      </td>
-    </tr>`).join('');
+  const kutu = document.getElementById('detay-kutu');
+  const tablo = document.getElementById('detay-tablo');
+
+  if (satirlar) {
+    // key=değer formatı → tablo göster
+    kutu.style.display = '';
+    tablo.innerHTML = satirlar.map(s => `
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 10px;font-size:12px;color:var(--text2);white-space:nowrap;width:40%">
+          ${alanEtiket[s.key] || s.key}
+        </td>
+        <td style="padding:7px 10px;font-size:13px;font-weight:600;color:var(--text)">
+          ${s.val}
+        </td>
+      </tr>`).join('');
+  } else {
+    // Düz metin → bilgi kutusu olarak göster
+    kutu.style.display = '';
+    tablo.innerHTML = `
+      <tr>
+        <td colspan="2" style="padding:12px 10px;font-size:14px;color:var(--text);text-align:center">
+          ${log.ozet || 'Detay bilgisi yok'}
+        </td>
+      </tr>`;
+  }
+
   modal.classList.add('open');
 }
 
