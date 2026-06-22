@@ -32,12 +32,12 @@
   </div>
 </div>
 
-<!-- Alt: Maaş Ödemeleri -->
+<!-- Alt: Personel Ödemeleri (Maaş + Avans) -->
 <div class="panel">
   <div class="toolbar" style="margin-bottom:10px">
-    <div class="section-title" style="margin:0;border:0">💰 Maaş Ödemeleri</div>
+    <div class="section-title" style="margin:0;border:0">💰 Personel Ödemeleri</div>
     <label style="color:var(--text2);font-size:12px">Yıl:</label>
-    <select class="filter" id="yil-sel" onchange="loadMaaslar()"></select>
+    <select class="filter" id="yil-sel" onchange="loadOdemeler()"></select>
     <div style="flex:1"></div>
     <button class="btn" style="font-size:12px;padding:6px 12px;background:var(--accent2);color:#000;margin-right:6px" onclick="openAvansModalDirect()">💰 Avans Ödemesi</button>
     <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMaasModal()">＋ Maaş Ödemesi</button>
@@ -45,17 +45,16 @@
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th>Tarih</th><th>Personel</th><th>Dönem</th>
-        <th style="text-align:right">Net Maaş</th>
-        <th style="text-align:right">Yol</th>
-        <th style="text-align:right">Fazla Mesai</th>
-        <th style="text-align:right">İzin</th>
-        <th style="text-align:right">Gelmediği</th>
-        <th style="text-align:right">Avans</th>
-        <th style="text-align:right">Toplam</th>
-        <th>Ödeme</th><th></th>
+        <th>Tarih</th>
+        <th>Personel</th>
+        <th>Tür</th>
+        <th>Dönem</th>
+        <th style="text-align:right">Tutar</th>
+        <th>Ödeme Şekli</th>
+        <th>Açıklama / Detay</th>
+        <th></th>
       </tr></thead>
-      <tbody id="maas-tbody"><tr class="loading-row"><td colspan="11"><span class="spinner"></span></td></tr></tbody>
+      <tbody id="odeme-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
   <div id="maas-toplam" style="margin-top:8px;font-size:13px;color:var(--accent2);font-weight:700"></div>
@@ -318,42 +317,66 @@ async function loadPersonel() {
     </tr>`).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:16px">Açık avans bakiyesi yok</td></tr>';
 }
 
-async function loadMaaslar() {
+async function loadOdemeler() {
   const yil = yilSel.value;
-  const data = await api(`/api/muhasebe/maaslar?yil=${yil}`);
+  const data = await api(`/api/muhasebe/personel/odemeler?yil=${yil}`);
   allData = data;
-  let toplam = 0;
-  const AYLAR = ['','Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-  document.getElementById('maas-tbody').innerHTML = data.map(r => {
-    const toplamOdeme = (r.net_odeme||0)+(r.yol_parasi||0)+(r.fazla_mesai||0)+(r.izin_parasi||0)-(r.avans_dusum||0);
-    toplam += toplamOdeme;
+  let toplamMaas = 0, toplamAvans = 0;
+  document.getElementById('odeme-tbody').innerHTML = data.length ? data.map(r => {
+    const isMaas = r.kaynak === 'maas';
+    if (isMaas) toplamMaas += (r.tutar || 0);
+    else toplamAvans += (r.tutar || 0);
+    // Detay satırı
+    let detay = r.aciklama || '';
+    if (isMaas && r.detay) {
+      const d = r.detay;
+      const parcalar = [];
+      if (d.net) parcalar.push(`Net: ${fmt(d.net)}`);
+      if (d.yol) parcalar.push(`Yol: ${fmt(d.yol)}`);
+      if (d.mesai) parcalar.push(`Mesai: ${fmt(d.mesai)}`);
+      if (d.izin) parcalar.push(`İzin: ${fmt(d.izin)}`);
+      if (d.avans_dusum) parcalar.push(`Avans -${fmt(d.avans_dusum)}`);
+      detay = parcalar.join(' · ') + (r.aciklama ? ` (${r.aciklama})` : '');
+    }
+    const turBadge = isMaas
+      ? `<span style="background:var(--accent2);color:#000;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Maaş</span>`
+      : `<span style="background:var(--accent3);color:#fff;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700">Avans</span>`;
+    const silFn = isMaas ? `silMaas(${r.id})` : `silAvansById(${r.id})`;
+    const duzFn = isMaas ? `duzenle(${r.id})` : ``;
     return `<tr>
       <td>${fmtDate(r.tarih)}</td>
-      <td>${r.ad_soyad||'—'}</td>
-      <td>${AYLAR[r.donem_ay]||r.donem_ay} ${r.donem_yil}</td>
-      <td style="text-align:right" class="yellow">${fmt(r.net_odeme)}</td>
-      <td style="text-align:right">${(r.yol_parasi||0)>0?fmt(r.yol_parasi):'—'}</td>
-      <td style="text-align:right">${(r.fazla_mesai||0)>0?fmt(r.fazla_mesai):'—'}</td>
-      <td style="text-align:right">${(r.izin_parasi||0)>0?fmt(r.izin_parasi):'—'}</td>
-      <td style="text-align:right;color:var(--accent3)">${(r.gelmedi_gun||0)>0?r.gelmedi_gun+' gün':'—'}</td>
-      <td style="text-align:right;color:var(--accent3)">${(r.avans_dusum||0)>0?'-'+fmt(r.avans_dusum):'—'}</td>
-      <td style="text-align:right" class="green"><strong>${fmt(toplamOdeme)}</strong></td>
-      <td style="font-size:11px">${r.odeme_banka==="100"?"Nakit":r.odeme_banka==="102-1"?"Is Bankasi":r.odeme_banka==="102-2"?"Ziraat":r.odeme_banka==="102-3"?"Deniz Bank":r.odeme_banka||"--"}</td>
+      <td>${r.ad_soyad || '—'}</td>
+      <td>${turBadge}</td>
+      <td style="font-size:11px;color:var(--text2)">${r.donem}</td>
+      <td style="text-align:right" class="${isMaas ? 'green' : 'yellow'}"><strong>${fmt(r.tutar)}</strong></td>
+      <td style="font-size:11px">${r.odeme_sekli || '—'}</td>
+      <td style="font-size:11px;color:var(--text2);max-width:220px;white-space:normal">${detay || '—'}</td>
       <td style="white-space:nowrap">
-        <button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button>
-        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="silMaas(${r.id})">Sil</button>
+        ${isMaas ? `<button class="btn" style="padding:3px 8px;font-size:11px;margin-right:4px;background:var(--accent4);color:#000" onclick="duzenle(${r.id})">Düzenle</button>` : ''}
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="${silFn}">Sil</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:20px">Maaş kaydı yok</td></tr>';
-  document.getElementById('maas-toplam').textContent = `${yil} Yılı Toplam: ${fmt(toplam)}`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt yok</td></tr>`;
+  document.getElementById('maas-toplam').innerHTML =
+    `${yil} — Maaş Toplamı: <span class="green">${fmt(toplamMaas)}</span> &nbsp;|&nbsp; Avans Toplamı: <span style="color:var(--accent3)">${fmt(toplamAvans)}</span>`;
 }
+
+async function loadMaaslar() { return loadOdemeler(); }
 
 async function silMaas(id) {
   if (!confirm('Bu maaş kaydı silinsin mi?')) return;
   const r = await api('/api/muhasebe/personel/maas/sil', {id});
-  if (r.ok) { toast('Silindi ✓'); loadMaaslar(); }
+  if (r.ok) { toast('Silindi ✓'); loadOdemeler(); }
   else toast(r.error, 'error');
 }
+
+async function silAvansById(id) {
+  if (!confirm('Bu avans kaydı silinsin mi?')) return;
+  const r = await api('/api/muhasebe/avans/sil', {id});
+  if (r.ok) { toast('Silindi ✓'); loadOdemeler(); loadPersonel(); }
+  else toast(r.error, 'error');
+}
+
 
 let editPersId = null;
 
