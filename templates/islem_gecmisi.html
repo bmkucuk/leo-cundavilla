@@ -93,7 +93,7 @@ const yolEtiket = {
 };
 
 const alanEtiket = {
-  tarih: 'Tarih', personel_id: 'Personel ID', donem_yil: 'Dönem Yılı',
+  tarih: 'Tarih', personel_id: 'Personel', donem_yil: 'Dönem Yılı',
   donem_ay: 'Dönem Ayı', net_odeme: 'Net Ödeme', odeme_banka: 'Ödeme Şekli',
   yol_parasi: 'Yol Parası', fazla_mesai: 'Fazla Mesai', izin_parasi: 'İzin Parası',
   gelmedi_gun: 'Gelmediği Gün', avans_dusum: 'Avans Düşüm', tutar: 'Tutar',
@@ -101,8 +101,19 @@ const alanEtiket = {
   musteri_adi: 'Müşteri Adı', giris: 'Giriş Tarihi', cikis: 'Çıkış Tarihi',
   fiyat: 'Fiyat', odeme: 'Ödeme Şekli', kapora: 'Kapora',
   ad_soyad: 'Ad Soyad', gorev: 'Görev', net_maas: 'Net Maaş',
-  odeme_sekli: 'Ödeme Şekli', personel_id: 'Personel',
+  odeme_sekli: 'Ödeme Şekli',
 };
+
+// Personel ID → Ad Soyad haritası
+let personelMap = {};
+api('/api/muhasebe/personel').then(liste => {
+  liste.forEach(p => { personelMap[String(p.id)] = p.ad_soyad; });
+}).catch(() => {});
+
+function degerCevir(key, val) {
+  if (key === 'personel_id' && personelMap[val]) return personelMap[val];
+  return val;
+}
 
 function ozetSatirlar(ozet) {
   if (!ozet || ozet.trim() === '') return null;
@@ -141,7 +152,7 @@ function detayGoster(log) {
           ${alanEtiket[s.key] || s.key}
         </td>
         <td style="padding:7px 10px;font-size:13px;font-weight:600;color:var(--text)">
-          ${s.val}
+          ${degerCevir(s.key, s.val)}
         </td>
       </tr>`).join('');
   } else {
