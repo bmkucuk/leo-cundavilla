@@ -39,7 +39,8 @@
     <label style="color:var(--text2);font-size:12px">Yıl:</label>
     <select class="filter" id="yil-sel" onchange="loadMaaslar()"></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMaasModal()">＋ Maaş Ekle</button>
+    <button class="btn" style="font-size:12px;padding:6px 12px;background:var(--accent2);color:#000;margin-right:6px" onclick="openAvansModalDirect()">💰 Avans Ödemesi</button>
+    <button class="btn btn-primary" style="font-size:12px;padding:6px 12px" onclick="openMaasModal()">＋ Maaş Ödemesi</button>
   </div>
   <div class="table-wrap">
     <table>
@@ -130,7 +131,6 @@
     <div class="form-row single"><div class="form-group"><label>Personel</label><select id="m-pers" onchange="onPersChange()"></select></div></div>
     <div class="form-row single" style="margin-top:-8px;margin-bottom:8px">
       <div style="display:flex;gap:8px">
-        <button type="button" class="btn" style="font-size:11px;padding:5px 10px;background:var(--accent2);color:#000" onclick="avansVerFromMaas()">💰 Avans Ver</button>
         <button type="button" class="btn" style="font-size:11px;padding:5px 10px;background:var(--card2);color:var(--text2)" onclick="avansGecmisiFromMaas()">📋 Avans Geçmişi</button>
       </div>
     </div>
@@ -486,10 +486,51 @@ function avansGecmisiFromMaas() {
   avansGecmisi(persId, ad);
 }
 
+function openAvansModalDirect() {
+  // Personel listesinden ilkini seç ya da modal içinde seçim yapılacak
+  const perseller = personelList.filter(p => p.durum === 'aktif');
+  if (!perseller.length) { toast('Aktif personel bulunamadı', 'error'); return; }
+  // Avans modalını aç; kullanıcı modal içinde personel seçebilir
+  avansPersonelId = perseller[0].id;
+  avansPersonelAd = perseller[0].ad_soyad;
+  editAvansId = null;
+  // Personel seçim dropdown'u oluştur (modal başlığı yerine)
+  document.getElementById('avans-modal-baslik').textContent = '💰 Avans Ödemesi';
+  // Eğer personel seçim alanı yoksa ilk personeli kullan
+  document.getElementById('av-tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('av-tutar').value = 0;
+  document.getElementById('av-odeme').value = '100';
+  document.getElementById('av-aciklama').value = '';
+  // Personel select oluştur/güncelle
+  let persSelWrap = document.getElementById('avans-pers-row');
+  if (!persSelWrap) {
+    persSelWrap = document.createElement('div');
+    persSelWrap.id = 'avans-pers-row';
+    persSelWrap.className = 'form-row single';
+    persSelWrap.style.cssText = 'margin-bottom:12px';
+    persSelWrap.innerHTML = '<div class="form-group"><label>Personel</label><select id="avans-pers-sel" onchange="onAvansPersonelChange(this)"></select></div>';
+    const firstField = document.querySelector('#avans-modal .form-row:first-of-type');
+    firstField.parentNode.insertBefore(persSelWrap, firstField);
+  }
+  const sel = document.getElementById('avans-pers-sel');
+  sel.innerHTML = perseller.map(p => `<option value="${p.id}">${p.ad_soyad}</option>`).join('');
+  sel.value = perseller[0].id;
+  persSelWrap.style.display = '';
+  document.getElementById('avans-modal').classList.add('open');
+}
+
+function onAvansPersonelChange(sel) {
+  avansPersonelId = parseInt(sel.value);
+  avansPersonelAd = sel.options[sel.selectedIndex].textContent;
+}
+
 function avansVer(id, ad) {
   avansPersonelId = id;
   avansPersonelAd = ad;
   editAvansId = null;
+  // Doğrudan açılışta personel seçim satırını gizle
+  const persRow = document.getElementById('avans-pers-row');
+  if (persRow) persRow.style.display = 'none';
   document.getElementById('avans-modal-baslik').textContent = `💰 ${ad} - Avans Ver`;
   document.getElementById('av-tarih').value = new Date().toISOString().split('T')[0];
   document.getElementById('av-tutar').value = 0;
