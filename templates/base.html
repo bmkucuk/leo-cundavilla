@@ -205,11 +205,11 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
   </nav>
   <div class="sidebar-bottom">
     {% if session.get('role') in ['admin', 'partner'] %}
-    <a href="/import" class="btn-sm">📥 Excel Aktar</a>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-      <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:700;text-transform:uppercase">Yedekle</div>
-      <a href="/yedekleme-talimati" class="btn-sm" style="margin-bottom:8px;color:var(--accent4)">📋 Yedekleme Talimatı</a>
-    </div>
+    {% if session.get('role') in ['admin', 'partner'] %}
+    <a href="/yedek/excel" class="btn-sm" style="margin-bottom:6px">📥 Yedek Al (Excel)</a>
+    {% endif %}
+    {% if session.get('role') == 'admin' %}
+    <a href="/geri-yukle" class="btn-sm" style="margin-bottom:6px;color:var(--accent4)">📤 Geri Yükle</a>
     {% endif %}
     {% if session.get('role') == 'admin' %}
     <a href="/islem-gecmisi" class="btn-sm {% if active=='islem-gecmisi' %}active{% endif %}">🕵️ İşlem Geçmişi</a>
