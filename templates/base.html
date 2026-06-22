@@ -205,7 +205,6 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
   </nav>
   <div class="sidebar-bottom">
     {% if session.get('role') in ['admin', 'partner'] %}
-    {% if session.get('role') in ['admin', 'partner'] %}
     <a href="/yedek/excel" class="btn-sm" style="margin-bottom:6px">📥 Yedek Al (Excel)</a>
     {% endif %}
     {% if session.get('role') == 'admin' %}
