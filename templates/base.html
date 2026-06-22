@@ -225,6 +225,15 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
   <div id="topbar">
     <h1>{% block page_title %}{% endblock %}</h1>
     <div style="display:flex;align-items:center;gap:12px">
+      {% if session.get('role') in ['admin', 'partner'] %}
+      <div id="aktif-kullanici-badge" style="position:relative">
+        <button onclick="toggleAktifKullanicilar(event)" style="display:flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer">
+          <span id="aktif-nokta" style="width:7px;height:7px;border-radius:50%;background:var(--text2)"></span>
+          <span id="aktif-badge-text">—</span>
+        </button>
+        <div id="aktif-kullanici-dropdown" style="display:none;position:absolute;top:36px;right:0;min-width:240px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:10px;z-index:50"></div>
+      </div>
+      {% endif %}
       <div class="meta" id="date-display">—</div>
       <button class="btn btn-print-hide" onclick="window.print()"
         style="padding:5px 12px;font-size:12px;background:var(--card2);color:var(--text2);border:1px solid var(--border)">
@@ -312,6 +321,40 @@ document.addEventListener('click', function(e) {
     setTimeout(function() { e.target.select(); }, 50);
   }
 });
+
+{% if session.get('role') in ['admin', 'partner'] %}
+async function loadAktifKullanicilarBadge() {
+  try {
+    const liste = await api('/api/aktif-kullanicilar');
+    const nokta = document.getElementById('aktif-nokta');
+    const text = document.getElementById('aktif-badge-text');
+    const dd = document.getElementById('aktif-kullanici-dropdown');
+    if (!text) return;
+    text.textContent = liste.length ? liste.length + ' aktif' : 'Yalnız sensin';
+    nokta.style.background = liste.length ? 'var(--pos)' : 'var(--text2)';
+    dd.innerHTML = liste.length
+      ? liste.map(u => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:7px 6px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--pos)"></span>${u.kullanici}
+          </div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--text2);white-space:nowrap">${u.son_aktivite_dk} dk önce</div>
+        </div>`).join('')
+      : '<div style="font-size:12.5px;color:var(--text2);padding:6px">Şu an başka aktif kullanıcı yok</div>';
+  } catch (e) {}
+}
+function toggleAktifKullanicilar(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('aktif-kullanici-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', () => {
+  const dd = document.getElementById('aktif-kullanici-dropdown');
+  if (dd) dd.style.display = 'none';
+});
+loadAktifKullanicilarBadge();
+setInterval(loadAktifKullanicilarBadge, 30000);
+{% endif %}
 </script>
 {% block scripts %}{% endblock %}
 </body>
