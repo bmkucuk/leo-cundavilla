@@ -146,7 +146,7 @@ def init_db():
         ilk_kullanicilar = [
             ('murre34',    'Murat',  'Mk192837+-',  'admin'),
             ('LeventK',    'Levent', 'Lk415263+-',  'partner'),
-            ('FiratB',     'Fırat',  'Fb415263+-',  'partner'),
+            ('FıratK',     'Fırat',  '415263',      'partner'),
             ('BurcinT',    'Burçin', 'Bt415263+-',  'partner'),
             ('resepsiyon', 'Resepsiyon', 'res708090/', 'resepsiyon'),
         ]
