@@ -9,29 +9,43 @@
 <div id="cari-cards" style="margin-bottom:16px">
   <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap">
     <!-- Rezervasyon Grubu -->
-    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:14px;padding:10px 14px;flex:4;min-width:0">
+    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:14px;padding:10px 14px;flex:{% if session.get('role') in ['admin','partner'] %}4{% else %}1{% endif %};min-width:0">
       <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:4px">🏨 Rezervasyon</div>
       <div style="display:flex;gap:8px">
+        {% if session.get('role') in ['admin','partner'] %}
         <div class="stat-card" style="flex:1"><div class="label">Toplam Tutar</div><div class="value blue" id="oz-rez-toplam">—</div></div>
         <div class="stat-card" style="flex:1"><div class="label">Tahsilat</div><div class="value green" id="oz-tahsilat">—</div></div>
+        {% else %}
+        <div id="oz-rez-toplam" style="display:none"></div>
+        <div id="oz-tahsilat" style="display:none"></div>
+        {% endif %}
         <div class="stat-card" style="flex:1"><div class="label">Bakiye</div><div class="value red" id="oz-rez-bak">—</div></div>
       </div>
     </div>
     <!-- Adisyon Grubu -->
-    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent2);border-radius:14px;padding:10px 14px;flex:3;min-width:0">
+    <div style="background:var(--card);border:1px solid var(--border);border-top:3px solid var(--accent2);border-radius:14px;padding:10px 14px;flex:{% if session.get('role') in ['admin','partner'] %}3{% else %}1{% endif %};min-width:0">
       <div style="font-size:10px;font-weight:700;color:var(--accent2);text-transform:uppercase;margin-bottom:4px">🍽️ Adisyon</div>
       <div style="display:flex;gap:8px">
+        {% if session.get('role') in ['admin','partner'] %}
         <div class="stat-card" style="flex:1"><div class="label">Toplam Tutar</div><div class="value blue" id="oz-adis-toplam">—</div></div>
         <div class="stat-card" style="flex:1"><div class="label">Tahsilat</div><div class="value green" id="oz-adis-tah">—</div></div>
+        {% else %}
+        <div id="oz-adis-toplam" style="display:none"></div>
+        <div id="oz-adis-tah" style="display:none"></div>
+        {% endif %}
         <div class="stat-card" style="flex:1"><div class="label">Bakiye</div><div class="value yellow" id="oz-adis-bak">—</div></div>
       </div>
     </div>
     <!-- Toplam Alacak -->
+    {% if session.get('role') in ['admin','partner'] %}
     <div class="stat-card" style="border-top:3px solid var(--accent3);flex:1;min-width:120px">
       <div class="label">💰 Toplam Alacak</div>
       <div class="value red" id="oz-toplam-alacak">—</div>
       <div class="sub">rez + adisyon</div>
     </div>
+    {% else %}
+    <div id="oz-toplam-alacak" style="display:none"></div>
+    {% endif %}
   </div>
 </div>
 
