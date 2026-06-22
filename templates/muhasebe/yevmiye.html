@@ -21,8 +21,8 @@
 
 <div class="table-wrap">
   <table>
-    <thead><tr><th>ID</th><th>Tarih</th><th>Belge No</th><th>İşlem Tipi</th><th>Borç Hesabı</th><th>Alacak Hesabı</th><th>Tutar</th><th>Açıklama</th><th>Otel</th></tr></thead>
-    <tbody id="tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr></tbody>
+    <thead><tr><th>ID</th><th>Tarih</th><th>Belge No</th><th>İşlem Tipi</th><th>Borç Hesabı</th><th>Alacak Hesabı</th><th>Tutar</th><th>Açıklama</th></tr></thead>
+    <tbody id="tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 <div id="pager" style="display:flex;align-items:center;gap:10px;margin-top:10px"></div>
@@ -52,9 +52,8 @@
       <div class="form-group"><label>Borç Hesabı</label><select id="f-borc"></select></div>
       <div class="form-group"><label>Alacak Hesabı</label><select id="f-alacak"></select></div>
     </div>
-    <div class="form-row">
+    <div class="form-row single">
       <div class="form-group"><label>Tutar (₺)</label><input type="number" id="f-tutar" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'"></div>
-      <div class="form-group"><label>Otel</label><select id="f-otel"><option>GENEL</option><option>LEO</option><option>CV</option></select></div>
     </div>
     <div class="form-row single">
       <div class="form-group"><label>Açıklama</label><input type="text" id="f-aciklama"></div>
@@ -109,7 +108,7 @@ function toggleSort() {
 async function load() {
   const yil = yilSel.value;
   const ayIdx = document.getElementById('ay-sel').selectedIndex;
-  document.getElementById('tbody').innerHTML = '<tr class="loading-row"><td colspan="10"><span class="spinner"></span></td></tr>';
+  document.getElementById('tbody').innerHTML = '<tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr>';
   allRows = await api(`/api/muhasebe/yevmiye?yil=${yil}&ay=${ayIdx}&order=ASC`);
   curPage = 1;
   render();
@@ -140,8 +139,8 @@ function render() {
       <td>${r.id}</td><td>${r.tarih}</td><td>${r.belge_no||'—'}</td>
       <td>${r.islem_tipi}</td><td style='font-size:11px'>${hesapAdi(r.borc_hesap)}</td><td style='font-size:11px'>${hesapAdi(r.alacak_hesap)}</td>
       <td style="text-align:right">${fmt(r.tutar)}</td>
-      <td>${r.aciklama||'—'}</td><td>${r.otel||''}</td>
-    </tr>`).join('') || `<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Kayıt yok'}</td></tr>`;
+      <td>${r.aciklama||'—'}</td>
+    </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">${q ? 'Sonuç bulunamadı' : 'Kayıt yok'}</td></tr>`;
 
   document.getElementById('info').textContent = `${data.length} kayıt (toplam ${allRows.length}) | Toplam: ${fmt(toplam)}`;
 
@@ -186,7 +185,7 @@ async function save() {
     alacak:     document.getElementById('f-alacak').value.split(' — ')[0],
     tutar:      parseFloat(document.getElementById('f-tutar').value) || 0,
     aciklama:   document.getElementById('f-aciklama').value,
-    otel:       document.getElementById('f-otel').value,
+    otel:       'GENEL',
     fatura_no:  document.getElementById('f-fatura').value,
   };
   if (!validateForm([
