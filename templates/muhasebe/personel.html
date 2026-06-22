@@ -488,7 +488,7 @@ function avansGecmisiFromMaas() {
 
 function openAvansModalDirect() {
   // Personel listesinden ilkini seç ya da modal içinde seçim yapılacak
-  const perseller = personelList.filter(p => p.durum === 'aktif');
+  const perseller = personelList.filter(p => p.aktif);
   if (!perseller.length) { toast('Aktif personel bulunamadı', 'error'); return; }
   // Avans modalını aç; kullanıcı modal içinde personel seçebilir
   avansPersonelId = perseller[0].id;
