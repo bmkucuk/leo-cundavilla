@@ -453,14 +453,23 @@ def telegram_webhook():
         if chat_id != TELEGRAM_CHAT_ID:
             return jsonify({'ok': True})
 
-        # Komut parse: /temiz 18 veya /temizleniyor 18 veya /bekliyor 18
+        # Komut parse:
+        # Kısa format: 18T=temiz, 18B=başladı(temizleniyor), 18G=geri al(bekliyor)
+        # Uzun format:  /temiz 18, /temizleniyor 18, /bekliyor 18
         import re
-        m = re.match(r'^/(temiz|temizleniyor|bekliyor)\s+(\d+)$', text.lower())
-        if not m:
-            return jsonify({'ok': True})
+        txt = text.strip().lower()
+        m_kisa = re.match(r'^(\d+)(t|b|g)$', txt)
+        m_uzun = re.match(r'^/(temiz|temizleniyor|bekliyor)\s+(\d+)$', txt)
 
-        komut  = m.group(1)   # temiz / temizleniyor / bekliyor
-        oda_no = int(m.group(2))
+        if m_kisa:
+            oda_no = int(m_kisa.group(1))
+            harf   = m_kisa.group(2)
+            komut  = {'t': 'temiz', 'b': 'temizleniyor', 'g': 'bekliyor'}[harf]
+        elif m_uzun:
+            komut  = m_uzun.group(1)
+            oda_no = int(m_uzun.group(2))
+        else:
+            return jsonify({'ok': True})
 
         conn = db.get_conn()
         rez  = conn.execute(
