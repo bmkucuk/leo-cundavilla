@@ -350,7 +350,7 @@ def api_anahtar_teslim():
     force  = data.get('force', False)
     conn = db.get_conn()
     rez = conn.execute(
-        "SELECT foy_no, rez_bakiye, adis_bakiye, oda_no, musteri FROM rezervasyonlar WHERE foy_no=?",
+        "SELECT foy_no, rez_bakiye, adis_bakiye, oda_no, otel, musteri FROM rezervasyonlar WHERE foy_no=?",
         (foy_no,)
     ).fetchone()
     if not rez:
