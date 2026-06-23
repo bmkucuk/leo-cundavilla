@@ -435,14 +435,17 @@ TELEGRAM_TOKEN   = os.environ.get('TELEGRAM_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 
 def telegram_gonder(mesaj):
-    try:
-        import urllib.request, json as _json
-        url  = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-        data = _json.dumps({'chat_id': TELEGRAM_CHAT_ID, 'text': mesaj}).encode()
-        req  = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-        urllib.request.urlopen(req, timeout=5)
-    except Exception as e:
-        print(f'Telegram hata: {e}')
+    import threading
+    def _gonder():
+        try:
+            import urllib.request, json as _json
+            url  = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+            data = _json.dumps({'chat_id': TELEGRAM_CHAT_ID, 'text': mesaj}).encode()
+            req  = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+            urllib.request.urlopen(req, timeout=8)
+        except Exception as e:
+            print(f'Telegram hata: {e}')
+    threading.Thread(target=_gonder, daemon=True).start()
 
 
 @app.route('/telegram-webhook', methods=['POST'])
