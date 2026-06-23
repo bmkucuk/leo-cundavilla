@@ -87,8 +87,12 @@
   white-space: nowrap;
 }
 .hk-btn:hover { background: var(--accent); color: #111; }
+.hk-btn { transition: all .15s; }
+.hk-btn.bekliyor     { border-color: var(--text2); color: var(--text2); }
 .hk-btn.temizleniyor { border-color: orange; color: orange; }
-.hk-btn.temiz { border-color: var(--accent2); color: var(--accent2); }
+.hk-btn.temiz        { border-color: var(--accent2); color: var(--accent2); }
+.hk-btn.active-step  { font-weight: 700; opacity: 1; }
+.hk-btn.done-step    { opacity: .35; cursor: default; pointer-events: none; }
 
 .otel-leo { color: var(--accent);  font-weight:700; font-size:12px; }
 .otel-cv  { color: var(--accent4); font-weight:700; font-size:12px; }
@@ -157,14 +161,26 @@ function renderTable(odalar) {
     let badgeTxt = durum === 'temiz' ? '✅ Temiz' :
                    durum === 'temizleniyor' ? '🔄 Temizleniyor' : '⏳ Bekliyor';
 
-    let butonlar = '';
-    if (durum === 'bekliyor') {
-      butonlar = `<button class="hk-btn temizleniyor" onclick="setDurum(${o.foy_no},'temizleniyor')">🔄 Başladı</button>`;
-    } else if (durum === 'temizleniyor') {
-      butonlar = `<button class="hk-btn temiz" onclick="setDurum(${o.foy_no},'temiz')">✅ Bitti</button>`;
-    } else {
-      butonlar = `<span style="font-size:13px;color:var(--accent2)">✅</span>`;
-    }
+    // 3 adım sıralı: Bekliyor → Temizleniyor → Temiz
+    const adimlar = [
+      { key: 'bekliyor',     label: '⏳ Bekliyor',      next: 'temizleniyor' },
+      { key: 'temizleniyor', label: '🔄 Temizleniyor',  next: 'temiz'        },
+      { key: 'temiz',        label: '✅ Temiz',          next: null           },
+    ];
+    const aktifIdx = adimlar.findIndex(a => a.key === durum);
+    const butonlar = adimlar.map((a, i) => {
+      if (i < aktifIdx) {
+        // Tamamlandı — soluk, tıklanamaz
+        return `<button class="hk-btn ${a.key} done-step">${a.label}</button>`;
+      } else if (i === aktifIdx) {
+        // Mevcut adım — aktif, tıklanınca sonrakine geç
+        const onclick = a.next ? `onclick="setDurum(${o.foy_no},'${a.next}')"` : '';
+        return `<button class="hk-btn ${a.key} active-step" ${onclick}>${a.label}</button>`;
+      } else {
+        // Henüz gelmedi — soluk, tıklanamaz
+        return `<button class="hk-btn ${a.key} done-step" style="opacity:.2">${a.label}</button>`;
+      }
+    }).join(' ');
 
     const bakiyeUyari = o.bakiyeli
       ? `<span title="Bakiyeli çıkış!" style="color:#ff6b6b;font-size:11px;margin-left:4px">⚠️ BAKİYE</span>`
