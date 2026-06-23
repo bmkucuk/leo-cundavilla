@@ -228,7 +228,7 @@ def dashboard():
 @app.route('/rezervasyonlar')
 @login_required
 def rezervasyonlar():
-    return render_template('rezervasyonlar.html')
+    return render_template('rezervasyonlar.html', user_role=session.get('role',''))
 
 @app.route('/rez-formu')
 @login_required
@@ -277,8 +277,7 @@ def api_gunluk_liste():
     ).fetchall()
     # Çıkış listesi
     cikislar = conn.execute(
-        "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no, "
-        "rez_bakiye, adis_bakiye, anahtar_teslim, anahtar_teslim_zaman, hk_durum "
+        "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no "
         "FROM rezervasyonlar WHERE cikis=? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY otel, oda_no", (tarih,)
     ).fetchall()
     # Kahvaltı listesi: konaklıyorlar (giris < tarih <= cikis) VEYA çıkış günü (cikis = tarih)
@@ -291,142 +290,21 @@ def api_gunluk_liste():
         "ORDER BY otel, oda_no", (tarih, tarih)
     ).fetchall()
     conn.close()
-    def row2dict(r, include_hk=False):
-        d = {
+    def row2dict(r):
+        return {
             'oda_no': r['oda_no'], 'otel': r['otel'], 'musteri': r['musteri'],
             'yetiskin': r['yetiskin'], 'cocuk': r['cocuk'],
             'giris': r['giris'], 'cikis': r['cikis'], 'foy_no': r['foy_no']
         }
-        if include_hk:
-            d['rez_bakiye']  = r['rez_bakiye'] or 0
-            d['adis_bakiye'] = r['adis_bakiye'] or 0
-            d['toplam_bakiye'] = (r['rez_bakiye'] or 0) + (r['adis_bakiye'] or 0)
-            d['anahtar_teslim'] = r['anahtar_teslim'] or 0
-            d['anahtar_teslim_zaman'] = r['anahtar_teslim_zaman'] or ''
-            d['hk_durum'] = r['hk_durum'] or ''
-        return d
     return jsonify({
         'tarih': tarih,
         'girisler': [row2dict(r) for r in girisler],
-        'cikislar': [row2dict(r, include_hk=True) for r in cikislar],
+        'cikislar': [row2dict(r) for r in cikislar],
         'kahvalti': [row2dict(r) for r in kahvalti]
     })
 
 
 # ── API — Okuma ───────────────────────────────────────────────────────────────
-
-
-# ── Anahtar Teslim & Housekeeping ────────────────────────────────────────────
-
-@app.route('/api/anahtar-teslim', methods=['POST'])
-@login_required
-def api_anahtar_teslim():
-    data   = request.get_json()
-    foy_no = data.get('foy_no')
-    isle   = data.get('isle', True)   # True=teslim al, False=geri al
-    force  = data.get('force', False) # Bakiyeli çıkışta onaylı geçiş
-
-    conn = db.get_conn()
-    rez = conn.execute(
-        "SELECT foy_no, rez_bakiye, adis_bakiye, oda_no, musteri, otel FROM rezervasyonlar WHERE foy_no=?",
-        (foy_no,)
-    ).fetchone()
-
-    if not rez:
-        conn.close()
-        return jsonify({'ok': False, 'error': 'Rezervasyon bulunamadı'})
-
-    toplam_bakiye = (rez['rez_bakiye'] or 0) + (rez['adis_bakiye'] or 0)
-
-    if isle and toplam_bakiye > 0 and not force:
-        conn.close()
-        return jsonify({
-            'ok': False,
-            'bakiye_uyari': True,
-            'bakiye': toplam_bakiye,
-            'oda_no': rez['oda_no'],
-            'musteri': rez['musteri']
-        })
-
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    now_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d %H:%M')
-
-    if isle:
-        conn.execute(
-            "UPDATE rezervasyonlar SET anahtar_teslim=1, anahtar_teslim_zaman=?, hk_durum='bekliyor' WHERE foy_no=?",
-            (now_str, foy_no)
-        )
-        # Audit log
-        try:
-            kullanici = session.get('username', '?')
-            conn.execute(
-                "INSERT INTO islem_loglari(kullanici, islem_turu, tablo, kayit_id, aciklama) VALUES(?,?,?,?,?)",
-                (kullanici, 'anahtar_teslim', 'rezervasyonlar', foy_no,
-                 f"Föy#{foy_no} Oda {rez['oda_no']} - {rez['musteri']} - Anahtar teslim alındı{' (BAKİYELİ ÇIKIŞ: ₺'+str(toplam_bakiye)+')' if toplam_bakiye > 0 else ''}")
-            )
-        except Exception:
-            pass
-    else:
-        conn.execute(
-            "UPDATE rezervasyonlar SET anahtar_teslim=0, anahtar_teslim_zaman='', hk_durum='' WHERE foy_no=?",
-            (foy_no,)
-        )
-
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True, 'isle': isle})
-
-
-@app.route('/hk-listesi')
-@login_required
-def hk_listesi():
-    return render_template('hk_listesi.html')
-
-
-@app.route('/api/hk-listesi')
-@login_required
-def api_hk_listesi():
-    tarih = request.args.get('tarih', bugun().isoformat())
-    conn  = db.get_conn()
-    rows  = conn.execute(
-        "SELECT foy_no, oda_no, otel, musteri, cikis, anahtar_teslim_zaman, hk_durum, "
-        "rez_bakiye, adis_bakiye "
-        "FROM rezervasyonlar "
-        "WHERE cikis=? AND anahtar_teslim=1 "
-        "ORDER BY hk_durum DESC, otel, oda_no",
-        (tarih,)
-    ).fetchall()
-    conn.close()
-    result = []
-    for r in rows:
-        result.append({
-            'foy_no':   r['foy_no'],
-            'oda_no':   r['oda_no'],
-            'otel':     r['otel'],
-            'musteri':  r['musteri'],
-            'cikis':    r['cikis'],
-            'teslim_zaman': r['anahtar_teslim_zaman'] or '',
-            'hk_durum': r['hk_durum'] or 'bekliyor',
-            'bakiyeli': ((r['rez_bakiye'] or 0) + (r['adis_bakiye'] or 0)) > 0,
-        })
-    return jsonify({'tarih': tarih, 'odalar': result})
-
-
-@app.route('/api/hk-durum', methods=['POST'])
-@login_required
-def api_hk_durum():
-    data   = request.get_json()
-    foy_no = data.get('foy_no')
-    durum  = data.get('durum')  # 'temizleniyor' | 'temiz'
-    if durum not in ('temizleniyor', 'temiz', 'bekliyor'):
-        return jsonify({'ok': False, 'error': 'Geçersiz durum'})
-    conn = db.get_conn()
-    conn.execute("UPDATE rezervasyonlar SET hk_durum=? WHERE foy_no=?", (durum, foy_no))
-    conn.commit()
-    conn.close()
-    return jsonify({'ok': True})
-
 
 @app.route('/api/dashboard')
 def api_dashboard():
