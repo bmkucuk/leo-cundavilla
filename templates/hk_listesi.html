@@ -161,29 +161,26 @@ function renderTable(odalar) {
     let badgeTxt = durum === 'temiz' ? '✅ Temiz' :
                    durum === 'temizleniyor' ? '🔄 Temizleniyor' : '⏳ Bekliyor';
 
-    // 3 adım sıralı: Bekliyor → Temizleniyor → Temiz
+    // İşlem sütunu: sadece "ne yapmalı" butonu + gerekirse geri al linki
     const adimlar = [
-      { key: 'bekliyor',     label: '⏳ Bekliyor',      next: 'temizleniyor' },
-      { key: 'temizleniyor', label: '🔄 Temizleniyor',  next: 'temiz'        },
-      { key: 'temiz',        label: '✅ Temiz',          next: null           },
+      { key: 'bekliyor',     ileri: 'temizleniyor', ileriLabel: '🔄 Temizlemeye Başla' },
+      { key: 'temizleniyor', ileri: 'temiz',        ileriLabel: '✅ Temizlendi'         },
+      { key: 'temiz',        ileri: null,            ileriLabel: null                   },
     ];
-    const aktifIdx = adimlar.findIndex(a => a.key === durum);
-    const butonlar = adimlar.map((a, i) => {
-      if (i < aktifIdx) {
-        // Tamamlandı — tıklanınca o adıma geri al
-        return `<button class="hk-btn ${a.key} done-step"
-          onclick="geriAl(${o.foy_no},'${a.key}')"
-          title="Bu adıma geri al">${a.label} ↩</button>`;
-      } else if (i === aktifIdx) {
-        // Mevcut aktif adım — tıklanınca ileri
-        const onclick = a.next ? `onclick="setDurum(${o.foy_no},'${a.next}')"` : '';
-        return `<button class="hk-btn ${a.key} active-step" ${onclick}>${a.label}</button>`;
-      } else {
-        // Henüz gelmedi — soluk, tıklanamaz
-        return `<button class="hk-btn ${a.key} done-step"
-          style="opacity:.2;cursor:default;pointer-events:none">${a.label}</button>`;
-      }
-    }).join(' ');
+    const aktif = adimlar.find(a => a.key === durum) || adimlar[0];
+    const onceki = { bekliyor: null, temizleniyor: 'bekliyor', temiz: 'temizleniyor' }[durum];
+    const oncekiLabel = { bekliyor: null, temizleniyor: '↩ Bekleyene Al', temiz: '↩ Temizleniyora Al' }[durum];
+
+    let butonlar = '';
+    if (aktif.ileri) {
+      butonlar += `<button class="hk-btn active-step ${durum}"
+        onclick="setDurum(${o.foy_no},'${aktif.ileri}')">${aktif.ileriLabel}</button>`;
+    }
+    if (onceki) {
+      butonlar += ` <button class="hk-btn done-step"
+        style="font-size:11px;padding:4px 8px"
+        onclick="geriAl(${o.foy_no},'${onceki}')">${oncekiLabel}</button>`;
+    }
 
     const bakiyeUyari = o.bakiyeli
       ? `<span title="Bakiyeli çıkış!" style="color:#ff6b6b;font-size:11px;margin-left:4px">⚠️ BAKİYE</span>`
