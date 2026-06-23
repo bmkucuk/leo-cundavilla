@@ -462,9 +462,9 @@ def api_hk_durum():
         from zoneinfo import ZoneInfo
         simdi = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%H:%M')
         if durum == 'temizleniyor':
-            mesaj = f"🧹 Temizlik Başladı\n🏨 {rez['otel']} - Oda {rez['oda_no']}\n⏰ {simdi}"
+            mesaj = f"{rez['otel']} - Oda {rez['oda_no']}\nOda Boşaldı. Temizlik yapılıp bilgi verilecek!"
         else:
-            mesaj = f"✅ Oda Temizlendi\n🏨 {rez['otel']} - Oda {rez['oda_no']}\n⏰ {simdi}"
+            mesaj = f"✅ {rez['otel']} - Oda {rez['oda_no']}\nTemizlik Tamamlandı. ⏰ {simdi}"
         telegram_gonder(mesaj)
 
     return jsonify({'ok': True})
