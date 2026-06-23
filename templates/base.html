@@ -110,6 +110,7 @@ select.filter{background:var(--card);border:1px solid var(--border);color:var(--
 /* ── Toast ── */
 #toast{position:fixed;bottom:24px;right:24px;background:var(--pos);color:#0a1326;padding:12px 20px;border-radius:9px;font-weight:700;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px #0006}
 #toast.error{background:var(--accent3);color:#fff}
+#toast.info{background:#1a6fb5;color:#fff}
 
 /* ── Loading ── */
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
@@ -270,12 +271,12 @@ function validateForm(fields) {
   return true;
 }
 
-function toast(msg, type='ok') {
+function toast(msg, type='ok', ms=3000) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = type === 'error' ? 'error' : '';
+  t.className = type === 'error' ? 'error' : type === 'info' ? 'info' : '';
   t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 3000);
+  setTimeout(() => t.style.display = 'none', ms);
 }
 
 async function api(url, data=null) {

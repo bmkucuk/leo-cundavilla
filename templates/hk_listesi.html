@@ -173,8 +173,11 @@ function renderTable(odalar) {
 
     let butonlar = '';
     if (aktif.ileri) {
+      const waOnclick = (durum === 'bekliyor')
+        ? `setDurumVeWA(${o.foy_no},'${aktif.ileri}','${o.otel}',${o.oda_no})`
+        : `setDurum(${o.foy_no},'${aktif.ileri}')`;
       butonlar += `<button class="hk-btn active-step ${durum}"
-        onclick="setDurum(${o.foy_no},'${aktif.ileri}')">${aktif.ileriLabel}</button>`;
+        onclick="${waOnclick}">${aktif.ileriLabel}</button>`;
     }
     if (onceki) {
       butonlar += ` <button class="hk-btn done-step"
@@ -195,6 +198,20 @@ function renderTable(odalar) {
       <td style="text-align:center">${butonlar}</td>
     </tr>`;
   }).join('');
+}
+
+const WA_GRUP = 'https://chat.whatsapp.com/C99bqnNgdhSGRy5XBB8jHL';
+
+async function setDurumVeWA(foyNo, durum, otel, odaNo) {
+  await setDurum(foyNo, durum);
+  const simdi = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+  const mesaj = `🧹 Temizlik Başladı\n🏨 ${otel} - Oda ${odaNo}\n⏰ ${simdi}`;
+  // Mesajı panoya kopyala
+  try { await navigator.clipboard.writeText(mesaj); } catch(e) {}
+  // WhatsApp grubunu yeni sekmede aç
+  window.open(WA_GRUP, '_blank');
+  // Kullanıcıya talimat ver
+  toast('📋 Mesaj kopyalandı! WhatsApp açıldı — yapıştır ve gönder (Ctrl+V)', 'info', 5000);
 }
 
 async function setDurum(foyNo, durum) {
