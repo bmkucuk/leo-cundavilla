@@ -228,7 +228,7 @@ def dashboard():
 @app.route('/rezervasyonlar')
 @login_required
 def rezervasyonlar():
-    return render_template('rezervasyonlar.html', user_role=session.get('role',''))
+    return render_template('rezervasyonlar.html')
 
 @app.route('/rez-formu')
 @login_required
