@@ -285,12 +285,19 @@ def api_gunluk_liste():
         "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no "
         "FROM rezervasyonlar WHERE giris=? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY otel, oda_no", (tarih,)
     ).fetchall()
-    # Çıkış listesi
-    cikislar = conn.execute(
-        "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no, "
-        "rez_bakiye, adis_bakiye, anahtar_teslim, anahtar_teslim_zaman, hk_durum "
-        "FROM rezervasyonlar WHERE cikis=? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY otel, oda_no", (tarih,)
-    ).fetchall()
+    # Çıkış listesi — HK kolonları yoksa fallback
+    try:
+        cikislar = conn.execute(
+            "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no, "
+            "rez_bakiye, adis_bakiye, anahtar_teslim, anahtar_teslim_zaman, hk_durum "
+            "FROM rezervasyonlar WHERE cikis=? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY otel, oda_no", (tarih,)
+        ).fetchall()
+    except Exception:
+        cikislar = conn.execute(
+            "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no, "
+            "rez_bakiye, adis_bakiye "
+            "FROM rezervasyonlar WHERE cikis=? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY otel, oda_no", (tarih,)
+        ).fetchall()
     # Kahvaltı listesi: konaklıyorlar (giris < tarih <= cikis) VEYA çıkış günü (cikis = tarih)
     # Giriş günü kahvaltı YOK, çıkış günü VAR
     kahvalti = conn.execute(
@@ -308,12 +315,15 @@ def api_gunluk_liste():
             'giris': r['giris'], 'cikis': r['cikis'], 'foy_no': r['foy_no']
         }
         if include_hk:
-            d['rez_bakiye']      = r['rez_bakiye'] or 0
-            d['adis_bakiye']     = r['adis_bakiye'] or 0
-            d['toplam_bakiye']   = (r['rez_bakiye'] or 0) + (r['adis_bakiye'] or 0)
-            d['anahtar_teslim']  = r['anahtar_teslim'] or 0
-            d['anahtar_teslim_zaman'] = r['anahtar_teslim_zaman'] or ''
-            d['hk_durum']        = r['hk_durum'] or ''
+            def _safe(key, default=0):
+                try: return r[key] or default
+                except Exception: return default
+            d['rez_bakiye']           = _safe('rez_bakiye', 0)
+            d['adis_bakiye']          = _safe('adis_bakiye', 0)
+            d['toplam_bakiye']        = _safe('rez_bakiye', 0) + _safe('adis_bakiye', 0)
+            d['anahtar_teslim']       = _safe('anahtar_teslim', 0)
+            d['anahtar_teslim_zaman'] = _safe('anahtar_teslim_zaman', '')
+            d['hk_durum']             = _safe('hk_durum', '')
         return d
     return jsonify({
         'tarih': tarih,
@@ -383,14 +393,17 @@ def hk_listesi():
 def api_hk_listesi():
     tarih = request.args.get('tarih', bugun().isoformat())
     conn  = db.get_conn()
-    rows  = conn.execute(
-        "SELECT foy_no, oda_no, otel, musteri, cikis, anahtar_teslim_zaman, hk_durum, "
-        "rez_bakiye, adis_bakiye "
-        "FROM rezervasyonlar "
-        "WHERE cikis=? AND anahtar_teslim=1 "
-        "ORDER BY hk_durum DESC, otel, oda_no",
-        (tarih,)
-    ).fetchall()
+    try:
+        rows  = conn.execute(
+            "SELECT foy_no, oda_no, otel, musteri, cikis, anahtar_teslim_zaman, hk_durum, "
+            "rez_bakiye, adis_bakiye "
+            "FROM rezervasyonlar "
+            "WHERE cikis=? AND anahtar_teslim=1 "
+            "ORDER BY hk_durum DESC, otel, oda_no",
+            (tarih,)
+        ).fetchall()
+    except Exception:
+        rows = []
     conn.close()
     return jsonify({'tarih': tarih, 'odalar': [
         {

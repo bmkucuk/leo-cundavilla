@@ -140,13 +140,16 @@ def init_db():
         # Mevcut tam ödenmişlerin odenen_tutar'ını tutar'a eşitle
         conn.execute("UPDATE adisyonlar SET odenen_tutar=tutar WHERE odendi=1")
 
-    # Migration: Anahtar teslim & Housekeeping
-    if 'anahtar_teslim' not in cols:
-        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN anahtar_teslim INTEGER DEFAULT 0")
-    if 'anahtar_teslim_zaman' not in cols:
-        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN anahtar_teslim_zaman TEXT DEFAULT ''")
-    if 'hk_durum' not in cols:
-        conn.execute("ALTER TABLE rezervasyonlar ADD COLUMN hk_durum TEXT DEFAULT ''")
+        # Migration: Anahtar teslim & Housekeeping (try/except ile güvenli)
+    for col, defn in [
+        ('anahtar_teslim',       'INTEGER DEFAULT 0'),
+        ('anahtar_teslim_zaman', "TEXT DEFAULT ''"),
+        ('hk_durum',             "TEXT DEFAULT ''"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE rezervasyonlar ADD COLUMN {col} {defn}")
+        except Exception:
+            pass  # Kolon zaten var
 
     # İlk kullanıcılar (yalnızca tablo boşsa eklenir)
     if conn.execute("SELECT COUNT(*) FROM kullanicilar").fetchone()[0] == 0:
