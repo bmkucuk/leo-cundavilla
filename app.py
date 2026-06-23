@@ -440,6 +440,61 @@ def telegram_gonder(mesaj):
         print(f'Telegram hata: {e}')
 
 
+@app.route('/telegram-webhook', methods=['POST'])
+def telegram_webhook():
+    """Telegram'dan gelen komutları işler: /temiz 18, /temizleniyor 18, /bekliyor 18"""
+    try:
+        data = request.get_json(force=True)
+        msg  = data.get('message', {})
+        text = msg.get('text', '').strip()
+        chat_id = str(msg.get('chat', {}).get('id', ''))
+
+        # Sadece HK grubundan gelen komutları kabul et
+        if chat_id != TELEGRAM_CHAT_ID:
+            return jsonify({'ok': True})
+
+        # Komut parse: /temiz 18 veya /temizleniyor 18 veya /bekliyor 18
+        import re
+        m = re.match(r'^/(temiz|temizleniyor|bekliyor)\s+(\d+)$', text.lower())
+        if not m:
+            return jsonify({'ok': True})
+
+        komut  = m.group(1)   # temiz / temizleniyor / bekliyor
+        oda_no = int(m.group(2))
+
+        conn = db.get_conn()
+        rez  = conn.execute(
+            "SELECT foy_no, oda_no, otel, cikis FROM rezervasyonlar "
+            "WHERE oda_no=? AND anahtar_teslim=1 AND hk_durum != 'temiz' "
+            "ORDER BY cikis DESC LIMIT 1",
+            (oda_no,)
+        ).fetchone()
+
+        if not rez:
+            conn.close()
+            telegram_gonder(f"⚠️ Oda {oda_no} için aktif HK kaydı bulunamadı.")
+            return jsonify({'ok': True})
+
+        conn.execute(
+            "UPDATE rezervasyonlar SET hk_durum=? WHERE foy_no=?",
+            (komut, rez['foy_no'])
+        )
+        conn.commit()
+        conn.close()
+
+        durum_tr = {'temiz': '✅ Temiz', 'temizleniyor': '🔄 Temizleniyor', 'bekliyor': '⏳ Bekliyor'}
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        simdi = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%H:%M')
+        onay = f"{durum_tr[komut]} — {rez['otel']} Oda {oda_no} güncellendi. ⏰ {simdi}"
+        telegram_gonder(onay)
+
+    except Exception as e:
+        print(f'Webhook hata: {e}')
+
+    return jsonify({'ok': True})
+
+
 @app.route('/api/hk-durum', methods=['POST'])
 @login_required
 def api_hk_durum():
