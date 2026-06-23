@@ -213,7 +213,7 @@ function buildRows(data, type) {
         <td>${fmt(r.cikis)}</td>
       </tr>`;
     } else { // cikis
-      const bakiye = (r.toplam_bakiye || 0);
+      const bakiye   = (r.toplam_bakiye || 0);
       const bakiyeHtml = bakiye > 0
         ? `<span style="color:#ff6b6b;font-weight:700">₺${bakiye.toLocaleString('tr-TR',{minimumFractionDigits:0})}</span>`
         : `<span style="color:var(--accent2)">✓</span>`;
@@ -227,6 +227,9 @@ function buildRows(data, type) {
         : hkDurum === 'temizleniyor'
           ? '<span style="font-size:10px;color:orange">🔄</span>'
           : '';
+      const saat = r.anahtar_teslim && r.anahtar_teslim_zaman
+        ? `<span style="font-size:10px;color:var(--text2)">${r.anahtar_teslim_zaman.slice(11,16)}</span>` : '';
+      // data-* ile güvenli veri taşı — inline JS yok
       return `<tr style="${rowStyle}">
         <td>${r.oda_no}</td>
         <td class="${otelCls}">${r.otel}</td>
@@ -235,10 +238,13 @@ function buildRows(data, type) {
         <td>${fmt(r.giris)}</td>
         <td style="text-align:center">
           <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;user-select:none">
-            <input type="checkbox" class="anahtar-cb" data-foy="${r.foy_no}"
+            <input type="checkbox" class="anahtar-cb"
+              data-foy="${r.foy_no}"
+              data-bakiye="${bakiye}"
+              data-musteri="${encodeURIComponent(r.musteri)}"
               style="width:16px;height:16px;accent-color:var(--accent2);cursor:pointer"
-              ${checked} onchange="anahtarTeslim(this, ${r.foy_no}, ${JSON.stringify(r.musteri)}, ${bakiye})">
-            ${r.anahtar_teslim ? `<span style="font-size:10px;color:var(--text2)">${r.anahtar_teslim_zaman ? r.anahtar_teslim_zaman.slice(11,16) : ''}</span>` : ''}
+              ${checked}>
+            ${saat}
           </label>
           ${hkBadge}
         </td>
@@ -295,14 +301,23 @@ async function loadData() {
 
 init();
 
-// ── Anahtar Teslim ───────────────────────────────────────────────────────────
+// ── Anahtar Teslim — event delegation ile ────────────────────────────────────
 
 let _pendingFoy = null;
+
+// Tüm checkbox değişimlerini tek listener ile yakala
+document.addEventListener('change', function(e) {
+  const cb = e.target;
+  if (!cb.classList.contains('anahtar-cb')) return;
+  const foyNo  = parseInt(cb.dataset.foy);
+  const bakiye = parseFloat(cb.dataset.bakiye) || 0;
+  const musteri = decodeURIComponent(cb.dataset.musteri || '');
+  anahtarTeslim(cb, foyNo, musteri, bakiye);
+});
 
 async function anahtarTeslim(cb, foyNo, musteri, bakiye) {
   const isle = cb.checked;
 
-  // Eğer geri alıyorsa direkt yap
   if (!isle) {
     cb.disabled = true;
     try {
@@ -319,9 +334,8 @@ async function anahtarTeslim(cb, foyNo, musteri, bakiye) {
     return;
   }
 
-  // Bakiye varsa modal göster
   if (bakiye > 0) {
-    cb.checked = false; // Önce geri al, modal sonucu belirleyecek
+    cb.checked = false;
     _pendingFoy = foyNo;
     document.getElementById('modal-bakiye-musteri').textContent = musteri;
     document.getElementById('modal-bakiye-tutar').textContent =
@@ -330,7 +344,6 @@ async function anahtarTeslim(cb, foyNo, musteri, bakiye) {
     return;
   }
 
-  // Bakiye yoksa direkt kaydet
   await _anahtarKaydet(foyNo, false);
 }
 
@@ -362,7 +375,7 @@ function modalBakiyeDevam() {
 function modalBakiyeIptal() {
   document.getElementById('modal-bakiye').style.display = 'none';
   _pendingFoy = null;
-  loadData(); // checkbox'ı sıfırla
+  loadData();
 }
 </script>
 

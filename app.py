@@ -315,15 +315,21 @@ def api_gunluk_liste():
             'giris': r['giris'], 'cikis': r['cikis'], 'foy_no': r['foy_no']
         }
         if include_hk:
-            def _safe(key, default=0):
-                try: return r[key] or default
-                except Exception: return default
-            d['rez_bakiye']           = _safe('rez_bakiye', 0)
-            d['adis_bakiye']          = _safe('adis_bakiye', 0)
-            d['toplam_bakiye']        = _safe('rez_bakiye', 0) + _safe('adis_bakiye', 0)
-            d['anahtar_teslim']       = _safe('anahtar_teslim', 0)
-            d['anahtar_teslim_zaman'] = _safe('anahtar_teslim_zaman', '')
-            d['hk_durum']             = _safe('hk_durum', '')
+            def _safe_num(key):
+                try: v = r[key]; return float(v) if v else 0
+                except Exception: return 0
+            def _safe_str(key):
+                try: v = r[key]; return str(v) if v else ''
+                except Exception: return ''
+            def _safe_int(key):
+                try: v = r[key]; return int(v) if v else 0
+                except Exception: return 0
+            d['rez_bakiye']           = _safe_num('rez_bakiye')
+            d['adis_bakiye']          = _safe_num('adis_bakiye')
+            d['toplam_bakiye']        = _safe_num('rez_bakiye') + _safe_num('adis_bakiye')
+            d['anahtar_teslim']       = _safe_int('anahtar_teslim')
+            d['anahtar_teslim_zaman'] = _safe_str('anahtar_teslim_zaman')
+            d['hk_durum']             = _safe_str('hk_durum')
         return d
     return jsonify({
         'tarih': tarih,
