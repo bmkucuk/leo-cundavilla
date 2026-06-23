@@ -92,7 +92,7 @@
 .hk-btn.temizleniyor { border-color: orange; color: orange; }
 .hk-btn.temiz        { border-color: var(--accent2); color: var(--accent2); }
 .hk-btn.active-step  { font-weight: 700; opacity: 1; }
-.hk-btn.done-step    { opacity: .35; cursor: default; pointer-events: none; }
+.hk-btn.done-step    { opacity: .35; cursor: pointer; }
 
 .otel-leo { color: var(--accent);  font-weight:700; font-size:12px; }
 .otel-cv  { color: var(--accent4); font-weight:700; font-size:12px; }
@@ -170,15 +170,18 @@ function renderTable(odalar) {
     const aktifIdx = adimlar.findIndex(a => a.key === durum);
     const butonlar = adimlar.map((a, i) => {
       if (i < aktifIdx) {
-        // Tamamlandı — soluk, tıklanamaz
-        return `<button class="hk-btn ${a.key} done-step">${a.label}</button>`;
+        // Tamamlandı — tıklanınca o adıma geri al
+        return `<button class="hk-btn ${a.key} done-step"
+          onclick="geriAl(${o.foy_no},'${a.key}')"
+          title="Bu adıma geri al">${a.label} ↩</button>`;
       } else if (i === aktifIdx) {
-        // Mevcut adım — aktif, tıklanınca sonrakine geç
+        // Mevcut aktif adım — tıklanınca ileri
         const onclick = a.next ? `onclick="setDurum(${o.foy_no},'${a.next}')"` : '';
         return `<button class="hk-btn ${a.key} active-step" ${onclick}>${a.label}</button>`;
       } else {
         // Henüz gelmedi — soluk, tıklanamaz
-        return `<button class="hk-btn ${a.key} done-step" style="opacity:.2">${a.label}</button>`;
+        return `<button class="hk-btn ${a.key} done-step"
+          style="opacity:.2;cursor:default;pointer-events:none">${a.label}</button>`;
       }
     }).join(' ');
 
@@ -206,10 +209,18 @@ async function setDurum(foyNo, durum) {
     });
     const d = await res.json();
     if (d.ok) {
-      toast(durum === 'temiz' ? '✅ Oda temiz olarak işaretlendi' : '🔄 Temizlik başladı');
+      const mesaj = durum === 'temiz' ? '✅ Oda temiz' :
+                    durum === 'temizleniyor' ? '🔄 Temizlik başladı' : '⏳ Beklemeye alındı';
+      toast(mesaj);
       loadData();
     }
   } catch(e) { toast('Hata', 'error'); }
+}
+
+function geriAl(foyNo, durum) {
+  const etiket = durum === 'bekliyor' ? 'Bekliyor' : 'Temizleniyor';
+  if (!confirm(`"${etiket}" adımına geri almak istediğinizden emin misiniz?`)) return;
+  setDurum(foyNo, durum);
 }
 
 init();
