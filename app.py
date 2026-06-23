@@ -366,7 +366,7 @@ def api_anahtar_teslim():
     now_str = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%Y-%m-%d %H:%M')
     if isle:
         conn.execute(
-            "UPDATE rezervasyonlar SET anahtar_teslim=1, anahtar_teslim_zaman=?, hk_durum='bekliyor' WHERE foy_no=?",
+            "UPDATE rezervasyonlar SET anahtar_teslim=1, anahtar_teslim_zaman=?, hk_durum='temizleniyor' WHERE foy_no=?",
             (now_str, foy_no)
         )
         try:
@@ -378,13 +378,18 @@ def api_anahtar_teslim():
             )
         except Exception:
             pass
+        conn.commit()
+        conn.close()
+        # Telegram bildirimi
+        mesaj = f"{rez['otel']} - Oda {rez['oda_no']}\nOda Boşaldı. Temizlik yapılıp bilgi verilecek!"
+        telegram_gonder(mesaj)
     else:
         conn.execute(
             "UPDATE rezervasyonlar SET anahtar_teslim=0, anahtar_teslim_zaman='', hk_durum='' WHERE foy_no=?",
             (foy_no,)
         )
-    conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
     return jsonify({'ok': True, 'isle': isle})
 
 
