@@ -425,8 +425,9 @@ def api_hk_listesi():
     ]})
 
 
-TELEGRAM_TOKEN   = '8847958566:AAFjcxfO7z1Z9oSPmPw1bW19zWnqALfsjXM'
-TELEGRAM_CHAT_ID = '-5408504259'
+import os
+TELEGRAM_TOKEN   = os.environ.get('TELEGRAM_TOKEN', '')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 
 def telegram_gonder(mesaj):
     try:
