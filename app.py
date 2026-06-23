@@ -425,6 +425,20 @@ def api_hk_listesi():
     ]})
 
 
+TELEGRAM_TOKEN   = '8847958566:AAFjcxfO7z1Z9oSPmPw1bW19zWnqALfsjXM'
+TELEGRAM_CHAT_ID = '-5408504259'
+
+def telegram_gonder(mesaj):
+    try:
+        import urllib.request, json as _json
+        url  = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+        data = _json.dumps({'chat_id': TELEGRAM_CHAT_ID, 'text': mesaj}).encode()
+        req  = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        print(f'Telegram hata: {e}')
+
+
 @app.route('/api/hk-durum', methods=['POST'])
 @login_required
 def api_hk_durum():
@@ -434,9 +448,24 @@ def api_hk_durum():
     if durum not in ('temizleniyor', 'temiz', 'bekliyor'):
         return jsonify({'ok': False, 'error': 'Geçersiz durum'})
     conn = db.get_conn()
+    rez  = conn.execute(
+        "SELECT oda_no, otel FROM rezervasyonlar WHERE foy_no=?", (foy_no,)
+    ).fetchone()
     conn.execute("UPDATE rezervasyonlar SET hk_durum=? WHERE foy_no=?", (durum, foy_no))
     conn.commit()
     conn.close()
+
+    # Telegram bildirimi — sadece Temizlemeye Başla ve Temizlendi'de
+    if rez and durum in ('temizleniyor', 'temiz'):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        simdi = datetime.now(ZoneInfo('Europe/Istanbul')).strftime('%H:%M')
+        if durum == 'temizleniyor':
+            mesaj = f"🧹 Temizlik Başladı\n🏨 {rez['otel']} - Oda {rez['oda_no']}\n⏰ {simdi}"
+        else:
+            mesaj = f"✅ Oda Temizlendi\n🏨 {rez['otel']} - Oda {rez['oda_no']}\n⏰ {simdi}"
+        telegram_gonder(mesaj)
+
     return jsonify({'ok': True})
 
 

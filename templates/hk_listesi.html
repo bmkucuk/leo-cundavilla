@@ -200,18 +200,9 @@ function renderTable(odalar) {
   }).join('');
 }
 
-const WA_GRUP = 'https://chat.whatsapp.com/C99bqnNgdhSGRy5XBB8jHL';
-
 async function setDurumVeWA(foyNo, durum, otel, odaNo) {
+  // Telegram bildirimi backend'den otomatik gönderiliyor
   await setDurum(foyNo, durum);
-  const simdi = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
-  const mesaj = `🧹 Temizlik Başladı\n🏨 ${otel} - Oda ${odaNo}\n⏰ ${simdi}`;
-  // Mesajı panoya kopyala
-  try { await navigator.clipboard.writeText(mesaj); } catch(e) {}
-  // WhatsApp grubunu yeni sekmede aç
-  window.open(WA_GRUP, '_blank');
-  // Kullanıcıya talimat ver
-  toast('📋 Mesaj kopyalandı! WhatsApp açıldı — yapıştır ve gönder (Ctrl+V)', 'info', 5000);
 }
 
 async function setDurum(foyNo, durum) {
