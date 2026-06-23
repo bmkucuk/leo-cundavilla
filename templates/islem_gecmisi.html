@@ -169,6 +169,13 @@ function detayGoster(log) {
   modal.classList.add('open');
 }
 
+async function loadKullanicilar() {
+  const liste = await api('/api/kullanici-listesi');
+  const sel = document.getElementById('f-kullanici');
+  sel.innerHTML = '<option value="">Hepsi</option>' +
+    liste.map(u => `<option value="${u}">${u}</option>`).join('');
+}
+
 async function loadLoglar() {
   const params = new URLSearchParams();
   const k  = document.getElementById('f-kullanici').value;
@@ -183,23 +190,12 @@ async function loadLoglar() {
   const loglar = await api('/api/islem-loglari?' + params.toString());
   document.getElementById('log-count').textContent = loglar.length + ' kayıt';
 
-  const sel = document.getElementById('f-kullanici');
-  if (sel.options.length === 1) {
-    const kullanicilar = [...new Set(loglar.map(l => l.kullanici))].sort();
-    kullanicilar.forEach(u => {
-      const o = document.createElement('option');
-      o.value = u; o.textContent = u;
-      sel.appendChild(o);
-    });
-  }
-
   const tbody = document.getElementById('log-tbody');
   tbody.innerHTML = loglar.length ? loglar.map(l => {
     const ozKisa = (l.ozet || '').length > 60
       ? (l.ozet || '').slice(0, 60) + '…'
       : (l.ozet || '—');
     const islemAdi = yolEtiket[l.yol] || islemEtiket[l.islem_tipi] || l.islem_tipi;
-    const satirData = encodeURIComponent(JSON.stringify(l));
     return `<tr style="cursor:pointer" onclick='detayGoster(${JSON.stringify(l)})' title="Detay için tıklayın">
       <td style="white-space:nowrap;font-family:'Geist Mono',monospace;font-size:12px">${l.zaman}</td>
       <td>${l.kullanici}</td>
@@ -212,6 +208,8 @@ async function loadLoglar() {
     </tr>`;
   }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Kayıt bulunamadı</td></tr>';
 }
+
+loadKullanicilar();
 loadLoglar();
 </script>
 {% endblock %}
