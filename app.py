@@ -183,10 +183,20 @@ def islem_gecmisi():
 def api_islem_loglari():
     kullanici = request.args.get('kullanici') or None
     baslangic = request.args.get('baslangic') or None
-    bitis = request.args.get('bitis') or None
-    arama = request.args.get('arama') or None
-    loglar = db.log_listele(limit=500, kullanici=kullanici, baslangic=baslangic, bitis=bitis, arama=arama)
+    bitis     = request.args.get('bitis') or None
+    arama     = request.args.get('arama') or None
+    loglar    = db.log_listele(limit=500, kullanici=kullanici, baslangic=baslangic, bitis=bitis, arama=arama)
     return jsonify(loglar)
+
+@app.route('/api/kullanici-listesi')
+@admin_required
+def api_kullanici_listesi():
+    conn = db.get_conn()
+    rows = conn.execute(
+        "SELECT username FROM kullanicilar WHERE aktif=1 ORDER BY username"
+    ).fetchall()
+    conn.close()
+    return jsonify([r['username'] for r in rows])
 
 # Veri değiştiren (POST) isteklerin otomatik denetim kaydı
 _LOG_HARIC_YOLLAR = {'/login', '/sifre-degistir'}
