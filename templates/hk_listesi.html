@@ -159,7 +159,7 @@ function renderTable(odalar) {
     const durum   = o.hk_durum || 'bekliyor';
 
     let badgeTxt = durum === 'temiz' ? '✅ Temiz' :
-                   durum === 'temizleniyor' ? '🔄 Temizleniyor' : '⏳ Bekliyor';
+                   durum === 'temizleniyor' ? '🔄 Temizleniyor' : '⏳ Temizliği Bekliyor';
 
     // İşlem sütunu: sadece "ne yapmalı" butonu + gerekirse geri al linki
     const adimlar = [
@@ -169,7 +169,7 @@ function renderTable(odalar) {
     ];
     const aktif = adimlar.find(a => a.key === durum) || adimlar[0];
     const onceki = { bekliyor: null, temizleniyor: 'bekliyor', temiz: 'temizleniyor' }[durum];
-    const oncekiLabel = { bekliyor: null, temizleniyor: '↩ Bekleyene Al', temiz: '↩ Temizleniyora Al' }[durum];
+    const oncekiLabel = { bekliyor: null, temizleniyor: '↩ Temizliği Bekleyene Al', temiz: '↩ Temizleniyora Al' }[durum];
 
     let butonlar = '';
     if (aktif.ileri) {
