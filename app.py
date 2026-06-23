@@ -438,11 +438,10 @@ def telegram_gonder(mesaj):
     import threading
     def _gonder():
         try:
-            import urllib.request, json as _json
-            url  = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-            data = _json.dumps({'chat_id': TELEGRAM_CHAT_ID, 'text': mesaj}).encode()
-            req  = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-            urllib.request.urlopen(req, timeout=8)
+            import requests as _req
+            url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
+            r = _req.post(url, json={'chat_id': TELEGRAM_CHAT_ID, 'text': mesaj}, timeout=10)
+            print(f'Telegram yanit: {r.status_code} {r.text[:100]}')
         except Exception as e:
             print(f'Telegram hata: {e}')
     threading.Thread(target=_gonder, daemon=True).start()
