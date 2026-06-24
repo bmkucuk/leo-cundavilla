@@ -1817,3 +1817,62 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"🌐 Sunucu → http://localhost:{port}")
     app.run(debug=False, host='0.0.0.0', port=port)
+
+
+# ── Süper Admin Paneli ────────────────────────────────────────────────────────
+
+SUPERADMIN_KEY = os.environ.get('SUPERADMIN_KEY', '')
+
+def _sadmin_kontrol():
+    key = request.headers.get('X-Admin-Key', '') or request.args.get('key', '')
+    return key and key == SUPERADMIN_KEY
+
+@app.route('/sadmin')
+def sadmin_sayfa():
+    return render_template('sadmin.html')
+
+@app.route('/sadmin/durum')
+def sadmin_durum():
+    if not _sadmin_kontrol():
+        return jsonify({'ok': False, 'error': 'Yetkisiz'}), 403
+    return jsonify({
+        'ok':    True,
+        'durum': 'aktif',
+        'kalan': 0,
+        'config': {
+            'otel': {'ad': 'Otel Leo & Cunda Villa', 'kisa_ad': 'LEO', 'toplam_oda': 29, 'sehir': 'Ayvalık'},
+            'sistem': {
+                'demo_baslangic': '',
+                'demo_sure_gun': 0,
+                'lisans_aktif': True,
+                'askiya_alindi': False,
+                'telegram_token': os.environ.get('TELEGRAM_TOKEN',''),
+                'not': ''
+            }
+        }
+    })
+
+@app.route('/sadmin/not-kaydet', methods=['POST'])
+def sadmin_not_kaydet():
+    if not _sadmin_kontrol():
+        return jsonify({'ok': False, 'error': 'Yetkisiz'}), 403
+    return jsonify({'ok': True})
+
+@app.route('/sadmin/aktif', methods=['POST'])
+def sadmin_aktif():
+    if not _sadmin_kontrol():
+        return jsonify({'ok': False, 'error': 'Yetkisiz'}), 403
+    return jsonify({'ok': True, 'durum': 'aktif'})
+
+@app.route('/sadmin/askiya-al', methods=['POST'])
+def sadmin_askiya_al():
+    if not _sadmin_kontrol():
+        return jsonify({'ok': False, 'error': 'Yetkisiz'}), 403
+    return jsonify({'ok': True, 'durum': 'askida'})
+
+@app.route('/sadmin/demo-uzat', methods=['POST'])
+def sadmin_demo_uzat():
+    if not _sadmin_kontrol():
+        return jsonify({'ok': False, 'error': 'Yetkisiz'}), 403
+    return jsonify({'ok': True})
+
