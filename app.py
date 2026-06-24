@@ -1610,7 +1610,7 @@ def yedek_mail_gonder():
     """Excel yedeğini oluşturup cundavilla@gmail.com'a gönderir."""
     gmail_user = os.environ.get('GMAIL_USER', 'bmkucuk@gmail.com')
     gmail_pass = os.environ.get('GMAIL_APP_PASSWORD', '')
-    alici      = gmail_user  # yedek kendi hesabına gelsin
+    alici      = 'villa@cundavilla.com'
     if not gmail_pass:
         print('[YEDEK] GMAIL_APP_PASSWORD tanımlı değil, mail atlanıyor.')
         return
