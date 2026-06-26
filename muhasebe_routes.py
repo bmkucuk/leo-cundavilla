@@ -300,10 +300,12 @@ def api_bankalar():
 ACENTE_HESAP = {'BKG': '320-1', 'EXP': '320-2', 'JLY': '320-3', 'TTS': '320-4', 'ETS': '320-5'}
 
 BANKA_HESAP = {
-    'KASA': '100',
-    'IS':   '102-1',
-    'ZRH':  '102-2',
-    'DNZ':  '102-3',
+    'KASA':     '100',
+    'IS':       '102-1',
+    'ZRH':      '102-2',
+    'DNZ':      '102-3',
+    'KASA-EUR': '100-EUR',
+    'KASA-USD': '100-USD',
 }
 
 @muh.route('/api/muhasebe/kasa')
@@ -315,15 +317,27 @@ def api_kasa():
     bakiyeler = []
     for b in bankalar:
         h_kodu = BANKA_HESAP.get(b['kod'], b['kod'])
-        # Aktif hesaplar: borç = giriş (para geldi), alacak = çıkış (para gitti)
         giris = conn.execute(
             "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=?",
             (yil, h_kodu)).fetchone()[0]
         cikis = conn.execute(
             "SELECT COALESCE(SUM(tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=?",
             (yil, h_kodu)).fetchone()[0]
-        bakiyeler.append({'kod': b['kod'], 'ad': b['ad'], 'hesap_kodu': h_kodu,
-                          'giris': giris, 'cikis': cikis, 'bakiye': giris - cikis})
+        bakiye = giris - cikis
+        entry = {'kod': b['kod'], 'ad': b['ad'], 'hesap_kodu': h_kodu,
+                 'giris': giris, 'cikis': cikis, 'bakiye': bakiye}
+        # Döviz kasaları için ayrıca döviz bakiyesi
+        if b['kod'] in ('KASA-EUR', 'KASA-USD'):
+            doviz = 'EUR' if b['kod'] == 'KASA-EUR' else 'USD'
+            doviz_giris = conn.execute(
+                "SELECT COALESCE(SUM(doviz_tutar),0) FROM yevmiye WHERE yil=? AND borc_hesap=? AND doviz_cinsi=?",
+                (yil, h_kodu, doviz)).fetchone()[0]
+            doviz_cikis = conn.execute(
+                "SELECT COALESCE(SUM(doviz_tutar),0) FROM yevmiye WHERE yil=? AND alacak_hesap=? AND doviz_cinsi=?",
+                (yil, h_kodu, doviz)).fetchone()[0]
+            entry['doviz_cinsi'] = doviz
+            entry['doviz_bakiye'] = doviz_giris - doviz_cikis
+        bakiyeler.append(entry)
     hareketler = []
     if hesap:
         h_kodu = BANKA_HESAP.get(hesap, hesap)

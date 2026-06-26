@@ -295,6 +295,25 @@ def init_db():
         if col not in maas_cols:
             c.execute(ddl)
 
+    # Migration: Expedia komisyon oranı %15 -> %18
+    c.execute("UPDATE acenteler SET komisyon_orani=18.0 WHERE kod='EXP'")
+
+    # Migration: EUR ve USD Kasa hesapları
+    c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES('KASA-EUR','Euro Kasa','')")
+    c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES('KASA-USD','Dolar Kasa','')")
+    # Yevmiye hesap planına döviz kasa hesapları
+    c.execute("INSERT OR IGNORE INTO hesaplar(kod,ad,tip,grup) VALUES('100-EUR','Euro Kasa','Aktif','Nakit')")
+    c.execute("INSERT OR IGNORE INTO hesaplar(kod,ad,tip,grup) VALUES('100-USD','Dolar Kasa','Aktif','Nakit')")
+
+    # Migration: yevmiye tablosuna döviz kolonları
+    yev_cols = [r[1] for r in c.execute("PRAGMA table_info(yevmiye)").fetchall()]
+    if 'doviz_cinsi' not in yev_cols:
+        c.execute("ALTER TABLE yevmiye ADD COLUMN doviz_cinsi TEXT DEFAULT ''")
+    if 'doviz_tutar' not in yev_cols:
+        c.execute("ALTER TABLE yevmiye ADD COLUMN doviz_tutar REAL DEFAULT 0")
+    if 'kur' not in yev_cols:
+        c.execute("ALTER TABLE yevmiye ADD COLUMN kur REAL DEFAULT 0")
+
     acenteler = [
         ("BKG",     "Booking",  15.0),
         ("EXP",     "Expedia",      15.0),
@@ -358,17 +377,20 @@ def get_personel(sadece_aktif=True):
     return rows
 
 def ekle_yevmiye(tarih, belge_no, islem_tipi, borc, alacak, tutar,
-                  aciklama="", otel="GENEL", fatura_no="", kaynak_tablo=None, kaynak_id=None):
+                  aciklama="", otel="GENEL", fatura_no="", kaynak_tablo=None, kaynak_id=None,
+                  doviz_cinsi="", doviz_tutar=0, kur=0):
     conn = get_conn()
     t = tarih if isinstance(tarih, str) else tarih.isoformat()
     yil = int(t[:4]); ay = int(t[5:7])
     conn.execute("""
         INSERT INTO yevmiye
         (tarih,belge_no,islem_tipi,borc_hesap,alacak_hesap,tutar,
-         aciklama,otel,fatura_no,yil,ay,kaynak_tablo,kaynak_id)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)
+         aciklama,otel,fatura_no,yil,ay,kaynak_tablo,kaynak_id,
+         doviz_cinsi,doviz_tutar,kur)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (t, belge_no, islem_tipi, borc, alacak, tutar,
-          aciklama, otel, fatura_no, yil, ay, kaynak_tablo, kaynak_id))
+          aciklama, otel, fatura_no, yil, ay, kaynak_tablo, kaynak_id,
+          doviz_cinsi or '', doviz_tutar or 0, kur or 0))
     conn.commit(); conn.close()
 
 def get_yevmiye(yil=None, ay=None, hesap=None, limit=None, order='DESC'):
