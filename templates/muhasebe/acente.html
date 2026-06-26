@@ -261,7 +261,8 @@ async function load() {
   const rows = d.rows;
   let toplamGelen = 0;
   rows.forEach(r => { toplamGelen += r.gelen_odeme||0; });
-  allDataRaw = rows;
+  // Sadece manuel fatura tahsilat kayıtları (gelen_odeme > 0 ve foy_no yok)
+  allDataRaw = rows.filter(r => (r.gelen_odeme||0) > 0 && !r.foy_no);
 
   // Gerçek cari bakiye (yevmiyeden) — sadece tek acente seçiliyken anlamlı
   let bakiyeHtml = '';

@@ -321,7 +321,7 @@ async function load() {
       <td style="text-align:right;font-family:'Geist Mono',monospace;color:var(--text2)">${r.kapora>0?fmt(r.kapora):'—'}</td>
       <td style="text-align:right;font-family:'Geist Mono',monospace;font-weight:600;color:${r.rez_bakiye>0?'var(--accent3)':'var(--pos)'}">${r.rez_bakiye>0?fmt(r.rez_bakiye):'Temiz'}</td>
       <td style="text-align:center"><span class="rez-durum-pill" style="background:${durumBg};color:${durumC}">${gercekDurum}</span></td>
-      <td style="text-align:center">${r.kahvalti==='Kahvaltısız' ? '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(255,111,125,.15);color:var(--accent3);font-weight:600">Kahvaltısız</span>' : '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(47,221,155,.15);color:var(--pos);font-weight:600">Kahvaltılı</span>'}</td>
+      <td style="text-align:center">${r.kahvalti==='Kahvaltısız' ? '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(255,111,125,.15);color:var(--accent3);font-weight:600">Yok</span>' : '<span style="font-size:11px;padding:3px 9px;border-radius:8px;background:rgba(47,221,155,.15);color:var(--pos);font-weight:600">Var</span>'}</td>
       <td style="text-align:right;white-space:nowrap">${islemHtml}</td>
     </tr>`;
   }).join('');
