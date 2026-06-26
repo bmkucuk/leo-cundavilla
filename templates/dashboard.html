@@ -78,8 +78,8 @@
     <div style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text2);background:var(--card2);padding:3px 9px;border-radius:20px" id="aktif-count">— misafir</div>
   </div>
   <table>
-    <thead><tr><th>Oda</th><th>Otel</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Gün</th><th>Rez.Bakiye</th><th>Adisyon</th><th>Adis.Bakiye</th></tr></thead>
-    <tbody id="aktif-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
+    <thead><tr><th>Oda</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Gün</th><th>Rez.Bakiye</th><th>Adisyon</th><th>Adis.Bakiye</th></tr></thead>
+    <tbody id="aktif-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 {% endblock %}
@@ -140,7 +140,6 @@ async function load() {
   aktifBody.innerHTML = d.aktifler.length ? d.aktifler.map(r => `
     <tr>
       <td>${r.oda_no}</td>
-      <td class="${r.otel=='LEO'?'leo-tag':'cv-tag'}">${r.otel}</td>
       <td>${r.musteri}</td>
       <td>${fmtDate(r.giris)}</td>
       <td>${fmtDate(r.cikis)}</td>
@@ -148,7 +147,7 @@ async function load() {
       <td class="${(r.rez_bakiye||0)>0?'red':'green'}">${fmt(r.rez_bakiye||0)}</td>
       <td>${fmt(r.adisyon||0)}</td>
       <td class="${(r.adis_bakiye||0)>0?'red':'green'}">${fmt(r.adis_bakiye||0)}</td>
-    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Şu an otelde misafir yok</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Şu an otelde misafir yok</td></tr>';
 }
 load();
 </script>

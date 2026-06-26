@@ -283,8 +283,12 @@ async function load() {
     detayWrap.style.display = detayFoylerRaw.length ? '' : 'none';
     kesilenWrap.style.display = kesilenListesiRaw.length ? '' : 'none';
   } else {
-    detayWrap.style.display = 'none';
-    kesilenWrap.style.display = 'none';
+    // Tüm Acenteler: tüm açık föyleri göster
+    const det = await api(`/api/muhasebe/acente-detay?kod=&yil=${yil}`);
+    detayFoylerRaw = det.foyler || [];
+    kesilenListesiRaw = det.kesilen_faturalar || [];
+    detayWrap.style.display = detayFoylerRaw.length ? '' : 'none';
+    kesilenWrap.style.display = 'none'; // Tüm modda fatura listesi anlamsız
   }
 
   document.getElementById('kartlar').innerHTML = `

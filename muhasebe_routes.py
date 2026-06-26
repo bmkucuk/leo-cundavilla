@@ -660,8 +660,27 @@ def api_acente_detay():
     kod = request.args.get('kod', '')
     yil = request.args.get('yil', date.today().year, type=int)
     hesap = ACENTE_HESAP.get(kod)
+
+    # Tüm acenteler modu: her acentenin detayını birleştir
     if not hesap:
-        return jsonify({'foyler': [], 'fatura_disi_bakiye': 0})
+        tum_foyler = []
+        tum_kesilen = []
+        for a_kod, a_hesap in ACENTE_HESAP.items():
+            det = _acente_detay_hesapla(a_hesap, a_kod, yil)
+            for f in det['foyler']:
+                f['acente_kod'] = a_kod
+            tum_foyler.extend(det['foyler'])
+            tum_kesilen.extend(det['kesilen_faturalar'])
+        tum_foyler.sort(key=lambda x: x['tarih'])
+        return jsonify({'foyler': tum_foyler, 'fatura_disi_bakiye': 0,
+                        'kesilen_faturalar': tum_kesilen})
+
+    det = _acente_detay_hesapla(hesap, kod, yil)
+    return jsonify(det)
+
+
+def _acente_detay_hesapla(hesap, kod, yil):
+    import re as _re
     conn = mdb.get_conn()
     rows = conn.execute("""
         SELECT tarih, islem_tipi, borc_hesap, alacak_hesap, tutar, aciklama
@@ -671,11 +690,10 @@ def api_acente_detay():
     """, (hesap, hesap, yil)).fetchall()
     conn.close()
 
-    import re as _re
     foyler = {}
     faturalanan = set()
     kesilen_faturalar = []
-    fatura_disi_bakiye = 0.0  # genel (föy'e bağlı olmayan) fatura tahsilatları
+    fatura_disi_bakiye = 0.0
     BANKA_AD = {'102-1': 'İş Bankası', '102-2': 'Ziraat Bankası', '102-3': 'Denizbank'}
     for r in rows:
         m = _re.search(r'Föy#(\d+)\s+(.*?)\s+\[ACENTE-OTO\]', r['aciklama'] or '')
@@ -711,8 +729,8 @@ def api_acente_detay():
         f['fatura_edildi'] = f['foy_no'] in faturalanan
         sonuc.append(f)
     sonuc.sort(key=lambda x: x['tarih'])
-    return jsonify({'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2),
-                    'kesilen_faturalar': kesilen_faturalar})
+    return {'foyler': sonuc, 'fatura_disi_bakiye': round(fatura_disi_bakiye, 2),
+            'kesilen_faturalar': kesilen_faturalar}
 
 @muh.route('/api/muhasebe/acente-fatura-kes', methods=['POST'])
 def api_acente_fatura_kes():
