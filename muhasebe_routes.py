@@ -295,12 +295,18 @@ def api_yevmiye_guncelle():
         tutar    = float(d['tutar'])
         aciklama = d.get('aciklama', '')
         islem    = d.get('islem_tipi', '')
+        borc     = d.get('borc', '')
+        alacak   = d.get('alacak', '')
         yil      = int(tarih[:4]); ay = int(tarih[5:7])
         conn = mdb.get_conn()
-        # Sadece tarih, tutar, aciklama, islem_tipi güncellenebilir — borç/alacak hesapları değişmez
-        conn.execute("""UPDATE yevmiye SET tarih=?, tutar=?, aciklama=?, islem_tipi=?, yil=?, ay=?
-                        WHERE id=? AND kaynak_tablo IS NULL""",
-                     (tarih, tutar, aciklama, islem, yil, ay, yev_id))
+        sets = "tarih=?, tutar=?, aciklama=?, islem_tipi=?, yil=?, ay=?"
+        vals = [tarih, tutar, aciklama, islem, yil, ay]
+        if borc:
+            sets += ", borc_hesap=?"; vals.append(borc)
+        if alacak:
+            sets += ", alacak_hesap=?"; vals.append(alacak)
+        vals.append(yev_id)
+        conn.execute(f"UPDATE yevmiye SET {sets} WHERE id=? AND kaynak_tablo IS NULL", vals)
         if conn.execute("SELECT changes()").fetchone()[0] == 0:
             conn.close()
             return jsonify({'ok': False, 'error': 'Bu kayıt düzenlenemez (sisteme bağlı kayıt)'}), 400
