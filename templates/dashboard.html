@@ -57,8 +57,8 @@
       <div style="display:flex;align-items:center;gap:9px"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span><span style="font-size:14px;font-weight:600">Bugün Giriş</span></div>
     </div>
     <table>
-      <thead><tr><th>Oda</th><th>Kanal</th><th>Misafir</th><th>Gün</th></tr></thead>
-      <tbody id="giris-tbody"><tr class="loading-row"><td colspan="4"><span class="spinner"></span></td></tr></tbody>
+      <thead><tr><th>Oda</th><th>Otel</th><th>Misafir</th><th>Gün</th><th>Kanal</th></tr></thead>
+      <tbody id="giris-tbody"><tr class="loading-row"><td colspan="5"><span class="spinner"></span></td></tr></tbody>
     </table>
   </div>
   <div class="table-wrap">
@@ -78,8 +78,8 @@
     <div style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--text2);background:var(--card2);padding:3px 9px;border-radius:20px" id="aktif-count">— misafir</div>
   </div>
   <table>
-    <thead><tr><th>Oda</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Gün</th><th>Rez.Bakiye</th><th>Adisyon</th><th>Adis.Bakiye</th></tr></thead>
-    <tbody id="aktif-tbody"><tr class="loading-row"><td colspan="8"><span class="spinner"></span></td></tr></tbody>
+    <thead><tr><th>Oda</th><th>Kanal</th><th>Misafir</th><th>Giriş</th><th>Çıkış</th><th>Gün</th><th>Rez.Bakiye</th><th>Adisyon</th><th>Adis.Bakiye</th></tr></thead>
+    <tbody id="aktif-tbody"><tr class="loading-row"><td colspan="9"><span class="spinner"></span></td></tr></tbody>
   </table>
 </div>
 {% endblock %}
@@ -121,10 +121,11 @@ async function load() {
   girisBody.innerHTML = d.girisler.length ? d.girisler.map(r => `
     <tr>
       <td>${r.oda_no}</td>
-      <td>${r.kanal||'—'}</td>
+      <td class="${r.otel=='LEO'?'leo-tag':'cv-tag'}">${r.otel}</td>
       <td>${r.musteri}</td>
       <td>${r.toplam_gun} gün</td>
-    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:20px">Bugün giriş yok</td></tr>';
+      <td>${r.kanal||'—'}</td>
+    </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">Bugün giriş yok</td></tr>';
 
   const cikisBody = document.getElementById('cikis-tbody');
   cikisBody.innerHTML = d.cikislar.length ? d.cikislar.map(r => `
@@ -140,6 +141,7 @@ async function load() {
   aktifBody.innerHTML = d.aktifler.length ? d.aktifler.map(r => `
     <tr>
       <td>${r.oda_no}</td>
+      <td>${r.kanal||'—'}</td>
       <td>${r.musteri}</td>
       <td>${fmtDate(r.giris)}</td>
       <td>${fmtDate(r.cikis)}</td>
@@ -147,7 +149,7 @@ async function load() {
       <td class="${(r.rez_bakiye||0)>0?'red':'green'}">${fmt(r.rez_bakiye||0)}</td>
       <td>${fmt(r.adisyon||0)}</td>
       <td class="${(r.adis_bakiye||0)>0?'red':'green'}">${fmt(r.adis_bakiye||0)}</td>
-    </tr>`).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:20px">Şu an otelde misafir yok</td></tr>';
+    </tr>`).join('') : '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:20px">Şu an otelde misafir yok</td></tr>';
 }
 load();
 </script>

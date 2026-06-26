@@ -33,6 +33,7 @@
   <th style="width:95px;cursor:pointer;pointer-events:auto" onclick="sirala('detay','tarih')">Tarih <span id="sort-detay-tarih"></span></th>
   <th style="width:70px;cursor:pointer;pointer-events:auto" onclick="sirala('detay','foy_no')">Föy <span id="sort-detay-foy_no"></span></th>
   <th>Misafir</th>
+  <th id="acente-col-th" style="width:90px;display:none">Acente</th>
   <th style="text-align:right">Rez. Bedeli</th>
   <th style="text-align:right">Komisyon (%15)</th>
   <th style="text-align:right">Net (Faturalanacak)</th>
@@ -323,6 +324,11 @@ function renderAltTablo() {
 }
 
 function renderDetayTablosu() {
+  const tumMod = !document.getElementById('acente-sel').value;
+  document.getElementById('acente-col-th').style.display = tumMod ? '' : 'none';
+  const acHucre = (f) => tumMod ? `<td style="font-size:11px;font-weight:700;color:var(--accent2)">${f.acente_kod||''}</td>` : '';
+  const colspan = tumMod ? 9 : 8;
+
   document.getElementById('detay-tbody').innerHTML = detayFoyler.map(f => {
     if (f.fatura_edildi) {
       return `<tr style="opacity:.55">
@@ -330,6 +336,7 @@ function renderDetayTablosu() {
         <td>${fmtDate(f.tarih)}</td>
         <td>${f.foy_no ? '<a href="/rezervasyonlar?q='+f.foy_no+'" style="color:var(--accent)">'+f.foy_no+'</a>' : '—'}</td>
         <td>${f.misafir||'—'}</td>
+        ${acHucre(f)}
         <td style="text-align:right">${fmt(f.rez_tutari)}</td>
         <td class="red" style="text-align:right">${fmt(f.komisyon)}</td>
         <td style="text-align:right;font-weight:600">${fmt(f.net)}</td>
@@ -343,12 +350,13 @@ function renderDetayTablosu() {
       <td>${fmtDate(f.tarih)}</td>
       <td>${f.foy_no ? '<a href="/rezervasyonlar?q='+f.foy_no+'" style="color:var(--accent)">'+f.foy_no+'</a>' : '—'}</td>
       <td>${f.misafir||'—'}</td>
+      ${acHucre(f)}
       <td style="text-align:right">${fmt(f.rez_tutari)}</td>
       <td class="red" style="text-align:right">${fmt(f.komisyon)}</td>
       <td class="green" style="text-align:right;font-weight:600">${fmt(f.net)}</td>
       <td style="text-align:center"><span style="font-size:10px;color:var(--text2)">Bekliyor</span></td>
     </tr>`;
-  }).join('') || (aramaTerimi ? '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:16px">Aramayla eşleşen kayıt yok</td></tr>' : '');
+  }).join('') || (aramaTerimi ? `<tr><td colspan="${colspan}" style="text-align:center;color:var(--text2);padding:16px">Aramayla eşleşen kayıt yok</td></tr>` : '');
   guncelleSecimOzeti();
 }
 
