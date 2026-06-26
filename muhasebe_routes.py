@@ -285,6 +285,30 @@ def api_yevmiye_sil():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
+@muh.route('/api/muhasebe/yevmiye/guncelle', methods=['POST'])
+@admin_required
+def api_yevmiye_guncelle():
+    try:
+        d = request.get_json()
+        yev_id   = int(d['id'])
+        tarih    = d['tarih']
+        tutar    = float(d['tutar'])
+        aciklama = d.get('aciklama', '')
+        islem    = d.get('islem_tipi', '')
+        yil      = int(tarih[:4]); ay = int(tarih[5:7])
+        conn = mdb.get_conn()
+        # Sadece tarih, tutar, aciklama, islem_tipi güncellenebilir — borç/alacak hesapları değişmez
+        conn.execute("""UPDATE yevmiye SET tarih=?, tutar=?, aciklama=?, islem_tipi=?, yil=?, ay=?
+                        WHERE id=? AND kaynak_tablo IS NULL""",
+                     (tarih, tutar, aciklama, islem, yil, ay, yev_id))
+        if conn.execute("SELECT changes()").fetchone()[0] == 0:
+            conn.close()
+            return jsonify({'ok': False, 'error': 'Bu kayıt düzenlenemez (sisteme bağlı kayıt)'}), 400
+        conn.commit(); conn.close()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 400
+
 @muh.route('/api/muhasebe/hesaplar')
 def api_hesaplar():
     return jsonify(mdb.get_hesap_adlari())

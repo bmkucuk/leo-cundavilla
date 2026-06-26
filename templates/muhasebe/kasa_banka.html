@@ -118,6 +118,35 @@
     </div>
   </div>
 </div>
+
+<!-- Gider Düzenleme Modalı -->
+<div class="modal-overlay" id="duzenle-modal">
+  <div class="modal" style="min-width:380px">
+    <h2>✏️ Gider Düzenle</h2>
+    <input type="hidden" id="d-id">
+    <div class="form-row">
+      <div class="form-group"><label>Tarih</label><input type="date" id="d-tarih"></div>
+      <div class="form-group"><label>İşlem Tipi</label>
+        <select id="d-islem">
+          <option>Maaş Ödemesi</option><option>Vergi Ödemesi</option><option>Fatura Ödemesi</option>
+          <option>Stok Alımı</option><option>Kasa - Banka Virman</option><option>Diğer</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Açıklama</label><input type="text" id="d-aciklama"></div>
+    </div>
+    <div class="form-row single">
+      <div class="form-group"><label>Tutar (₺)</label>
+        <input type="number" id="d-tutar" step="any" min="0" style="font-size:18px;font-weight:700">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeDuzenleMod()">İptal</button>
+      <button class="btn btn-primary" onclick="saveDuzenle()">💾 Güncelle</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -194,7 +223,6 @@ function gotoPage(which, p) {
 }
 
 function rowHtml(r) {
-  // Döviz kasası hareketi ise hem TL hem döviz tutarı göster
   let dovizHtml = '';
   if (r.doviz_cinsi && r.doviz_tutar) {
     const sembol = r.doviz_cinsi === 'EUR' ? '€' : '$';
@@ -202,6 +230,12 @@ function rowHtml(r) {
     const kurFmt = r.kur ? ` @ ${(r.kur||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}` : '';
     dovizHtml = `<br><span style="font-size:10px;color:var(--accent2)">${dovizFmt} ${sembol}${kurFmt}</span>`;
   }
+  // Sadece manuel gider kayıtları düzenlenebilir (kaynak_tablo yok, cikis > 0, açıklama sisteme bağlı değil)
+  const duzenlenebirmi = !r.kaynak_tablo && r.cikis > 0 && !baglantiliSayfa(r.kaynak_tablo, r.aciklama);
+  const duzenleBtnHtml = duzenlenebirmi
+    ? `<button onclick='openDuzenleMod(${JSON.stringify(r)})' title="Düzenle"
+        style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:14px;padding:4px">✏️</button>`
+    : '';
   return `<tr>
     <td>${fmtDate(r.tarih)}</td>
     <td>${r.aciklama||'—'}${dovizHtml}</td>
@@ -209,7 +243,8 @@ function rowHtml(r) {
     <td class="green" style="text-align:right">${r.giris > 0 ? fmt(r.giris) : '—'}</td>
     <td class="red" style="text-align:right">${r.cikis > 0 ? fmt(r.cikis) : '—'}</td>
     <td class="${r.bakiye_kum >= 0 ? 'green' : 'red'}" style="text-align:right;font-weight:600">${fmt(r.bakiye_kum)}</td>
-    <td style="text-align:center">
+    <td style="text-align:center;white-space:nowrap">
+      ${duzenleBtnHtml}
       <button onclick='silKasaKaydi(${r.id}, ${JSON.stringify(r.kaynak_tablo||null)}, ${JSON.stringify(r.aciklama||"")})'
         title="Sil" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:4px">🗑️</button>
     </td>
@@ -246,6 +281,30 @@ async function silKasaKaydi(id, kaynakTablo, aciklama) {
   const r = await api('/api/muhasebe/kasa/sil', { id });
   if (r.ok) { toast('Kayıt silindi ✓'); load(); }
   else toast(r.error, 'error');
+}
+
+function openDuzenleMod(r) {
+  document.getElementById('d-id').value = r.id;
+  document.getElementById('d-tarih').value = r.tarih || '';
+  document.getElementById('d-aciklama').value = r.aciklama || '';
+  document.getElementById('d-tutar').value = r.cikis || 0;
+  document.getElementById('d-islem').value = r.islem_tipi || 'Fatura Ödemesi';
+  document.getElementById('duzenle-modal').classList.add('open');
+}
+function closeDuzenleMod() {
+  document.getElementById('duzenle-modal').classList.remove('open');
+}
+async function saveDuzenle() {
+  const id    = parseInt(document.getElementById('d-id').value);
+  const tutar = parseFloat(document.getElementById('d-tutar').value) || 0;
+  const tarih = document.getElementById('d-tarih').value;
+  const aciklama = document.getElementById('d-aciklama').value.trim();
+  const islemTipi = document.getElementById('d-islem').value;
+  if (!tarih) { toast('Tarih girin', 'error'); return; }
+  if (!(tutar > 0)) { toast('Tutar > 0 olmalı', 'error'); return; }
+  const r = await api('/api/muhasebe/yevmiye/guncelle', { id, tarih, tutar, aciklama, islem_tipi: islemTipi });
+  if (r.ok) { toast('Güncellendi ✓'); closeDuzenleMod(); load(); }
+  else toast(r.error || 'Hata', 'error');
 }
 
 function renderKasa() {
