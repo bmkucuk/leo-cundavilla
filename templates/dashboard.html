@@ -47,7 +47,7 @@
 <div class="cards-row" id="stat-cards">
   <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--accent)"></span><div class="label">Bugün Giriş</div><div class="value" id="s-giris">—</div><div class="sub">bekleyen check-in</div></div>
   <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--accent2)"></span><div class="label">Bugün Çıkış</div><div class="value" id="s-cikis">—</div><div class="sub">check-out</div></div>
-  <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--accent4)"></span><div class="label">☕ Kahvaltı</div><div class="value" id="s-kah">—</div><div class="sub">kişi · bugün</div></div>
+  <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--accent4)"></span><div class="label">☕ Kahvaltı</div><div class="value" id="s-kah">—</div><div class="sub" id="s-kah-sub">kişi · bugün</div></div>
   <div class="stat-card"><span style="position:absolute;top:17px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--pos)"></span><div class="label">Boş Oda</div><div class="value" id="s-bos">—</div><div class="sub">müsait · satışa açık</div></div>
 </div>
 
@@ -94,7 +94,13 @@ async function load() {
 
   document.getElementById('s-giris').textContent  = d.stats.bugun_giris;
   document.getElementById('s-cikis').textContent  = d.stats.bugun_cikis;
-  document.getElementById('s-kah').textContent    = d.stats.kahvalti_kisi;
+  document.getElementById('s-kah').textContent = d.stats.kahvalti_kisi;
+  const kahSub = document.getElementById('s-kah-sub');
+  if (d.stats.kahvalti_super > 0) {
+    kahSub.innerHTML = `Normal: ${d.stats.kahvalti_normal} · <span style="color:var(--accent);font-weight:700">Süper: ${d.stats.kahvalti_super}</span>`;
+  } else {
+    kahSub.textContent = 'kişi · bugün';
+  }
   document.getElementById('s-alacak').textContent = fmt(d.stats.toplam_alacak);
 
   const leoDolu = d.stats.leo_aktif, cvDolu = d.stats.cv_aktif;

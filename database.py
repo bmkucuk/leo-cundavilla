@@ -507,11 +507,19 @@ def get_dashboard(today_str):
     aktifler = [dict(r) for r in conn.execute(
         "SELECT * FROM rezervasyonlar WHERE giris<=? AND cikis>? AND (durum IS NULL OR durum != 'Kapora Yandı') ORDER BY oda_no",
         (today_str, today_str)).fetchall()]
-    kahvalti = conn.execute(
+    kahvalti_toplam = conn.execute(
         "SELECT SUM(yetiskin+cocuk) FROM rezervasyonlar WHERE giris<=? AND cikis>=? AND (durum IS NULL OR durum != 'Kapora Yandı') AND (kahvalti IS NULL OR kahvalti != 'Kahvaltısız')",
         (today_str, today_str)).fetchone()[0] or 0
+    kahvalti_super = conn.execute(
+        "SELECT SUM(yetiskin+cocuk) FROM rezervasyonlar WHERE giris<=? AND cikis>=? AND (durum IS NULL OR durum != 'Kapora Yandı') AND kahvalti='Süper Kahvaltı'",
+        (today_str, today_str)).fetchone()[0] or 0
+    kahvalti_normal = kahvalti_toplam - kahvalti_super
     conn.close()
-    return girisler, cikislar, aktifler, int(kahvalti)
+    return girisler, cikislar, aktifler, {
+        'toplam': int(kahvalti_toplam),
+        'normal': int(kahvalti_normal),
+        'super': int(kahvalti_super),
+    }
 
 
 # ── Excel import ──────────────────────────────────────────────────────────────
