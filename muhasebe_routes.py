@@ -1140,19 +1140,48 @@ def api_mizan():
     satirlar.append({'tip':'bos'})
 
     satirlar.append({'tip':'baslik','kod':'━━','ad':'GİDERLER','borc':0,'alacak':0})
-    if maas:  satir('720','Personel Maaş', maas,  0, 'Gider')
-    if vergi: satir('770','Vergi',         vergi, 0, 'Gider')
-    if stok:  satir('740','Stok/Market',   stok,  0, 'Gider')
-    if dem:   satir('255','Demirbaş',      dem,   0, 'Gider')
-    if ortak: satir('500','Ortak Cari',    ortak, 0, 'Gider')
+    if maas:     satir('720','Personel Maaş', maas,  0, 'Gider')
     if komisyon: satir('730','Acente Komisyonu', komisyon, 0, 'Gider')
+    if vergi:    satir('770','Vergi',         vergi, 0, 'Gider')
+    if stok:     satir('740','Stok/Market',   stok,  0, 'Gider')
+    if dem:      satir('255','Demirbaş',      dem,   0, 'Gider')
+
+    # Yevmiyeden kaydedilmiş diğer tüm gider hesapları (740-780 arası ve 255 hariç zaten işlenenler)
+    islenecekler = {'720','730','770','740','255'}  # yukarıda elle eklenenler
+    muh_conn2 = mdb.get_conn()
+    gider_hesaplar = muh_conn2.execute("""
+        SELECT h.kod, h.ad,
+               COALESCE(SUM(CASE WHEN y.borc_hesap=h.kod THEN y.tutar ELSE 0 END),0) AS borc,
+               COALESCE(SUM(CASE WHEN y.alacak_hesap=h.kod THEN y.tutar ELSE 0 END),0) AS alacak
+        FROM hesaplar h
+        LEFT JOIN yevmiye y ON (y.borc_hesap=h.kod OR y.alacak_hesap=h.kod) AND y.yil=?
+        WHERE h.tip='Gider' AND h.aktif=1
+        GROUP BY h.kod
+        HAVING borc>0 OR alacak>0
+        ORDER BY h.kod
+    """, (yil,)).fetchall()
+    muh_conn2.close()
+    for row in gider_hesaplar:
+        if row[0] not in islenecekler:
+            satir(row[0], row[1], row[2], row[3], 'Gider')
+            islenecekler.add(row[0])
+
     satirlar.append({'tip':'bos'})
 
     satirlar.append({'tip':'baslik','kod':'━━','ad':'ÖZKAYNAKLAR','borc':0,'alacak':0})
     satirlar.append({'tip':'bos'})
 
     gelir_toplam = leo_kon + cv_kon + adis_gel
-    gider_toplam = maas + vergi + stok + dem + ortak + komisyon
+    # Gider toplamı: yevmiyedeki TÜM gider hesap borçları
+    muh_conn3 = mdb.get_conn()
+    gider_toplam_yev = muh_conn3.execute("""
+        SELECT COALESCE(SUM(y.tutar),0)
+        FROM yevmiye y JOIN hesaplar h ON y.borc_hesap=h.kod
+        WHERE h.tip='Gider' AND y.yil=?
+    """, (yil,)).fetchone()[0] or 0
+    muh_conn3.close()
+    # personel_maas ve vergi tablosu kaynaklı giderler de dahil (bunlar yevmiyede olmayabilir)
+    gider_toplam = max(gider_toplam_yev, maas + vergi + stok + dem + ortak + komisyon)
     net = gelir_toplam - gider_toplam
 
     satirlar.append({'tip':'net','kod':'NET','ad':'NET KÂR / ZARAR',
