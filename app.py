@@ -301,7 +301,7 @@ def api_gunluk_liste():
     # Kahvaltı listesi: konaklıyorlar (giris < tarih <= cikis) VEYA çıkış günü (cikis = tarih)
     # Giriş günü kahvaltı YOK, çıkış günü VAR
     kahvalti = conn.execute(
-        "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no "
+        "SELECT oda_no, otel, musteri, yetiskin, cocuk, giris, cikis, foy_no, kahvalti "
         "FROM rezervasyonlar "
         "WHERE giris < ? AND cikis >= ? AND (durum IS NULL OR durum != 'Kapora Yandı') "
         "AND (kahvalti IS NULL OR kahvalti != 'Kahvaltısız') "
@@ -312,7 +312,8 @@ def api_gunluk_liste():
         d = {
             'oda_no': r['oda_no'], 'otel': r['otel'], 'musteri': r['musteri'],
             'yetiskin': r['yetiskin'], 'cocuk': r['cocuk'],
-            'giris': r['giris'], 'cikis': r['cikis'], 'foy_no': r['foy_no']
+            'giris': r['giris'], 'cikis': r['cikis'], 'foy_no': r['foy_no'],
+            'kahvalti': r['kahvalti'] if 'kahvalti' in r.keys() else 'Kahvaltılı'
         }
         if include_hk:
             def _safe_num(key):

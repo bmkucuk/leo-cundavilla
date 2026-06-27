@@ -33,7 +33,9 @@
     <div style="font-size:11px;color:var(--text2);margin-bottom:10px">
       Giriş günü hariç · Çıkış günü dahil
     </div>
-    <div id="tbl-kahvalti-wrap">
+
+    <!-- Normal Kahvaltı -->
+    <div id="wrap-normal-kahvalti">
       <table class="gl-table" id="tbl-kahvalti">
         <thead><tr>
           <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th>
@@ -41,6 +43,22 @@
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- Süper Kahvaltı (gizli kalabilir) -->
+    <div id="wrap-super-kahvalti" style="display:none;margin-top:12px">
+      <div style="font-size:12px;font-weight:600;color:var(--accent4);
+                  background:rgba(255,193,7,0.12);border:1px solid rgba(255,193,7,0.3);
+                  border-radius:8px 8px 0 0;padding:7px 12px;">
+        ★ Süper Kahvaltı
+      </div>
+      <table class="gl-table" id="tbl-super-kahvalti" style="border-radius:0 0 8px 8px">
+        <thead><tr>
+          <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
     <div class="gl-toplam" id="top-kahvalti"></div>
   </div>
 
@@ -276,8 +294,16 @@ async function loadData() {
     const res = await fetch(`/api/gunluk-liste?tarih=${tarih}`);
     const d = await res.json();
 
-    // Kahvaltı
-    document.querySelector('#tbl-kahvalti tbody').innerHTML = buildRows(d.kahvalti, 'kahvalti');
+    // Kahvaltı — normal ve süper ayrı gruplar
+    const normalKahvalti = d.kahvalti.filter(r => r.kahvalti !== 'Süper Kahvaltı');
+    const superKahvalti  = d.kahvalti.filter(r => r.kahvalti === 'Süper Kahvaltı');
+
+    document.querySelector('#tbl-kahvalti tbody').innerHTML = buildRows(normalKahvalti, 'kahvalti');
+    document.querySelector('#tbl-super-kahvalti tbody').innerHTML = buildRows(superKahvalti, 'kahvalti');
+
+    // Süper kahvaltı bölümünü dinamik göster/gizle
+    document.getElementById('wrap-super-kahvalti').style.display = superKahvalti.length ? '' : 'none';
+
     document.getElementById('top-kahvalti').innerHTML = toplam(d.kahvalti, 'Kahvaltı');
     document.getElementById('oz-kahvalti').textContent =
       `🍳 Kahvaltı: ${d.kahvalti.length} oda`;
