@@ -1143,11 +1143,10 @@ def api_mizan():
     if maas:     satir('720','Personel Maaş', maas,  0, 'Gider')
     if komisyon: satir('730','Acente Komisyonu', komisyon, 0, 'Gider')
     if vergi:    satir('770','Vergi',         vergi, 0, 'Gider')
-    if stok:     satir('740','Stok/Market',   stok,  0, 'Gider')
     if dem:      satir('255','Demirbaş',      dem,   0, 'Gider')
 
     # Yevmiyeden kaydedilmiş diğer tüm gider hesapları (740-780 arası ve 255 hariç zaten işlenenler)
-    islenecekler = {'720','730','770','740','255'}  # yukarıda elle eklenenler
+    islenecekler = {'720','730','770','255','500','153'}  # 740 yevmiyede 153 olarak yazılır
     muh_conn2 = mdb.get_conn()
     gider_hesaplar = muh_conn2.execute("""
         SELECT h.kod, h.ad,
