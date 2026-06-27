@@ -212,7 +212,7 @@ def init_db():
         ("102-3",  "Denizbank",                 "Aktif",     "Banka"),
         ("120",    "Müşteri Cari",               "Aktif",     "Alacak"),
         ("150",    "Stok",                       "Aktif",     "Stok"),
-        ("153",    "Stok/Market Gideri",         "Gider",     "Gider"),
+        ("153",    "Genel Giderler",              "Gider",     "Gider"),
         ("195",    "Personel Avans",             "Aktif",     "Dönen Varlık"),
         ("255",    "Demirbaş Gideri",             "Gider",     "Gider"),
         ("320-1",  "Booking Cari",               "Pasif",     "Acente"),
@@ -297,6 +297,9 @@ def init_db():
 
     # Migration: Expedia komisyon oranı %15 -> %18
     c.execute("UPDATE acenteler SET komisyon_orani=18.0 WHERE kod='EXP'")
+
+    # Migration: 153 hesap adını Genel Giderler yap
+    c.execute("UPDATE hesaplar SET ad='Genel Giderler' WHERE kod='153'")
 
     # Migration: EUR ve USD Kasa hesapları
     c.execute("INSERT OR IGNORE INTO bankalar(kod,ad,hesap_no) VALUES('KASA-EUR','Euro Kasa','')")
