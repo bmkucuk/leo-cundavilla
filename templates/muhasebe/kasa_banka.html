@@ -194,12 +194,12 @@ function toggleSort(which) {
 function filterSortHareketler(data, q, dir) {
   let list = data;
   if (q && q.trim()) {
-    const term = q.trim().toLowerCase();
+    const term = q.trim().toLocaleLowerCase('tr-TR');
     list = list.filter(r => {
-      const tutarStr = String(r.giris || r.cikis || '').toLowerCase();
-      const tarihStr = (fmtDate(r.tarih) || '').toLowerCase();
-      return (r.aciklama||'').toLowerCase().includes(term) ||
-             (r.islem_tipi||'').toLowerCase().includes(term) ||
+      const tutarStr = String(r.giris || r.cikis || '').toLocaleLowerCase('tr-TR');
+      const tarihStr = (fmtDate(r.tarih) || '').toLocaleLowerCase('tr-TR');
+      return (r.aciklama||'').toLocaleLowerCase('tr-TR').includes(term) ||
+             (r.islem_tipi||'').toLocaleLowerCase('tr-TR').includes(term) ||
              tutarStr.includes(term) ||
              tarihStr.includes(term) ||
              (r.tarih||'').includes(term);
