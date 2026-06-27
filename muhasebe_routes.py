@@ -1146,7 +1146,7 @@ def api_mizan():
     if dem:      satir('255','Demirbaş',      dem,   0, 'Gider')
 
     # Yevmiyeden kaydedilmiş diğer tüm gider hesapları (740-780 arası ve 255 hariç zaten işlenenler)
-    islenecekler = {'720','730','770','255','500','153'}  # 740 yevmiyede 153 olarak yazılır
+    islenecekler = {'720','730','770','255','500'}  # 740 yevmiyede 153 olarak yazılır
     muh_conn2 = mdb.get_conn()
     gider_hesaplar = muh_conn2.execute("""
         SELECT h.kod, h.ad,
