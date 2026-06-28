@@ -425,7 +425,7 @@ def get_next_foy_no():
     conn = get_conn()
     row = conn.execute("SELECT MAX(foy_no) as m FROM rezervasyonlar").fetchone()
     conn.close()
-    return (row['m'] or 0) + 1
+    return max((row['m'] or 0) + 1, 198)
 
 
 # ── Adisyon CRUD ──────────────────────────────────────────────────────────────
@@ -443,7 +443,7 @@ def get_next_adisyon_no():
     conn = get_conn()
     row = conn.execute("SELECT MAX(adisyon_no) as m FROM adisyonlar").fetchone()
     conn.close()
-    return (row['m'] or 0) + 1
+    return max((row['m'] or 0) + 1, 162)
 
 def save_adisyon(data):
     conn = get_conn()
