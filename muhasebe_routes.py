@@ -1401,6 +1401,49 @@ def api_gider_sekme():
     return jsonify([dict(r) for r in rows])
 
 
+# ── GEÇİCİ: Mükerrer acente kayıt analizi ────────────────────────────────────
+@muh.route('/api/debug/acente-mukerrer')
+@login_required
+def api_debug_acente_mukerrer():
+    """Acente ödemeleri için yanlış/mükerrer girilmiş olası kayıtları listeler."""
+    conn = mdb.get_conn()
+    # 1) Kasa-Banka'dan manuel girilen, kaynak_tablo=NULL, acente ile ilgili görünen kayıtlar
+    # (320-x hesabına dokunan ama ACENTE-OTO veya ACENTE-FATURA etiketi taşımayan)
+    manuel = conn.execute("""
+        SELECT id, tarih, aciklama, tutar, borc_hesap, alacak_hesap, islem_tipi, kaynak_tablo
+        FROM yevmiye
+        WHERE (borc_hesap LIKE '320%' OR alacak_hesap LIKE '320%')
+        AND (kaynak_tablo IS NULL OR kaynak_tablo = '')
+        AND aciklama NOT LIKE '%[ACENTE-OTO]%'
+        AND aciklama NOT LIKE '%[ACENTE-FATURA]%'
+        ORDER BY tarih DESC
+    """).fetchall()
+
+    # 2) Kasa-Banka'dan girilen ve açıklamada booking/expedia/jolly/tatil/ets geçen
+    anahtar = conn.execute("""
+        SELECT id, tarih, aciklama, tutar, borc_hesap, alacak_hesap, islem_tipi, kaynak_tablo
+        FROM yevmiye
+        WHERE (kaynak_tablo IS NULL OR kaynak_tablo = '')
+        AND aciklama NOT LIKE '%[ACENTE-OTO]%'
+        AND aciklama NOT LIKE '%[ACENTE-FATURA]%'
+        AND (
+            UPPER(aciklama) LIKE '%BOOKING%' OR UPPER(aciklama) LIKE '%EXPEDIA%'
+            OR UPPER(aciklama) LIKE '%JOLLY%' OR UPPER(aciklama) LIKE '%TATİL%'
+            OR UPPER(aciklama) LIKE '%TATIL%' OR UPPER(aciklama) LIKE '%ETSTUR%'
+            OR UPPER(aciklama) LIKE '%ETS %' OR UPPER(aciklama) LIKE '%ACENTE%'
+        )
+        ORDER BY tarih DESC
+    """).fetchall()
+
+    conn.close()
+    return jsonify({
+        'acente_hesap_manual': [dict(r) for r in manuel],
+        'aciklama_eslesme': [dict(r) for r in anahtar],
+        'toplam_manuel': len(manuel),
+        'toplam_eslesme': len(anahtar),
+    })
+
+
 # ── KK Komisyon ──────────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/kk_komisyon')
