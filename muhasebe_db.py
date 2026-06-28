@@ -122,6 +122,7 @@ def init_db():
         belge_no    TEXT,
         aciklama    TEXT NOT NULL,
         kategori    TEXT,
+        hesap_kodu  TEXT,
         tutar       REAL NOT NULL,
         odeme_hesap TEXT,
         fatura_var  INTEGER DEFAULT 0,
@@ -317,6 +318,11 @@ def init_db():
     if 'kur' not in yev_cols:
         c.execute("ALTER TABLE yevmiye ADD COLUMN kur REAL DEFAULT 0")
 
+    # Migration: stok tablosuna hesap_kodu kolonu
+    stok_cols = [r[1] for r in c.execute("PRAGMA table_info(stok)").fetchall()]
+    if 'hesap_kodu' not in stok_cols:
+        c.execute("ALTER TABLE stok ADD COLUMN hesap_kodu TEXT DEFAULT ''")
+
     acenteler = [
         ("BKG",     "Booking",  15.0),
         ("EXP",     "Expedia",      15.0),
@@ -479,15 +485,15 @@ def ekle_maas(tarih, personel_id, donem_yil, donem_ay,
     conn.commit(); conn.close()
 
 def ekle_stok(tarih, aciklama, tutar, kategori="", belge_no="",
-               odeme_hesap="", fatura_var=False, otel="GENEL", not_=""):
+               odeme_hesap="", fatura_var=False, otel="GENEL", not_="", hesap_kodu=""):
     conn = get_conn()
     t = tarih if isinstance(tarih, str) else tarih.isoformat()
     yil = int(t[:4]); ay = int(t[5:7])
     conn.execute("""
-        INSERT INTO stok(tarih,belge_no,aciklama,kategori,tutar,
+        INSERT INTO stok(tarih,belge_no,aciklama,kategori,hesap_kodu,tutar,
                          odeme_hesap,fatura_var,otel,not_)
-        VALUES(?,?,?,?,?,?,?,?,?)
-    """, (t, belge_no, aciklama, kategori, tutar,
+        VALUES(?,?,?,?,?,?,?,?,?,?)
+    """, (t, belge_no, aciklama, kategori, hesap_kodu, tutar,
           odeme_hesap, int(fatura_var), otel, not_))
     # Yevmiye: Stok Gideri borç / Ödeme hesabı alacak
     if tutar > 0:
