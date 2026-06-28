@@ -1380,6 +1380,27 @@ def api_acente_sil():
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
+# ── Gider Sekmeleri: yevmiyeden borc_hesap koduna göre ───────────────────────
+
+@muh.route('/api/muhasebe/gider_sekme')
+def api_gider_sekme():
+    """7xx hesap koduna göre yevmiye kayıtlarını döndürür (tüm kaynaklar)."""
+    yil        = request.args.get('yil', date.today().year, type=int)
+    hesap_kodu = request.args.get('hesap_kodu', '')
+    if not hesap_kodu:
+        return jsonify([])
+    conn = mdb.get_conn()
+    rows = conn.execute("""
+        SELECT y.id, y.tarih, y.aciklama, y.tutar, y.borc_hesap,
+               y.alacak_hesap, y.kaynak_tablo, y.kaynak_id, y.islem_tipi
+        FROM yevmiye y
+        WHERE y.yil=? AND y.borc_hesap=?
+        ORDER BY y.tarih ASC
+    """, (yil, hesap_kodu)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
 # ── KK Komisyon ──────────────────────────────────────────────────────────────
 
 @muh.route('/api/muhasebe/kk_komisyon')

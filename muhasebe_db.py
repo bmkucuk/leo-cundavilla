@@ -336,6 +336,21 @@ def init_db():
     if 'hesap_kodu' not in stok_cols:
         c.execute("ALTER TABLE stok ADD COLUMN hesap_kodu TEXT DEFAULT ''")
 
+    # Migration: Kasa&Banka'dan girilen KK komisyon yevmiyelerini 760'a taşı
+    # Açıklamada "KK KOM" veya "KOMİSYON" + borç hesabı 780/153 olanları 760'a al
+    c.execute("""
+        UPDATE yevmiye SET borc_hesap='760'
+        WHERE borc_hesap IN ('780','153')
+        AND (
+            UPPER(aciklama) LIKE '%KK KOM%'
+            OR UPPER(aciklama) LIKE '%KOMİSYON%'
+            OR UPPER(aciklama) LIKE '%KOMISYON%'
+            OR UPPER(aciklama) LIKE '%POS %'
+            OR UPPER(aciklama) LIKE '%POS U%'
+        )
+        AND kaynak_tablo IS NULL
+    """)
+
     # Migration: mevcut stok kayıtlarının hesap_kodu'nu kategoriden türet
     kat_map = {
         'Elektrik':'740','Su':'740','Doğalgaz':'740','Elektrik/Su/Doğalgaz':'740',
