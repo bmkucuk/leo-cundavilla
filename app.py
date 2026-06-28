@@ -117,6 +117,12 @@ def login():
         return render_template('login.html', error='Kullanıcı adı veya şifre yanlış')
     return render_template('login.html', error=None)
 
+@app.route('/yardim')
+def yardim():
+    if 'kullanici' not in session:
+        return redirect(url_for('login'))
+    return render_template('yardim.html')
+
 @app.route('/logout')
 def logout():
     u, r = session.get('user'), session.get('role')
