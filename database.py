@@ -9,6 +9,10 @@ _data_dir = "/data" if os.path.isdir("/data") else "."
 DB_PATH = os.environ.get("DB_PATH", os.path.join(_data_dir, "otel.db"))
 
 
+def uc(s):
+    if not s: return s
+    return str(s).upper()
+
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -198,6 +202,10 @@ def log_yaz(kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum):
         "VALUES (?,?,?,?,?,?,?,?)",
         (kullanici, rol, zaman, islem_tipi, modul, yol, ozet, durum)
     )
+
+    # Migration: açıklama alanlarını büyük harfe çevir
+    conn.execute("UPDATE rezervasyonlar SET aciklama=UPPER(aciklama) WHERE aciklama != '' AND aciklama != UPPER(aciklama)")
+    conn.execute("UPDATE adisyonlar SET aciklama=UPPER(aciklama) WHERE aciklama != '' AND aciklama != UPPER(aciklama)")
     conn.commit()
     conn.close()
 
@@ -304,7 +312,7 @@ def save_rezervasyon(data):
         giris, cikis, toplam_gun, toplam_fiyat,
         kapora, data.get('kapora_tarihi'),
         rez_tahsilat, data.get('rez_odeme_sekli',''), rez_bakiye,
-        data.get('aciklama',''),
+        uc(uc(data.get('aciklama',''))),
         data.get('tc_kimlik',''), data.get('arac_plaka',''),
         data.get('telefon',''), data.get('beraberindekiler','')
     ))
@@ -343,7 +351,7 @@ def update_rezervasyon(foy_no, data):
         data['musteri'], int(data.get('yetiskin',1)), int(data.get('cocuk',0)),
         data.get('ek_yatak','Yok'), data.get('kahvalti','Kahvaltılı'), gun_fiyat, giris, cikis,
         toplam_gun, toplam_fiyat, kapora, data.get('kapora_tarihi'),
-        data.get('aciklama',''),
+        uc(uc(data.get('aciklama',''))),
         data.get('tc_kimlik',''), data.get('arac_plaka',''),
         data.get('telefon',''), data.get('beraberindekiler',''),
         rez_bakiye, int(foy_no)
@@ -445,7 +453,7 @@ def save_adisyon(data):
         int(data['adisyon_no']), foy_no,
         rez['oda_no'] if rez else None,
         data.get('tarih'), float(data['tutar']),
-        data.get('odeme','Oda Hesabına'), data.get('aciklama',''),
+        data.get('odeme','Oda Hesabına'), uc(data.get('aciklama','')),
         rez['otel'] if rez else ''
     ))
     # Rezervasyondaki adisyon toplamını güncelle
