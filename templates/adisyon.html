@@ -169,9 +169,9 @@ async function load() {
     foyListesi.map(f => `<option value="${f.foy_no}">#${f.foy_no} — ${f.musteri}</option>`).join('');
   foyFilter.value = curFilter;
 
-  // Sonraki adisyon no
-  const maxNo = allAdisyonlar.reduce((m, a) => Math.max(m, a.adisyon_no||0), 0);
-  document.getElementById('a-no').value = maxNo + 1;
+  // Sonraki adisyon no — API'den al
+  const nextRes = await api('/api/next-adisyon');
+  document.getElementById('a-no').value = nextRes.adisyon_no || (allAdisyonlar.reduce((m, a) => Math.max(m, a.adisyon_no||0), 0) + 1);
 
   renderStats();
   filterTable();
