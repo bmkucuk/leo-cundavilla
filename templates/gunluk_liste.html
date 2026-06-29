@@ -38,7 +38,7 @@
     <div id="wrap-normal-kahvalti">
       <table class="gl-table" id="tbl-kahvalti">
         <thead><tr>
-          <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th>
+          <th>Oda</th><th>Föy No</th><th>Misafir</th><th>Kişi</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -53,7 +53,7 @@
       </div>
       <table class="gl-table" id="tbl-super-kahvalti" style="border-radius:0 0 8px 8px">
         <thead><tr>
-          <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th>
+          <th>Oda</th><th>Föy No</th><th>Misafir</th><th>Kişi</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -71,7 +71,7 @@
     <div id="tbl-giris-wrap">
       <table class="gl-table" id="tbl-giris">
         <thead><tr>
-          <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th><th>Çıkış</th>
+          <th>Oda</th><th>Föy No</th><th>Misafir</th><th>Kişi</th><th>Çıkış</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -88,7 +88,7 @@
     <div id="tbl-cikis-wrap">
       <table class="gl-table" id="tbl-cikis">
         <thead><tr>
-          <th>Oda</th><th>Otel</th><th>Misafir</th><th>Kişi</th><th>Giriş</th>
+          <th>Oda</th><th>Föy No</th><th>Misafir</th><th>Kişi</th><th>Giriş</th>
           <th style="width:70px;text-align:center">Anahtar</th><th style="width:60px;text-align:right">Bakiye</th>
         </tr></thead>
         <tbody></tbody>
@@ -218,14 +218,14 @@ function buildRows(data, type) {
     if (type === 'kahvalti') {
       return `<tr>
         <td>${r.oda_no}</td>
-        <td class="${otelCls}">${r.otel}</td>
+        <td class="${otelCls}">${r.foy_no}</td>
         <td>${r.musteri}</td>
         <td>${kisiStr}</td>
       </tr>`;
     } else if (type === 'giris') {
       return `<tr>
         <td>${r.oda_no}</td>
-        <td class="${otelCls}">${r.otel}</td>
+        <td class="${otelCls}">${r.foy_no}</td>
         <td>${r.musteri}</td>
         <td>${kisiStr}</td>
         <td>${fmt(r.cikis)}</td>
@@ -250,7 +250,7 @@ function buildRows(data, type) {
       // data-* ile güvenli veri taşı — inline JS yok
       return `<tr style="${rowStyle}">
         <td>${r.oda_no}</td>
-        <td class="${otelCls}">${r.otel}</td>
+        <td class="${otelCls}">${r.foy_no}</td>
         <td>${r.musteri}</td>
         <td>${kisiStr}</td>
         <td>${fmt(r.giris)}</td>
@@ -441,3 +441,4 @@ function modalBakiyeIptal() {
 </div>
 
 {% endblock %}
+
