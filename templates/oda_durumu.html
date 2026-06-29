@@ -30,6 +30,9 @@
 .ms-room-pill.leo{color:var(--leo)}
 .ms-room-pill.cv{color:var(--cv)}
 
+/* Sticky üst bölüm: sorgu paneli + tarih satırı */
+.sticky-header{position:sticky;top:0;z-index:20;background:var(--bg);flex-shrink:0;padding:24px 28px 0;}
+
 /* Tarih satırı sticky-bar içinde, yatay scroll ile senkron */
 .dates-row-wrap{overflow:hidden;flex-shrink:0}
 .dates-row{display:flex;gap:2px;margin-left:102px;}
@@ -43,8 +46,8 @@
 .day-header.today{color:var(--accent);border-color:var(--accent);background:rgba(255,194,77,.14)}
 .day-header.today .dh-day{opacity:1;color:var(--accent)}
 
-/* Grid sadece oda satırları, scroll burada */
-.grid-wrap{overflow-x:auto;overflow-y:auto;flex:1;min-height:0}
+/* Grid sadece oda satırları, yatay scroll burada, dikey scroll #content'te */
+.grid-wrap{overflow-x:auto;overflow-y:visible;flex:1;min-height:0;padding:0 28px 24px}
 .oda-grid{display:grid;gap:3px;min-width:max-content}
 
 .oda-label{background:var(--card);padding:5px 8px;font-size:12.5px;font-weight:700;
@@ -84,7 +87,8 @@
 .today-line{position:absolute;width:0;border-left:2px dashed var(--accent);pointer-events:none;z-index:8}
 </style>
 
-<!-- Müsaitlik Sorgu -->
+<!-- SABİT ÜST KISIM: sorgu paneli + dönem etiketi + tarih satırı -->
+<div class="sticky-header">
 <div class="panel ms-panel">
   <div class="ms-left">
     <div class="section-title" style="border:none;margin:0 0 4px;color:var(--accent)">🔎 Müsaitlik Sorgu</div>
@@ -123,13 +127,14 @@
       <div id="ms-pills" style="display:flex;flex-wrap:wrap;gap:8px"></div>
     </div>
   </div>
-</div>
+</div><!-- /ms-panel -->
 
 <!-- SABİT KISIM: tarih + tarih satırı -->
 <div class="period" id="period-lbl" style="text-align:center;margin-bottom:10px">—</div>
 <div class="dates-row-wrap">
   <div class="dates-row" id="dates-row"></div>
 </div>
+</div><!-- /sticky-header -->
 
 <!-- SCROLL KISIM: sadece oda satırları -->
 <div class="grid-wrap" id="grid-wrap">
@@ -418,3 +423,4 @@ async function lokalizeOda(otel, odaNo, girisStr, cikisStr){
 load();
 </script>
 {% endblock %}
+
