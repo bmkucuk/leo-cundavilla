@@ -20,6 +20,23 @@
 .rez-btn-gold{background:rgba(255,194,77,.16);color:var(--accent);border:1px solid rgba(255,194,77,.4)}
 .rez-btn-danger{background:rgba(255,111,125,.12);color:var(--accent3);border:1px solid rgba(255,111,125,.34)}
 .rez-btn-warn{background:#8B4513;color:#fff;border:none}
+
+/* ── Küçük ekran: tablo sıkıştırma ───────────────────────── */
+@media (max-width:1400px){
+  .rez-search{width:200px}
+  table{font-size:11.5px}
+  table th, table td{padding:6px 6px}
+  .rez-avatar{width:26px;height:26px;font-size:9px}
+  .rez-durum-pill{padding:2px 7px;font-size:10px}
+  .rez-oda-pill{font-size:9.5px;padding:1px 5px}
+  .rez-btn{padding:3px 7px;font-size:10.5px}
+  .rez-tahsil-pill{padding:3px 7px;font-size:10.5px}
+}
+@media (max-width:1200px){
+  table{font-size:11px}
+  table th, table td{padding:5px 4px}
+  .rez-search{width:160px}
+}
 </style>
 
 <div class="rez-summary" id="rez-summary">— kayıt</div>
@@ -41,17 +58,17 @@
   <button class="btn btn-primary" onclick="openModal()">＋ Yeni Rezervasyon</button>
 </div>
 
-<div class="table-wrap" style="max-height:calc(100vh - 240px);overflow-y:auto">
+<div class="table-wrap" style="max-height:calc(100vh - 240px);overflow-y:auto;overflow-x:auto">
   <table>
     <thead>
       <tr>
         <th>Föy</th><th>Misafir</th><th>Kişi</th><th>Kanal</th><th>Konaklama</th>
-        <th style="text-align:right">Gün Fiyat</th>
+        <th style="text-align:right">Gün/Fiy.</th>
         <th style="text-align:right">Toplam</th>
         <th style="text-align:right">Kapora</th>
         <th style="text-align:right">Bakiye</th>
         <th style="text-align:center">Durum</th>
-        <th style="text-align:center">Kahvaltı</th>
+        <th style="text-align:center">Khvt.</th>
         <th style="text-align:right">İşlem</th>
       </tr>
     </thead>
@@ -495,3 +512,4 @@ function secimKaldirRez(){
 }
 </script>
 {% endblock %}
+
