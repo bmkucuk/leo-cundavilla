@@ -37,6 +37,9 @@
 .sales-row:last-child{border-bottom:none}
 .sales-ay{font-size:13px;color:var(--text2);font-weight:500}
 .sales-sayi{font-family:'Geist Mono',monospace;font-size:18px;font-weight:700;color:var(--pos)}
+.sales-toplam{margin-top:6px;padding-top:10px;border-top:2px solid var(--border)}
+.sales-toplam .sales-ay{color:var(--text);font-weight:700}
+.sales-toplam .sales-sayi{color:var(--accent);font-size:20px}
 
 /* Sticky üst bölüm: sorgu paneli + tarih satırı */
 /* Üst sabit kısım */
@@ -126,6 +129,7 @@
       <div class="sales-row"><span class="sales-ay">Ağustos</span><span class="sales-sayi">—</span></div>
       <div class="sales-row"><span class="sales-ay">Eylül</span><span class="sales-sayi">—</span></div>
     </div>
+    <div class="sales-row sales-toplam"><span class="sales-ay">Toplam</span><span class="sales-sayi" id="sales-toplam-sayi">—</span></div>
   </div>
   <div class="ms-right">
     <div id="ms-empty" style="color:var(--text2);font-size:13px;margin:auto">Tarih seçip sorgula'ya bas</div>
@@ -202,10 +206,13 @@ async function loadSatislar(){
   const d = await api('/api/oda-satislari?yil=2026');
   const ayIndex = {'Mayıs':5,'Haziran':6,'Temmuz':7,'Ağustos':8,'Eylül':9};
   const rowsEl = document.getElementById('sales-rows');
+  let toplam = 0;
   rowsEl.innerHTML = Object.entries(ayIndex).map(([ad, no])=>{
     const sayi = d.aylik ? (d.aylik[no] ?? d.aylik[String(no)] ?? 0) : 0;
+    toplam += sayi;
     return `<div class="sales-row"><span class="sales-ay">${ad}</span><span class="sales-sayi">${sayi}</span></div>`;
   }).join('');
+  document.getElementById('sales-toplam-sayi').textContent = toplam;
 }
 
 let lastDates = [];
