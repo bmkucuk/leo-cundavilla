@@ -1,14 +1,6 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="{{ 'light' if request.cookies.get('theme') == 'light' else 'dark' }}">
 <head>
-<script>
-(function(){
-  try{
-    var t = localStorage.getItem('theme');
-    if(t === 'light') document.documentElement.setAttribute('data-theme','light');
-  }catch(e){}
-})();
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Rezervasyon Ve Ön Muhasebe{% endblock %}</title>
@@ -320,14 +312,17 @@ function applyThemeBtnLabel(){
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   btn.innerHTML = isLight ? '☀️ Karanlık' : '🌙 Aydınlık';
 }
+function setThemeCookie(value){
+  document.cookie = 'theme=' + value + '; path=/; max-age=31536000; SameSite=Lax';
+}
 function toggleTheme(){
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   if(isLight){
-    document.documentElement.removeAttribute('data-theme');
-    try{ localStorage.setItem('theme','dark'); }catch(e){}
+    document.documentElement.setAttribute('data-theme','dark');
+    setThemeCookie('dark');
   } else {
     document.documentElement.setAttribute('data-theme','light');
-    try{ localStorage.setItem('theme','light'); }catch(e){}
+    setThemeCookie('light');
   }
   applyThemeBtnLabel();
 }
