@@ -226,6 +226,12 @@ def _islem_logla(response):
             )
     except Exception:
         pass  # log yazımı asla asıl isteği bozmasın
+
+    # HTML sayfaları önbelleğe alınmasın: tema tercihi cookie'den okunup her istekte
+    # yeniden render edildiği için, tarayıcı eski (yanlış temalı) bir kopyayı göstermemeli.
+    if response.content_type and response.content_type.startswith('text/html'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+
     return response
 
 
