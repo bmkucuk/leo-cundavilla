@@ -313,7 +313,13 @@ function applyThemeBtnLabel(){
   btn.innerHTML = isLight ? '☀️ Karanlık' : '🌙 Aydınlık';
 }
 function setThemeCookie(value){
-  document.cookie = 'theme=' + value + '; path=/; max-age=31536000; SameSite=Lax';
+  // document.cookie yerine sunucudan gerçek Set-Cookie başlığıyla yazdırıyoruz —
+  // bazı tarayıcı/uzantılar script'in doğrudan yazdığı çerezleri güvenilmez şekilde ele alıyor.
+  fetch('/api/tema', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({tema: value})
+  }).catch(()=>{});
 }
 function toggleTheme(){
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';

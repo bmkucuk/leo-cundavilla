@@ -661,6 +661,16 @@ def api_oda_satislari():
 
     return jsonify({'yil': yil, 'aylik': aylik, 'aylar': _TR_AYLAR})
 
+@app.route('/api/tema', methods=['POST'])
+def api_tema():
+    veri = request.get_json(silent=True) or {}
+    tema = veri.get('tema')
+    if tema not in ('light', 'dark'):
+        tema = 'dark'
+    resp = jsonify({'ok': True, 'tema': tema})
+    resp.set_cookie('theme', tema, max_age=31536000, path='/', samesite='Lax')
+    return resp
+
 @app.route('/api/musaitlik')
 def api_musaitlik():
     # Verilen giriş/çıkış aralığında ve (varsa) otelde boş odaları döner. Salt-okunur, mevcut hiçbir kayda dokunmaz.
