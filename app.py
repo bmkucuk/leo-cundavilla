@@ -625,6 +625,36 @@ def api_oda_durumu():
 
     return jsonify({'dates': [d.isoformat() for d in dates], 'today': today, 'grid': grid})
 
+@app.route('/api/oda-satislari')
+def api_oda_satislari():
+    # Verilen yıl için, her ay kaç oda-gecesi satıldığını (dolu geceler) döner.
+    from datetime import timedelta
+    yil = request.args.get('yil', str(bugun().year))
+    try:
+        yil = int(yil)
+    except:
+        yil = bugun().year
+
+    rezervasyonlar = [r for r in db.get_rezervasyonlar() if r.get('durum') != 'Kapora Yandı']
+    aylik = {ay: 0 for ay in range(1, 13)}
+
+    for r in rezervasyonlar:
+        g, c = r.get('giris'), r.get('cikis')
+        if not g or not c:
+            continue
+        try:
+            g_d = date.fromisoformat(g)
+            c_d = date.fromisoformat(c)
+        except:
+            continue
+        gece = g_d
+        while gece < c_d:
+            if gece.year == yil:
+                aylik[gece.month] += 1
+            gece += timedelta(days=1)
+
+    return jsonify({'yil': yil, 'aylik': aylik, 'aylar': _TR_AYLAR})
+
 @app.route('/api/musaitlik')
 def api_musaitlik():
     # Verilen giriş/çıkış aralığında ve (varsa) otelde boş odaları döner. Salt-okunur, mevcut hiçbir kayda dokunmaz.
