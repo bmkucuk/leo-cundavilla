@@ -58,6 +58,15 @@
 
 {% block scripts %}
 <script>
+function trZaman(z) {
+  // "YYYY-MM-DD HH:MM:SS" -> "GG.AA.YYYY HH:MM:SS"
+  if (!z) return '—';
+  const [tarih, saat] = z.split(' ');
+  if (!tarih) return z;
+  const [y, m, d] = tarih.split('-');
+  return saat ? `${d}.${m}.${y} ${saat}` : `${d}.${m}.${y}`;
+}
+
 let _debounceTimer = null;
 function aramaDebounce() {
   clearTimeout(_debounceTimer);
@@ -133,7 +142,7 @@ function detayGoster(log) {
   const modal = document.getElementById('detay-modal');
   const islemAdi = yolEtiket[log.yol] || islemEtiket[log.islem_tipi] || log.islem_tipi;
   document.getElementById('detay-meta').innerHTML = `
-    <div><strong>Zaman:</strong> ${log.zaman}</div>
+    <div><strong>Zaman:</strong> ${trZaman(log.zaman)}</div>
     <div><strong>Kullanıcı:</strong> ${log.kullanici} &nbsp;·&nbsp; <strong>Rol:</strong> ${log.rol || '—'}</div>
     <div><strong>İşlem:</strong> ${islemAdi}</div>
     <div><strong>Yol:</strong> <code style="font-size:11px;color:var(--accent2)">${log.yol || '—'}</code></div>
@@ -197,7 +206,7 @@ async function loadLoglar() {
       : (l.ozet || '—');
     const islemAdi = yolEtiket[l.yol] || islemEtiket[l.islem_tipi] || l.islem_tipi;
     return `<tr style="cursor:pointer" onclick='detayGoster(${JSON.stringify(l)})' title="Detay için tıklayın">
-      <td style="white-space:nowrap;font-family:'Geist Mono',monospace;font-size:12px">${l.zaman}</td>
+      <td style="white-space:nowrap;font-family:'Geist Mono',monospace;font-size:12px">${trZaman(l.zaman)}</td>
       <td>${l.kullanici}</td>
       <td>${l.rol || '—'}</td>
       <td>${islemAdi}</td>
